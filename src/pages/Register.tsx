@@ -452,6 +452,12 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Registration failed');
 
+      if (!authData.session) {
+        toast({ title: 'Please check your email to verify your account', description: 'Then sign in.' });
+        navigate('/login');
+        return;
+      }
+
       const { error: profileError } = await supabase.from('profiles').insert({
         user_id: authData.user.id,
         full_name: fullName,
@@ -464,7 +470,7 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       if (profileError) throw profileError;
 
       toast({ title: 'Account created successfully!' });
-      navigate('/student');
+      setTimeout(() => navigate('/student'), 500);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
