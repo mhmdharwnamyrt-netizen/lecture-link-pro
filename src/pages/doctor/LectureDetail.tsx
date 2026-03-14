@@ -7,6 +7,8 @@ import MobileLayout from '@/components/MobileLayout';
 import { ArrowLeft, Users, CheckCircle2, AlertCircle, Clock, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import QRCodeDisplay from '@/components/doctor/QRCodeDisplay';
+import ExportButtons from '@/components/shared/ExportButtons';
 
 export default function LectureDetail() {
   const { id } = useParams();
