@@ -203,10 +203,21 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
       );
       await supabase.from('doctor_departments').insert(deptInserts);
 
+      // Resolve temp subjects (custom ones added during registration)
+      const resolvedSubjects: Subject[] = [];
+      for (const s of selectedSubjects) {
+        if (s.id.startsWith('temp-')) {
+          const { data } = await supabase.from('subjects').insert({ name: s.name }).select().single();
+          if (data) resolvedSubjects.push(data);
+        } else {
+          resolvedSubjects.push(s);
+        }
+      }
+
       // Insert doctor subjects
-      if (selectedSubjects.length > 0) {
+      if (resolvedSubjects.length > 0) {
         await supabase.from('doctor_subjects').insert(
-          selectedSubjects.map(s => ({ doctor_id: profileData.id, subject_id: s.id }))
+          resolvedSubjects.map(s => ({ doctor_id: profileData.id, subject_id: s.id }))
         );
       }
 
