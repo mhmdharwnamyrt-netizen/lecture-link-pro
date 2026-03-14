@@ -7,8 +7,10 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentPosition, checkWithinUniversity, UNIVERSITY_COORDS } from '@/lib/constants';
-import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2 } from 'lucide-react';
+import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode } from 'lucide-react';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
+import QRScanner from '@/components/student/QRScanner';
+import ExportButtons from '@/components/shared/ExportButtons';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
