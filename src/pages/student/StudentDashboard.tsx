@@ -271,10 +271,11 @@ export default function StudentDashboard() {
                           </>
                         ) : (
                           <>
-                            <MapPin className="mr-2 h-5 w-5" /> Register Attendance
+                            <MapPin className="mr-2 h-5 w-5" /> GPS
                           </>
                         )}
                       </Button>
+                      <QRScanner onSuccess={loadData} />
                       <Button
                         variant="outline"
                         onClick={() => setShowExcuse(lecture.id)}
