@@ -303,7 +303,20 @@ export default function StudentDashboard() {
           {/* Recent Attendance */}
           {recentAttendance.length > 0 && (
             <div className="mb-6">
-              <h2 className="mb-3 text-lg font-semibold">Recent Attendance</h2>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Recent Attendance</h2>
+                <ExportButtons
+                  title={`${profile.full_name} - Attendance Report`}
+                  data={recentAttendance.map(a => ({
+                    studentName: profile.full_name,
+                    studentId: profile.student_id || '',
+                    lectureTitle: a.lectures?.title || '',
+                    status: a.status,
+                    date: new Date(a.created_at).toLocaleDateString('en-US'),
+                    time: new Date(a.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' }),
+                  }))}
+                />
+              </div>
               <div className="space-y-2">
                 {recentAttendance.map(a => (
                   <div key={a.id} className="flex items-center justify-between rounded-2xl bg-card p-4 shadow-card">
