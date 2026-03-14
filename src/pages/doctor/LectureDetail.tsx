@@ -143,14 +143,27 @@ export default function LectureDetail() {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="mb-4 flex gap-2 rounded-xl bg-muted p-1">
-            <button onClick={() => setTab('attendees')} className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${tab === 'attendees' ? 'bg-card shadow-card' : 'text-muted-foreground'}`}>
-              Attendees ({attendees.length})
-            </button>
-            <button onClick={() => setTab('excuses')} className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${tab === 'excuses' ? 'bg-card shadow-card' : 'text-muted-foreground'}`}>
-              Excuses ({excuses.length})
-            </button>
+          {/* Export + Tabs */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex gap-2 rounded-xl bg-muted p-1 flex-1 mr-3">
+              <button onClick={() => setTab('attendees')} className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${tab === 'attendees' ? 'bg-card shadow-card' : 'text-muted-foreground'}`}>
+                Attendees ({attendees.length})
+              </button>
+              <button onClick={() => setTab('excuses')} className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${tab === 'excuses' ? 'bg-card shadow-card' : 'text-muted-foreground'}`}>
+                Excuses ({excuses.length})
+              </button>
+            </div>
+            <ExportButtons
+              title={`Lecture: ${lecture.title}`}
+              data={attendees.map(a => ({
+                studentName: a.profiles?.full_name || '',
+                studentId: a.profiles?.student_id || '',
+                lectureTitle: lecture.title,
+                status: a.status,
+                date: new Date(a.created_at).toLocaleDateString('en-US'),
+                time: new Date(a.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' }),
+              }))}
+            />
           </div>
 
           {/* Content */}
