@@ -184,6 +184,13 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Registration failed');
 
+      // Wait for session to be established
+      if (!authData.session) {
+        toast({ title: 'Please check your email to verify your account', description: 'Then sign in.' });
+        navigate('/login');
+        return;
+      }
+
       const { data: profileData, error: profileError } = await supabase.from('profiles').insert({
         user_id: authData.user.id,
         full_name: fullName,
@@ -222,7 +229,8 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
       }
 
       toast({ title: 'Account created successfully!' });
-      navigate('/doctor');
+      // Small delay to let AuthContext pick up the session
+      setTimeout(() => navigate('/doctor'), 500);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
