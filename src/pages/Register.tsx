@@ -161,16 +161,11 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
 
   const addCustomSubject = async () => {
     if (!newSubject.trim()) return;
-    const { data, error } = await supabase.from('subjects').insert({ name: newSubject.trim() }).select().single();
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      return;
-    }
-    if (data) {
-      setSubjects(prev => [...prev, data]);
-      setSelectedSubjects(prev => [...prev, data]);
-      setNewSubject('');
-    }
+    // Store locally with a temp ID; will be created after auth
+    const tempSubject = { id: `temp-${Date.now()}`, name: newSubject.trim() };
+    setSubjects(prev => [...prev, tempSubject]);
+    setSelectedSubjects(prev => [...prev, tempSubject]);
+    setNewSubject('');
   };
 
   const handleRegister = async () => {
@@ -208,10 +203,21 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
       );
       await supabase.from('doctor_departments').insert(deptInserts);
 
+      // Resolve temp subjects (custom ones added during registration)
+      const resolvedSubjects: Subject[] = [];
+      for (const s of selectedSubjects) {
+        if (s.id.startsWith('temp-')) {
+          const { data } = await supabase.from('subjects').insert({ name: s.name }).select().single();
+          if (data) resolvedSubjects.push(data);
+        } else {
+          resolvedSubjects.push(s);
+        }
+      }
+
       // Insert doctor subjects
-      if (selectedSubjects.length > 0) {
+      if (resolvedSubjects.length > 0) {
         await supabase.from('doctor_subjects').insert(
-          selectedSubjects.map(s => ({ doctor_id: profileData.id, subject_id: s.id }))
+          resolvedSubjects.map(s => ({ doctor_id: profileData.id, subject_id: s.id }))
         );
       }
 
@@ -415,6 +421,7 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Load departments on mount
   useState(() => {
     supabase.from('departments').select('*').then(({ data }) => {
       if (data) setDepartments(data);
