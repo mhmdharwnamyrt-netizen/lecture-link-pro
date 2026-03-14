@@ -161,16 +161,11 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
 
   const addCustomSubject = async () => {
     if (!newSubject.trim()) return;
-    const { data, error } = await supabase.from('subjects').insert({ name: newSubject.trim() }).select().single();
-    if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-      return;
-    }
-    if (data) {
-      setSubjects(prev => [...prev, data]);
-      setSelectedSubjects(prev => [...prev, data]);
-      setNewSubject('');
-    }
+    // Store locally with a temp ID; will be created after auth
+    const tempSubject = { id: `temp-${Date.now()}`, name: newSubject.trim() };
+    setSubjects(prev => [...prev, tempSubject]);
+    setSelectedSubjects(prev => [...prev, tempSubject]);
+    setNewSubject('');
   };
 
   const handleRegister = async () => {
