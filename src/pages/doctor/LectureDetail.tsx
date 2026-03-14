@@ -108,13 +108,18 @@ export default function LectureDetail() {
                 <p className="text-muted-foreground">{lecture.departments?.name} • Level {lecture.level} • Hall {lecture.hall_number}</p>
                 {lecture.subjects?.name && <p className="text-sm text-muted-foreground">Subject: {lecture.subjects.name}</p>}
               </div>
-              <Button
-                variant="outline"
-                onClick={toggleActive}
-                className={`rounded-xl ${lecture.is_active ? 'text-success' : 'text-muted-foreground'}`}
-              >
-                {lecture.is_active ? 'Active' : 'Ended'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {lecture.is_active && (
+                  <QRCodeDisplay lectureId={lecture.id} lectureTitle={lecture.title} />
+                )}
+                <Button
+                  variant="outline"
+                  onClick={toggleActive}
+                  className={`rounded-xl ${lecture.is_active ? 'text-success' : 'text-muted-foreground'}`}
+                >
+                  {lecture.is_active ? 'Active' : 'Ended'}
+                </Button>
+              </div>
             </div>
             {lecture.description && <p className="mt-2 text-sm text-muted-foreground">{lecture.description}</p>}
           </motion.div>
