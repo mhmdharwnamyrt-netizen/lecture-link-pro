@@ -415,6 +415,7 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Load departments on mount
   useState(() => {
     supabase.from('departments').select('*').then(({ data }) => {
       if (data) setDepartments(data);
