@@ -3,19 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getCurrentPosition, checkWithinUniversity, UNIVERSITY_COORDS } from '@/lib/constants';
-import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode } from 'lucide-react';
+import { getCurrentPosition, checkWithinUniversity } from '@/lib/constants';
+import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield } from 'lucide-react';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
 import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
+import FaceVerification from '@/components/student/FaceVerification';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeLectures, setActiveLectures] = useState<any[]>([]);
   const [stats, setStats] = useState({ present: 0, excused: 0, absent: 0, points: 0, totalLectures: 0 });
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
@@ -24,19 +27,37 @@ export default function StudentDashboard() {
   const [showExcuse, setShowExcuse] = useState<string | null>(null);
   const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
   const [showBloom, setShowBloom] = useState(false);
+  const [hasFaceTemplate, setHasFaceTemplate] = useState(false);
+
+  // Face verification state
+  const [showFaceVerify, setShowFaceVerify] = useState(false);
+  const [pendingLectureId, setPendingLectureId] = useState<string | null>(null);
+  const [pendingGPS, setPendingGPS] = useState<{ lat?: number; lon?: number; verified: boolean }>({ verified: false });
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'student')) navigate('/login');
   }, [loading, user, profile]);
 
   useEffect(() => {
-    if (profile) loadData();
+    if (profile) {
+      loadData();
+      checkFaceTemplate();
+    }
   }, [profile]);
+
+  const checkFaceTemplate = async () => {
+    if (!profile) return;
+    const { data } = await supabase
+      .from('face_templates')
+      .select('id')
+      .eq('student_id', profile.id)
+      .maybeSingle();
+    setHasFaceTemplate(!!data);
+  };
 
   const loadData = async () => {
     if (!profile) return;
 
-    // Get active lectures for student's department and level
     const { data: lectures } = await supabase
       .from('lectures')
       .select('*, departments(name), subjects(name), profiles!lectures_doctor_id_fkey(full_name)')
@@ -46,7 +67,6 @@ export default function StudentDashboard() {
       .order('created_at', { ascending: false });
 
     if (lectures) {
-      // Check which ones student already attended
       const { data: attended } = await supabase
         .from('attendance')
         .select('lecture_id')
@@ -57,7 +77,6 @@ export default function StudentDashboard() {
       setActiveLectures(lectures.map(l => ({ ...l, attended: attendedIds.has(l.id) })));
     }
 
-    // Stats
     const { data: allAttendance } = await supabase
       .from('attendance')
       .select('*, lectures(title, created_at)')
@@ -91,14 +110,26 @@ export default function StudentDashboard() {
       if (!result.within) {
         setGpsStatus('outside');
         toast({
-          title: 'Outside Campus',
+          title: t('student.outsideCampus'),
           description: `You are ${result.distance}m away from the university. Max allowed: 400m.`,
           variant: 'destructive',
         });
+        setCheckingIn(null);
+        setGpsStatus('idle');
         return;
       }
 
-      // Register attendance
+      // If student has face template, require face verification
+      if (hasFaceTemplate) {
+        setPendingLectureId(lectureId);
+        setPendingGPS({ lat: latitude, lon: longitude, verified: true });
+        setShowFaceVerify(true);
+        setCheckingIn(null);
+        setGpsStatus('idle');
+        return;
+      }
+
+      // No face template - register with GPS only
       const { error } = await supabase.from('attendance').insert({
         student_id: profile!.id,
         lecture_id: lectureId,
@@ -108,23 +139,25 @@ export default function StudentDashboard() {
         longitude,
       });
 
-      if (error) throw error;
-
-      setGpsStatus('success');
-      setShowBloom(true);
-      setTimeout(() => setShowBloom(false), 1000);
-
-      toast({ title: '✓ Attendance Registered', description: '+3 points earned!' });
-      loadData();
+      if (error) {
+        if (error.code === '23505') {
+          toast({ title: 'Already registered' });
+        } else {
+          throw error;
+        }
+      } else {
+        setGpsStatus('success');
+        setShowBloom(true);
+        setTimeout(() => setShowBloom(false), 1000);
+        toast({ title: '✓ ' + t('student.attendanceRegistered'), description: '+3 points earned!' });
+        loadData();
+      }
     } catch (err: any) {
       setGpsStatus('error');
       if (err.code === 1) {
         toast({ title: 'Location Permission Required', description: 'Please enable GPS and try again.', variant: 'destructive' });
-      } else if (err.code === 2 || err.code === 3) {
-        // GPS failed - offer manual verification
-        toast({ title: 'GPS Unavailable', description: 'Location service is not available. You can request manual verification.', variant: 'destructive' });
       } else {
-        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+        toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
       }
     } finally {
       setTimeout(() => {
@@ -134,12 +167,10 @@ export default function StudentDashboard() {
     }
   };
 
-  // Offline support: save to localStorage if offline
   const handleOfflineCheckIn = async (lectureId: string) => {
     if (navigator.onLine) {
       handleCheckIn(lectureId);
     } else {
-      // Save offline
       const offlineAttendance = JSON.parse(localStorage.getItem('offline_attendance') || '[]');
       offlineAttendance.push({
         student_id: profile!.id,
@@ -151,12 +182,10 @@ export default function StudentDashboard() {
     }
   };
 
-  // Sync offline attendance when back online
   useEffect(() => {
     const syncOffline = async () => {
       const offlineData = JSON.parse(localStorage.getItem('offline_attendance') || '[]');
       if (offlineData.length === 0 || !profile) return;
-
       for (const item of offlineData) {
         try {
           await supabase.from('attendance').insert({
@@ -171,7 +200,6 @@ export default function StudentDashboard() {
       localStorage.removeItem('offline_attendance');
       loadData();
     };
-
     window.addEventListener('online', syncOffline);
     if (navigator.onLine) syncOffline();
     return () => window.removeEventListener('online', syncOffline);
@@ -191,41 +219,59 @@ export default function StudentDashboard() {
         <div className="px-4 pt-6 md:px-8">
           {/* Welcome */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-            <p className="text-sm text-muted-foreground">Welcome back,</p>
+            <p className="text-sm text-muted-foreground">{t('auth.welcomeBack')}</p>
             <h1 className="text-2xl font-bold">{profile.full_name}</h1>
             <p className="text-sm text-muted-foreground tabular-nums">ID: {profile.student_id}</p>
           </motion.div>
+
+          {/* Face Registration Prompt */}
+          {!hasFaceTemplate && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 rounded-2xl bg-warning/10 p-4 shadow-card cursor-pointer"
+              onClick={() => navigate('/student/face-registration')}
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="h-6 w-6 text-warning" />
+                <div>
+                  <p className="font-medium text-sm">{t('profile.registerFace')}</p>
+                  <p className="text-xs text-muted-foreground">Register your face for secure attendance verification</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Stats */}
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="rounded-2xl bg-card p-4 shadow-card">
               <Award className={`h-5 w-5 text-primary mb-2 ${showBloom ? 'animate-bloom' : ''}`} />
               <p className="text-2xl font-bold tabular-nums">{stats.points}</p>
-              <p className="text-xs text-muted-foreground">Total Points</p>
+              <p className="text-xs text-muted-foreground">{t('student.totalPoints')}</p>
             </div>
             <div className="rounded-2xl bg-card p-4 shadow-card">
               <CheckCircle2 className="h-5 w-5 text-success mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.present}</p>
-              <p className="text-xs text-muted-foreground">Present</p>
+              <p className="text-xs text-muted-foreground">{t('common.present')}</p>
             </div>
             <div className="rounded-2xl bg-card p-4 shadow-card">
               <BookOpen className="h-5 w-5 text-warning mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.excused}</p>
-              <p className="text-xs text-muted-foreground">Excused</p>
+              <p className="text-xs text-muted-foreground">{t('common.excused')}</p>
             </div>
             <div className="rounded-2xl bg-card p-4 shadow-card">
               <Clock className="h-5 w-5 text-muted-foreground mb-2" />
               <p className="text-2xl font-bold tabular-nums">{stats.totalLectures}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-xs text-muted-foreground">{t('common.total')}</p>
             </div>
           </div>
 
           {/* Active Lectures */}
-          <h2 className="mb-3 text-lg font-semibold">Active Lectures</h2>
+          <h2 className="mb-3 text-lg font-semibold">{t('student.activeLectures')}</h2>
           {activeLectures.length === 0 ? (
             <div className="mb-6 rounded-2xl bg-card p-8 text-center shadow-card">
               <BookOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-              <p className="text-muted-foreground">No active lectures right now</p>
+              <p className="text-muted-foreground">{t('student.noActiveLectures')}</p>
             </div>
           ) : (
             <div className="mb-6 space-y-3">
@@ -255,7 +301,7 @@ export default function StudentDashboard() {
                   {lecture.attended ? (
                     <div className="flex items-center gap-2 rounded-2xl bg-success/5 p-3">
                       <CheckCircle2 className="h-5 w-5 text-success" />
-                      <p className="text-sm font-medium text-success">Attendance Registered</p>
+                      <p className="text-sm font-medium text-success">{t('student.attendanceRegistered')}</p>
                     </div>
                   ) : (
                     <div className="flex gap-2">
@@ -267,11 +313,11 @@ export default function StudentDashboard() {
                         {checkingIn === lecture.id ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            {gpsStatus === 'checking' ? 'Checking GPS...' : gpsStatus === 'outside' ? 'Outside Campus' : 'Processing...'}
+                            {gpsStatus === 'checking' ? t('student.checkingGPS') : gpsStatus === 'outside' ? t('student.outsideCampus') : 'Processing...'}
                           </>
                         ) : (
                           <>
-                            <MapPin className="mr-2 h-5 w-5" /> GPS
+                            <MapPin className="mr-2 h-5 w-5" /> GPS {hasFaceTemplate && '+ Face'}
                           </>
                         )}
                       </Button>
@@ -304,7 +350,7 @@ export default function StudentDashboard() {
           {recentAttendance.length > 0 && (
             <div className="mb-6">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Recent Attendance</h2>
+                <h2 className="text-lg font-semibold">{t('student.recentAttendance')}</h2>
                 <ExportButtons
                   title={`${profile.full_name} - Attendance Report`}
                   data={recentAttendance.map(a => ({
@@ -325,6 +371,11 @@ export default function StudentDashboard() {
                       <p className="text-xs text-muted-foreground">
                         {new Date(a.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' })}
                       </p>
+                      {a.biometric_verified && (
+                        <p className="text-xs text-success flex items-center gap-1 mt-0.5">
+                          <Shield className="h-3 w-3" /> {t('face.verified')} ({a.face_match_score}%)
+                        </p>
+                      )}
                     </div>
                     <span className={`rounded-xl px-3 py-1 text-xs font-medium ${
                       a.status === 'present' ? 'bg-success/10 text-success' :
@@ -344,6 +395,25 @@ export default function StudentDashboard() {
           studentId={profile.id}
           onClose={() => setShowExcuse(null)}
           onSubmitted={loadData}
+        />
+      )}
+
+      {showFaceVerify && pendingLectureId && (
+        <FaceVerification
+          open={showFaceVerify}
+          lectureId={pendingLectureId}
+          latitude={pendingGPS.lat}
+          longitude={pendingGPS.lon}
+          locationVerified={pendingGPS.verified}
+          onSuccess={() => {
+            setShowFaceVerify(false);
+            setPendingLectureId(null);
+            loadData();
+          }}
+          onCancel={() => {
+            setShowFaceVerify(false);
+            setPendingLectureId(null);
+          }}
         />
       )}
     </MobileLayout>
