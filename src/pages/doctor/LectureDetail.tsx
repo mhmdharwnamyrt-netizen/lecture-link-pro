@@ -3,22 +3,26 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
-import { ArrowLeft, Users, CheckCircle2, AlertCircle, Clock, FileText } from 'lucide-react';
+import { ArrowLeft, Users, CheckCircle2, AlertCircle, Clock, FileText, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import QRCodeDisplay from '@/components/doctor/QRCodeDisplay';
 import ExportButtons from '@/components/shared/ExportButtons';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function LectureDetail() {
   const { id } = useParams();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [lecture, setLecture] = useState<any>(null);
   const [attendees, setAttendees] = useState<any[]>([]);
   const [excuses, setExcuses] = useState<any[]>([]);
   const [tab, setTab] = useState<'attendees' | 'excuses'>('attendees');
+  const [selectedAttendee, setSelectedAttendee] = useState<any>(null);
 
   useEffect(() => {
     if (id) loadData();
@@ -40,7 +44,6 @@ export default function LectureDetail() {
       await supabase.from('excuses').update({ status: action, reviewed_by: profile?.id }).eq('id', excuseId);
 
       if (action === 'approved') {
-        // Mark attendance as excused
         await supabase.from('attendance').upsert({
           student_id: studentId,
           lecture_id: id!,
@@ -54,7 +57,7 @@ export default function LectureDetail() {
       if (student.data) {
         await supabase.from('notifications').insert({
           user_id: student.data.user_id,
-          title: action === 'approved' ? 'Excuse Approved' : 'Excuse Rejected',
+          title: action === 'approved' ? t('notifications.excuseApproved') : t('notifications.excuseRejected'),
           message: action === 'approved'
             ? `Your excuse for "${lecture?.title}" has been approved. 3 points added.`
             : `Your excuse for "${lecture?.title}" has been rejected.`,
@@ -86,13 +89,14 @@ export default function LectureDetail() {
   const presentCount = attendees.filter(a => a.status === 'present').length;
   const excusedCount = attendees.filter(a => a.status === 'excused').length;
   const pendingExcuses = excuses.filter(e => e.status === 'pending').length;
+  const faceVerifiedCount = attendees.filter(a => a.biometric_verified).length;
 
   return (
     <MobileLayout role="doctor">
       <div className="md:ml-64">
         <div className="px-4 pt-6 md:px-8">
           <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> {t('common.back')}
           </button>
 
           {/* Lecture Info */}
@@ -117,7 +121,7 @@ export default function LectureDetail() {
                   onClick={toggleActive}
                   className={`rounded-xl ${lecture.is_active ? 'text-success' : 'text-muted-foreground'}`}
                 >
-                  {lecture.is_active ? 'Active' : 'Ended'}
+                  {lecture.is_active ? t('common.active') : t('common.ended')}
                 </Button>
               </div>
             </div>
@@ -125,21 +129,26 @@ export default function LectureDetail() {
           </motion.div>
 
           {/* Stats */}
-          <div className="mb-6 grid grid-cols-3 gap-3">
+          <div className="mb-6 grid grid-cols-4 gap-3">
             <div className="rounded-2xl bg-card p-4 shadow-card text-center">
               <CheckCircle2 className="mx-auto mb-1 h-5 w-5 text-success" />
               <p className="text-xl font-bold tabular-nums">{presentCount}</p>
-              <p className="text-xs text-muted-foreground">Present</p>
+              <p className="text-xs text-muted-foreground">{t('common.present')}</p>
             </div>
             <div className="rounded-2xl bg-card p-4 shadow-card text-center">
               <FileText className="mx-auto mb-1 h-5 w-5 text-warning" />
               <p className="text-xl font-bold tabular-nums">{excusedCount}</p>
-              <p className="text-xs text-muted-foreground">Excused</p>
+              <p className="text-xs text-muted-foreground">{t('common.excused')}</p>
             </div>
             <div className="rounded-2xl bg-card p-4 shadow-card text-center">
               <AlertCircle className="mx-auto mb-1 h-5 w-5 text-destructive" />
               <p className="text-xl font-bold tabular-nums">{pendingExcuses}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
+              <p className="text-xs text-muted-foreground">{t('doctor.pending')}</p>
+            </div>
+            <div className="rounded-2xl bg-card p-4 shadow-card text-center">
+              <Shield className="mx-auto mb-1 h-5 w-5 text-primary" />
+              <p className="text-xl font-bold tabular-nums">{faceVerifiedCount}</p>
+              <p className="text-xs text-muted-foreground">{t('face.verified')}</p>
             </div>
           </div>
 
@@ -147,10 +156,10 @@ export default function LectureDetail() {
           <div className="mb-4 flex items-center justify-between">
             <div className="flex gap-2 rounded-xl bg-muted p-1 flex-1 mr-3">
               <button onClick={() => setTab('attendees')} className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${tab === 'attendees' ? 'bg-card shadow-card' : 'text-muted-foreground'}`}>
-                Attendees ({attendees.length})
+                {t('doctor.attendees')} ({attendees.length})
               </button>
               <button onClick={() => setTab('excuses')} className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${tab === 'excuses' ? 'bg-card shadow-card' : 'text-muted-foreground'}`}>
-                Excuses ({excuses.length})
+                {t('doctor.excuses')} ({excuses.length})
               </button>
             </div>
             <ExportButtons
@@ -173,12 +182,19 @@ export default function LectureDetail() {
                 <p className="py-8 text-center text-muted-foreground">No attendees yet</p>
               ) : (
                 attendees.map(a => (
-                  <div key={a.id} className="flex items-center justify-between rounded-2xl bg-card p-4 shadow-card"
-                    onClick={() => navigate(`/doctor/student/${a.student_id}`)}
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between rounded-2xl bg-card p-4 shadow-card cursor-pointer transition-all hover:shadow-elevated"
+                    onClick={() => setSelectedAttendee(a)}
                   >
                     <div>
                       <p className="font-medium">{a.profiles?.full_name}</p>
                       <p className="text-sm tabular-nums text-muted-foreground">ID: {a.profiles?.student_id}</p>
+                      {a.biometric_verified && (
+                        <p className="text-xs text-success flex items-center gap-1 mt-0.5">
+                          <Shield className="h-3 w-3" /> {t('face.verified')} ({a.face_match_score}%)
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className={`rounded-xl px-3 py-1 text-xs font-medium ${
@@ -217,14 +233,14 @@ export default function LectureDetail() {
                           onClick={() => handleExcuseAction(e.id, e.student_id, 'approved')}
                           className="h-10 flex-1 rounded-xl bg-success text-success-foreground hover:bg-success/90"
                         >
-                          Approve
+                          {t('doctor.approve')}
                         </Button>
                         <Button
                           variant="outline"
                           onClick={() => handleExcuseAction(e.id, e.student_id, 'rejected')}
                           className="h-10 flex-1 rounded-xl text-destructive"
                         >
-                          Reject
+                          {t('doctor.reject')}
                         </Button>
                       </div>
                     )}
@@ -235,6 +251,64 @@ export default function LectureDetail() {
           )}
         </div>
       </div>
+
+      {/* Attendee Detail Dialog */}
+      <Dialog open={!!selectedAttendee} onOpenChange={() => setSelectedAttendee(null)}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Attendance Details</DialogTitle>
+          </DialogHeader>
+          {selectedAttendee && (
+            <div className="space-y-4">
+              <div>
+                <p className="font-semibold text-lg">{selectedAttendee.profiles?.full_name}</p>
+                <p className="text-sm text-muted-foreground tabular-nums">ID: {selectedAttendee.profiles?.student_id}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-muted p-3">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="font-medium capitalize">{selectedAttendee.status}</p>
+                </div>
+                <div className="rounded-xl bg-muted p-3">
+                  <p className="text-xs text-muted-foreground">Time</p>
+                  <p className="font-medium tabular-nums">{new Date(selectedAttendee.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' })}</p>
+                </div>
+                <div className="rounded-xl bg-muted p-3">
+                  <p className="text-xs text-muted-foreground">GPS Verified</p>
+                  <p className="font-medium">{selectedAttendee.location_verified ? '✓ Yes' : '✗ No'}</p>
+                </div>
+                <div className="rounded-xl bg-muted p-3">
+                  <p className="text-xs text-muted-foreground">{t('face.verified')}</p>
+                  <p className="font-medium">{selectedAttendee.biometric_verified ? `✓ ${selectedAttendee.face_match_score}%` : '✗ No'}</p>
+                </div>
+              </div>
+
+              {selectedAttendee.verification_photo_url && (
+                <div>
+                  <p className="text-sm font-medium mb-2">{t('doctor.verificationPhoto')}</p>
+                  <img
+                    src={selectedAttendee.verification_photo_url}
+                    alt="Verification"
+                    className="h-48 w-full rounded-xl object-cover"
+                  />
+                </div>
+              )}
+
+              <Button
+                onClick={() => {
+                  setSelectedAttendee(null);
+                  navigate(`/doctor/student/${selectedAttendee.student_id}`);
+                }}
+                variant="outline"
+                className="w-full rounded-xl"
+              >
+                View Student Profile
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </MobileLayout>
   );
 }

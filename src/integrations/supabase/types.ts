@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           biometric_verified: boolean
           created_at: string
+          face_match_score: number | null
           id: string
           latitude: number | null
           lecture_id: string
@@ -26,10 +27,12 @@ export type Database = {
           status: string
           student_id: string
           synced: boolean
+          verification_photo_url: string | null
         }
         Insert: {
           biometric_verified?: boolean
           created_at?: string
+          face_match_score?: number | null
           id?: string
           latitude?: number | null
           lecture_id: string
@@ -38,10 +41,12 @@ export type Database = {
           status?: string
           student_id: string
           synced?: boolean
+          verification_photo_url?: string | null
         }
         Update: {
           biometric_verified?: boolean
           created_at?: string
+          face_match_score?: number | null
           id?: string
           latitude?: number | null
           lecture_id?: string
@@ -50,6 +55,7 @@ export type Database = {
           status?: string
           student_id?: string
           synced?: boolean
+          verification_photo_url?: string | null
         }
         Relationships: [
           {
@@ -211,6 +217,44 @@ export type Database = {
             foreignKeyName: "excuses_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      face_templates: {
+        Row: {
+          created_at: string
+          front_photo_url: string
+          id: string
+          left_photo_url: string | null
+          right_photo_url: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          front_photo_url: string
+          id?: string
+          left_photo_url?: string | null
+          right_photo_url?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          front_photo_url?: string
+          id?: string
+          left_photo_url?: string | null
+          right_photo_url?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "face_templates_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

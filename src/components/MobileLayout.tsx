@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, Bell, User, BarChart3 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -9,20 +10,21 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
-  
+  const { t } = useLanguage();
+
   const doctorNav = [
-    { path: '/doctor', icon: Home, label: 'Home' },
-    { path: '/doctor/lectures', icon: BookOpen, label: 'Lectures' },
-    { path: '/doctor/analytics', icon: BarChart3, label: 'Analytics' },
-    { path: '/doctor/notifications', icon: Bell, label: 'Alerts' },
-    { path: '/doctor/profile', icon: User, label: 'Profile' },
+    { path: '/doctor', icon: Home, label: t('nav.home') },
+    { path: '/doctor/lectures', icon: BookOpen, label: t('nav.lectures') },
+    { path: '/doctor/analytics', icon: BarChart3, label: t('nav.analytics') },
+    { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
+    { path: '/doctor/profile', icon: User, label: t('nav.profile') },
   ];
 
   const studentNav = [
-    { path: '/student', icon: Home, label: 'Home' },
-    { path: '/student/lectures', icon: BookOpen, label: 'Lectures' },
-    { path: '/student/notifications', icon: Bell, label: 'Alerts' },
-    { path: '/student/profile', icon: User, label: 'Profile' },
+    { path: '/student', icon: Home, label: t('nav.home') },
+    { path: '/student/lectures', icon: BookOpen, label: t('nav.lectures') },
+    { path: '/student/notifications', icon: Bell, label: t('nav.alerts') },
+    { path: '/student/profile', icon: User, label: t('nav.profile') },
   ];
 
   const navItems = role === 'doctor' ? doctorNav : studentNav;
