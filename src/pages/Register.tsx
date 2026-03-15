@@ -470,7 +470,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       if (profileError) throw profileError;
 
       toast({ title: 'Account created successfully!' });
-      setTimeout(() => navigate('/student'), 500);
+      // Redirect to face registration
+      setTimeout(() => navigate('/student/face-registration'), 500);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
