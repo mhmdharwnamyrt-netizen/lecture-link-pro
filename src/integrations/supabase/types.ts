@@ -263,15 +263,18 @@ export type Database = {
       lectures: {
         Row: {
           created_at: string
+          day_of_week: string | null
           department_id: string
           description: string | null
           doctor_id: string
+          end_time: string | null
           hall_number: number | null
           id: string
           is_active: boolean
           level: number
           notes: string | null
           points: number
+          start_time: string | null
           subject_id: string | null
           title: string
           type: string
@@ -279,15 +282,18 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          day_of_week?: string | null
           department_id: string
           description?: string | null
           doctor_id: string
+          end_time?: string | null
           hall_number?: number | null
           id?: string
           is_active?: boolean
           level: number
           notes?: string | null
           points?: number
+          start_time?: string | null
           subject_id?: string | null
           title: string
           type: string
@@ -295,15 +301,18 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          day_of_week?: string | null
           department_id?: string
           description?: string | null
           doctor_id?: string
+          end_time?: string | null
           hall_number?: number | null
           id?: string
           is_active?: boolean
           level?: number
           notes?: string | null
           points?: number
+          start_time?: string | null
           subject_id?: string | null
           title?: string
           type?: string
@@ -419,6 +428,50 @@ export type Database = {
           },
         ]
       }
+      schedule_uploads: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          error_message: string | null
+          id: string
+          image_url: string
+          lectures_created: number | null
+          parsed_data: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          error_message?: string | null
+          id?: string
+          image_url: string
+          lectures_created?: number | null
+          parsed_data?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          error_message?: string | null
+          id?: string
+          image_url?: string
+          lectures_created?: number | null
+          parsed_data?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_uploads_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           created_at: string
@@ -436,6 +489,60 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      warning_alerts: {
+        Row: {
+          absence_count: number | null
+          alert_type: string
+          created_at: string
+          doctor_id: string
+          id: string
+          is_resolved: boolean | null
+          message: string
+          risk_level: string
+          student_id: string
+          total_lectures: number | null
+        }
+        Insert: {
+          absence_count?: number | null
+          alert_type?: string
+          created_at?: string
+          doctor_id: string
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          risk_level?: string
+          student_id: string
+          total_lectures?: number | null
+        }
+        Update: {
+          absence_count?: number | null
+          alert_type?: string
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          risk_level?: string
+          student_id?: string
+          total_lectures?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warning_alerts_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warning_alerts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

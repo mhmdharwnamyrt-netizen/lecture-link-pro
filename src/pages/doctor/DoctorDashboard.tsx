@@ -3,18 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, BookOpen, Clock, TrendingUp } from 'lucide-react';
+import { Plus, Users, BookOpen, Clock, TrendingUp, Bot, AlertTriangle } from 'lucide-react';
 import AddLectureDialog from '@/components/doctor/AddLectureDialog';
 
 export default function DoctorDashboard() {
   const { profile, loading, user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [lectures, setLectures] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalLectures: 0, totalStudents: 0, avgAttendance: 0 });
   const [showAddLecture, setShowAddLecture] = useState(false);
   const [recentLectures, setRecentLectures] = useState<any[]>([]);
+  const [warningCount, setWarningCount] = useState(0);
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'doctor')) {
@@ -39,7 +42,6 @@ export default function DoctorDashboard() {
       setLectures(lecturesData);
       setRecentLectures(lecturesData.slice(0, 5));
 
-      // Get attendance stats
       const lectureIds = lecturesData.map(l => l.id);
       if (lectureIds.length > 0) {
         const { data: attendanceData } = await supabase
@@ -57,6 +59,14 @@ export default function DoctorDashboard() {
         });
       }
     }
+
+    // Load warning count
+    const { count } = await supabase
+      .from('warning_alerts' as any)
+      .select('*', { count: 'exact', head: true })
+      .eq('doctor_id', profile.id)
+      .eq('is_resolved', false) as any;
+    setWarningCount(count || 0);
   };
 
   if (loading || !profile) {
@@ -74,22 +84,18 @@ export default function DoctorDashboard() {
       <div className="md:ml-64">
         <div className="px-4 pt-6 md:px-8">
           {/* Welcome */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
-            <p className="text-sm text-muted-foreground">Welcome back,</p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+            <p className="text-sm text-muted-foreground">{t('auth.welcomeBack')}</p>
             <h1 className="text-2xl font-bold">{profile.academic_title ? `${profile.academic_title} ` : 'Dr. '}{profile.full_name}</h1>
           </motion.div>
 
           {/* Stats Grid */}
           <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { label: 'Total Lectures', value: stats.totalLectures, icon: BookOpen, color: 'text-primary' },
-              { label: 'Students', value: stats.totalStudents, icon: Users, color: 'text-accent' },
-              { label: 'Avg Attendance', value: stats.avgAttendance, icon: TrendingUp, color: 'text-warning' },
-              { label: 'Active', value: lectures.filter(l => l.is_active).length, icon: Clock, color: 'text-success' },
+              { label: t('doctor.totalLectures'), value: stats.totalLectures, icon: BookOpen, color: 'text-primary' },
+              { label: t('doctor.students'), value: stats.totalStudents, icon: Users, color: 'text-accent' },
+              { label: t('doctor.avgAttendance'), value: stats.avgAttendance, icon: TrendingUp, color: 'text-warning' },
+              { label: t('common.active'), value: lectures.filter(l => l.is_active).length, icon: Clock, color: 'text-success' },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -105,18 +111,41 @@ export default function DoctorDashboard() {
             ))}
           </div>
 
-          {/* Add Lecture Button */}
-          <Button onClick={() => setShowAddLecture(true)} className="mb-6 h-14 w-full rounded-2xl text-base md:w-auto">
-            <Plus className="mr-2 h-5 w-5" /> Add Lecture / Section
-          </Button>
+          {/* Quick Actions */}
+          <div className="mb-6 grid grid-cols-2 gap-3">
+            <Button onClick={() => setShowAddLecture(true)} className="h-14 rounded-2xl text-base">
+              <Plus className="mr-2 h-5 w-5" /> {t('doctor.addLecture')}
+            </Button>
+            <Button onClick={() => navigate('/doctor/schedule-parser')} variant="outline" className="h-14 rounded-2xl text-base gap-2">
+              <Bot className="h-5 w-5" /> {t('nav.schedule')}
+            </Button>
+          </div>
+
+          {/* Early Warning Banner */}
+          {warningCount > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => navigate('/doctor/early-warning')}
+              className="mb-6 rounded-2xl bg-warning/10 p-4 shadow-card cursor-pointer transition-colors hover:bg-warning/15"
+            >
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-6 w-6 text-warning" />
+                <div>
+                  <p className="font-medium text-sm">{warningCount} {t('warning.activeAlerts')}</p>
+                  <p className="text-xs text-muted-foreground">{t('warning.subtitle')}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Recent Lectures */}
           <div className="mb-6">
-            <h2 className="mb-3 text-lg font-semibold">Recent Lectures</h2>
+            <h2 className="mb-3 text-lg font-semibold">{t('doctor.recentLectures')}</h2>
             {recentLectures.length === 0 ? (
               <div className="rounded-2xl bg-card p-8 text-center shadow-card">
                 <BookOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                <p className="text-muted-foreground">No lectures yet. Add your first lecture!</p>
+                <p className="text-muted-foreground">{t('doctor.noLectures')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -135,14 +164,16 @@ export default function DoctorDashboard() {
                         <p className="text-sm text-muted-foreground">
                           {lecture.departments?.name} • Level {lecture.level} • {lecture.type === 'section' ? `Section ${lecture.hall_number}` : `Hall ${lecture.hall_number}`}
                         </p>
+                        {lecture.day_of_week && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {lecture.day_of_week} {lecture.start_time?.substring(0,5)} - {lecture.end_time?.substring(0,5)}
+                          </p>
+                        )}
                       </div>
                       <div className={`rounded-xl px-3 py-1 text-xs font-medium ${lecture.is_active ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
-                        {lecture.is_active ? 'Active' : 'Ended'}
+                        {lecture.is_active ? t('common.active') : t('common.ended')}
                       </div>
                     </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {new Date(lecture.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' })} • {new Date(lecture.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' })}
-                    </p>
                   </motion.div>
                 ))}
               </div>

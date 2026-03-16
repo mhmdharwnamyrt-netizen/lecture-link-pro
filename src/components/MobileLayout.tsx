@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3 } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MobileLayoutProps {
@@ -15,19 +15,26 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const doctorNav = [
     { path: '/doctor', icon: Home, label: t('nav.home') },
     { path: '/doctor/lectures', icon: BookOpen, label: t('nav.lectures') },
+    { path: '/doctor/schedule-parser', icon: Bot, label: t('nav.schedule') },
     { path: '/doctor/analytics', icon: BarChart3, label: t('nav.analytics') },
-    { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
     { path: '/doctor/profile', icon: User, label: t('nav.profile') },
   ];
 
   const studentNav = [
     { path: '/student', icon: Home, label: t('nav.home') },
     { path: '/student/lectures', icon: BookOpen, label: t('nav.lectures') },
+    { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
     { path: '/student/notifications', icon: Bell, label: t('nav.alerts') },
     { path: '/student/profile', icon: User, label: t('nav.profile') },
   ];
 
   const navItems = role === 'doctor' ? doctorNav : studentNav;
+
+  // Sidebar-only items for doctor
+  const doctorSidebarExtra = [
+    { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
+    { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
+  ];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -69,6 +76,21 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
         </div>
         <div className="space-y-1">
           {navItems.map(item => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+          {role === 'doctor' && doctorSidebarExtra.map(item => {
             const isActive = location.pathname === item.path;
             return (
               <Link
