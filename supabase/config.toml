@@ -1,1 +1,10 @@
 project_id = "ixhvppnucqxlnlizpdwz"
+
+[functions.face-verify]
+verify_jwt = false
+
+[functions.parse-schedule]
+verify_jwt = false
+
+[functions.analyze-attendance]
+verify_jwt = false

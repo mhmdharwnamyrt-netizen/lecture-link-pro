@@ -12,8 +12,11 @@ import DoctorLectures from "./pages/doctor/DoctorLectures";
 import LectureDetail from "./pages/doctor/LectureDetail";
 import StudentDetail from "./pages/doctor/StudentDetail";
 import DoctorAnalytics from "./pages/doctor/DoctorAnalytics";
+import ScheduleParser from "./pages/doctor/ScheduleParser";
+import EarlyWarning from "./pages/doctor/EarlyWarning";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentLectures from "./pages/student/StudentLectures";
+import StudentCalendar from "./pages/student/StudentCalendar";
 import FaceRegistration from "./pages/student/FaceRegistration";
 import NotificationsPage from "./pages/shared/Notifications";
 import ProfilePage from "./pages/shared/Profile";
@@ -40,12 +43,15 @@ const App = () => (
               <Route path="/doctor/lectures/:id" element={<LectureDetail />} />
               <Route path="/doctor/student/:studentId" element={<StudentDetail />} />
               <Route path="/doctor/analytics" element={<DoctorAnalytics />} />
+              <Route path="/doctor/schedule-parser" element={<ScheduleParser />} />
+              <Route path="/doctor/early-warning" element={<EarlyWarning />} />
               <Route path="/doctor/notifications" element={<NotificationsPage role="doctor" />} />
               <Route path="/doctor/profile" element={<ProfilePage role="doctor" />} />
               
               {/* Student Routes */}
               <Route path="/student" element={<StudentDashboard />} />
               <Route path="/student/lectures" element={<StudentLectures />} />
+              <Route path="/student/calendar" element={<StudentCalendar />} />
               <Route path="/student/face-registration" element={<FaceRegistration />} />
               <Route path="/student/notifications" element={<NotificationsPage role="student" />} />
               <Route path="/student/profile" element={<ProfilePage role="student" />} />
