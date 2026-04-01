@@ -44,8 +44,20 @@ export default function StudentDashboard() {
     if (profile) {
       loadData();
       checkFaceTemplate();
+      registerServiceWorker();
+      // Request notification permission after a short delay
+      setTimeout(() => requestNotificationPermission(), 2000);
     }
+    return () => stopLectureReminders();
   }, [profile]);
+
+  // Start reminders when lectures change
+  useEffect(() => {
+    if (activeLectures.length > 0) {
+      startLectureReminders(activeLectures);
+    }
+    return () => stopLectureReminders();
+  }, [activeLectures]);
 
   const checkFaceTemplate = async () => {
     if (!profile) return;
