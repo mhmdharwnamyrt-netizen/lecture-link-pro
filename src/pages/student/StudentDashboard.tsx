@@ -8,11 +8,13 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentPosition, checkWithinUniversity } from '@/lib/constants';
-import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield } from 'lucide-react';
+import { isLectureCurrentlyActive, isLectureToday } from '@/lib/lectureUtils';
+import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell } from 'lucide-react';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
 import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
 import FaceVerification from '@/components/student/FaceVerification';
+import { requestNotificationPermission, startLectureReminders, stopLectureReminders, registerServiceWorker, getNotificationPermission } from '@/lib/pushNotifications';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
@@ -42,8 +44,20 @@ export default function StudentDashboard() {
     if (profile) {
       loadData();
       checkFaceTemplate();
+      registerServiceWorker();
+      // Request notification permission after a short delay
+      setTimeout(() => requestNotificationPermission(), 2000);
     }
+    return () => stopLectureReminders();
   }, [profile]);
+
+  // Start reminders when lectures change
+  useEffect(() => {
+    if (activeLectures.length > 0) {
+      startLectureReminders(activeLectures);
+    }
+    return () => stopLectureReminders();
+  }, [activeLectures]);
 
   const checkFaceTemplate = async () => {
     if (!profile) return;
@@ -63,18 +77,31 @@ export default function StudentDashboard() {
       .select('*, departments(name), subjects(name), profiles!lectures_doctor_id_fkey(full_name)')
       .eq('department_id', profile.department_id!)
       .eq('level', profile.level!)
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (lectures) {
+      // Filter to show: currently active (time-based) OR today's lectures OR manually active without schedule
+      const relevantLectures = lectures.filter(l => {
+        // Show if currently in time window
+        if (isLectureCurrentlyActive(l)) return true;
+        // Show today's lectures even if not in window yet
+        if (isLectureToday(l) && l.is_active) return true;
+        // Show manually active lectures without schedule
+        if (!l.day_of_week && l.is_active) return true;
+        return false;
+      });
       const { data: attended } = await supabase
         .from('attendance')
         .select('lecture_id')
         .eq('student_id', profile.id)
-        .in('lecture_id', lectures.map(l => l.id));
+        .in('lecture_id', relevantLectures.map(l => l.id));
 
       const attendedIds = new Set(attended?.map(a => a.lecture_id) || []);
-      setActiveLectures(lectures.map(l => ({ ...l, attended: attendedIds.has(l.id) })));
+      setActiveLectures(relevantLectures.map(l => ({
+        ...l,
+        attended: attendedIds.has(l.id),
+        isNow: isLectureCurrentlyActive(l),
+      })));
     }
 
     const { data: allAttendance } = await supabase
@@ -281,14 +308,27 @@ export default function StudentDashboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-2xl bg-card p-4 shadow-card"
+                  className={`rounded-2xl bg-card p-4 shadow-card ${lecture.isNow ? 'ring-2 ring-success' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {lecture.isNow && (
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success animate-pulse">● NOW</span>
+                        )}
+                        {lecture.day_of_week && !lecture.isNow && (
+                          <span className="text-xs text-muted-foreground">{lecture.day_of_week}</span>
+                        )}
+                      </div>
                       <p className="font-semibold">{lecture.title}</p>
                       <p className="text-sm text-muted-foreground">
                         {lecture.profiles?.full_name} • Hall {lecture.hall_number}
                       </p>
+                      {lecture.start_time && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock className="h-3 w-3" /> {lecture.start_time?.substring(0,5)} - {lecture.end_time?.substring(0,5)}
+                        </p>
+                      )}
                       {lecture.subjects?.name && (
                         <p className="text-xs text-muted-foreground">{lecture.subjects.name}</p>
                       )}
