@@ -14,6 +14,7 @@ import ExcuseDialog from '@/components/student/ExcuseDialog';
 import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
 import FaceVerification from '@/components/student/FaceVerification';
+import { requestNotificationPermission, startLectureReminders, stopLectureReminders, registerServiceWorker, getNotificationPermission } from '@/lib/pushNotifications';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
