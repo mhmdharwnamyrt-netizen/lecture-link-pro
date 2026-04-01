@@ -295,14 +295,27 @@ export default function StudentDashboard() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-2xl bg-card p-4 shadow-card"
+                  className={`rounded-2xl bg-card p-4 shadow-card ${lecture.isNow ? 'ring-2 ring-success' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {lecture.isNow && (
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success animate-pulse">● NOW</span>
+                        )}
+                        {lecture.day_of_week && !lecture.isNow && (
+                          <span className="text-xs text-muted-foreground">{lecture.day_of_week}</span>
+                        )}
+                      </div>
                       <p className="font-semibold">{lecture.title}</p>
                       <p className="text-sm text-muted-foreground">
                         {lecture.profiles?.full_name} • Hall {lecture.hall_number}
                       </p>
+                      {lecture.start_time && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock className="h-3 w-3" /> {lecture.start_time?.substring(0,5)} - {lecture.end_time?.substring(0,5)}
+                        </p>
+                      )}
                       {lecture.subjects?.name && (
                         <p className="text-xs text-muted-foreground">{lecture.subjects.name}</p>
                       )}
