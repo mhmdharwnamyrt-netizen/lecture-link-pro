@@ -64,10 +64,19 @@ export default function StudentDashboard() {
       .select('*, departments(name), subjects(name), profiles!lectures_doctor_id_fkey(full_name)')
       .eq('department_id', profile.department_id!)
       .eq('level', profile.level!)
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (lectures) {
+      // Filter to show: currently active (time-based) OR today's lectures OR manually active without schedule
+      const relevantLectures = lectures.filter(l => {
+        // Show if currently in time window
+        if (isLectureCurrentlyActive(l)) return true;
+        // Show today's lectures even if not in window yet
+        if (isLectureToday(l) && l.is_active) return true;
+        // Show manually active lectures without schedule
+        if (!l.day_of_week && l.is_active) return true;
+        return false;
+      });
       const { data: attended } = await supabase
         .from('attendance')
         .select('lecture_id')
