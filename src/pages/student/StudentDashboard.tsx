@@ -81,10 +81,14 @@ export default function StudentDashboard() {
         .from('attendance')
         .select('lecture_id')
         .eq('student_id', profile.id)
-        .in('lecture_id', lectures.map(l => l.id));
+        .in('lecture_id', relevantLectures.map(l => l.id));
 
       const attendedIds = new Set(attended?.map(a => a.lecture_id) || []);
-      setActiveLectures(lectures.map(l => ({ ...l, attended: attendedIds.has(l.id) })));
+      setActiveLectures(relevantLectures.map(l => ({
+        ...l,
+        attended: attendedIds.has(l.id),
+        isNow: isLectureCurrentlyActive(l),
+      })));
     }
 
     const { data: allAttendance } = await supabase
