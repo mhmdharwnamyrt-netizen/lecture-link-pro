@@ -27,14 +27,15 @@ export function showLocalNotification(title: string, body: string, tag?: string)
   if (Notification.permission !== 'granted') return;
 
   try {
-    const notification = new Notification(title, {
+    const options: Record<string, any> = {
       body,
       icon: '/placeholder.svg',
       badge: '/placeholder.svg',
       tag: tag || 'lecture-reminder',
       renotify: true,
       vibrate: [200, 100, 200],
-    });
+    };
+    const notification = new Notification(title, options as NotificationOptions);
 
     notification.onclick = () => {
       window.focus();
