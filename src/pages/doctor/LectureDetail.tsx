@@ -179,7 +179,7 @@ export default function LectureDetail() {
           {tab === 'attendees' ? (
             <div className="space-y-2">
               {attendees.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">No attendees yet</p>
+                <p className="py-8 text-center text-muted-foreground">{t('common.noAttendeesYet')}</p>
               ) : (
                 attendees.map(a => (
                   <div
