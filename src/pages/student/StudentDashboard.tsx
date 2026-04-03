@@ -322,7 +322,7 @@ export default function StudentDashboard() {
                       </div>
                       <p className="font-semibold">{lecture.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {lecture.profiles?.full_name} • Hall {lecture.hall_number}
+                        {lecture.profiles?.full_name} • {t('common.hall')} {lecture.hall_number}
                       </p>
                       {lecture.start_time && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
