@@ -176,7 +176,7 @@ export default function StudentDashboard() {
         setGpsStatus('success');
         setShowBloom(true);
         setTimeout(() => setShowBloom(false), 1000);
-        toast({ title: '✓ ' + t('student.attendanceRegistered'), description: '+3 points earned!' });
+        toast({ title: '✓ ' + t('student.attendanceRegistered'), description: t('student.pointsEarned') });
         loadData();
       }
     } catch (err: any) {
