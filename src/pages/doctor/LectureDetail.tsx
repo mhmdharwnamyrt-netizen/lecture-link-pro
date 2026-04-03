@@ -275,8 +275,8 @@ export default function LectureDetail() {
                   <p className="font-medium tabular-nums">{new Date(selectedAttendee.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' })}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">GPS Verified</p>
-                  <p className="font-medium">{selectedAttendee.location_verified ? '✓ Yes' : '✗ No'}</p>
+                    <p className="text-xs text-muted-foreground">{t('common.gpsVerified')}</p>
+                    <p className="font-medium">{selectedAttendee.location_verified ? `✓ ${t('common.yes')}` : `✗ ${t('common.no')}`}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-xs text-muted-foreground">{t('face.verified')}</p>
