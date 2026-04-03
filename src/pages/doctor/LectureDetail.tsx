@@ -55,18 +55,18 @@ export default function LectureDetail() {
       // Create notification for student
       const student = await supabase.from('profiles').select('user_id').eq('id', studentId).single();
       if (student.data) {
+        const approvedMsg = t('notifications.approvedMessage').replace('{lecture}', lecture?.title || '');
+        const rejectedMsg = t('notifications.rejectedMessage').replace('{lecture}', lecture?.title || '');
         await supabase.from('notifications').insert({
           user_id: student.data.user_id,
           title: action === 'approved' ? t('notifications.excuseApproved') : t('notifications.excuseRejected'),
-          message: action === 'approved'
-            ? `Your excuse for "${lecture?.title}" has been approved. 3 points added.`
-            : `Your excuse for "${lecture?.title}" has been rejected.`,
+          message: action === 'approved' ? approvedMsg : rejectedMsg,
           type: action === 'approved' ? 'success' : 'warning',
           related_id: excuseId,
         });
       }
 
-      toast({ title: `Excuse ${action}` });
+      toast({ title: t('notifications.excuseAction').replace('{action}', action) });
       loadData();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
