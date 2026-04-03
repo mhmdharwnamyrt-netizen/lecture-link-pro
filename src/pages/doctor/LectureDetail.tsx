@@ -280,7 +280,7 @@ export default function LectureDetail() {
                 </div>
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-xs text-muted-foreground">{t('face.verified')}</p>
-                  <p className="font-medium">{selectedAttendee.biometric_verified ? `✓ ${selectedAttendee.face_match_score}%` : '✗ No'}</p>
+                  <p className="font-medium">{selectedAttendee.biometric_verified ? `✓ ${selectedAttendee.face_match_score}%` : `✗ ${t('common.no')}`}</p>
                 </div>
               </div>
 
