@@ -182,7 +182,7 @@ export default function StudentDashboard() {
     } catch (err: any) {
       setGpsStatus('error');
       if (err.code === 1) {
-        toast({ title: 'Location Permission Required', description: 'Please enable GPS and try again.', variant: 'destructive' });
+        toast({ title: t('student.locationRequired'), description: t('student.enableGPS'), variant: 'destructive' });
       } else {
         toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
       }
