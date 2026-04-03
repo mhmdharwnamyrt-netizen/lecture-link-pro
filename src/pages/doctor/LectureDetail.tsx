@@ -267,11 +267,11 @@ export default function LectureDetail() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{selectedAttendee.status}</p>
-                </div>
+                    <p className="text-xs text-muted-foreground">{t('common.status')}</p>
+                    <p className="font-medium capitalize">{selectedAttendee.status}</p>
+                  </div>
                 <div className="rounded-xl bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Time</p>
+                    <p className="text-xs text-muted-foreground">{t('common.time')}</p>
                   <p className="font-medium tabular-nums">{new Date(selectedAttendee.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' })}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
