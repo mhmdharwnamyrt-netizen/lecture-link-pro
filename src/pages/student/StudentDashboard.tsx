@@ -314,7 +314,7 @@ export default function StudentDashboard() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         {lecture.isNow && (
-                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success animate-pulse">● NOW</span>
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success animate-pulse">● {t('common.now')}</span>
                         )}
                         {lecture.day_of_week && !lecture.isNow && (
                           <span className="text-xs text-muted-foreground">{lecture.day_of_week}</span>
