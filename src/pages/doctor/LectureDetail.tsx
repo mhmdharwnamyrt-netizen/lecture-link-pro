@@ -212,7 +212,7 @@ export default function LectureDetail() {
           ) : (
             <div className="space-y-3">
               {excuses.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">No excuses submitted</p>
+                <p className="py-8 text-center text-muted-foreground">{t('common.noExcusesSubmitted')}</p>
               ) : (
                 excuses.map(e => (
                   <div key={e.id} className="rounded-2xl bg-card p-4 shadow-card">
