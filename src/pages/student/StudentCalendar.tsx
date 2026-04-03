@@ -59,7 +59,7 @@ export default function StudentCalendar() {
 
   return (
     <MobileLayout role="student">
-      <div className="md:ml-64">
+      <div >
         <div className="px-4 pt-6 md:px-8">
           <div className="flex items-center gap-3 mb-6">
             <Calendar className="h-6 w-6 text-primary" />
