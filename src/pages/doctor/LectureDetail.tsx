@@ -256,7 +256,7 @@ export default function LectureDetail() {
       <Dialog open={!!selectedAttendee} onOpenChange={() => setSelectedAttendee(null)}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Attendance Details</DialogTitle>
+            <DialogTitle>{t('common.attendanceDetails')}</DialogTitle>
           </DialogHeader>
           {selectedAttendee && (
             <div className="space-y-4">
