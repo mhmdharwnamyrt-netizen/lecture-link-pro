@@ -353,7 +353,7 @@ export default function StudentDashboard() {
                         {checkingIn === lecture.id ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            {gpsStatus === 'checking' ? t('student.checkingGPS') : gpsStatus === 'outside' ? t('student.outsideCampus') : 'Processing...'}
+                            {gpsStatus === 'checking' ? t('student.checkingGPS') : gpsStatus === 'outside' ? t('student.outsideCampus') : t('common.processing')}
                           </>
                         ) : (
                           <>
