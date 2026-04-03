@@ -262,7 +262,7 @@ export default function LectureDetail() {
             <div className="space-y-4">
               <div>
                 <p className="font-semibold text-lg">{selectedAttendee.profiles?.full_name}</p>
-                <p className="text-sm text-muted-foreground tabular-nums">ID: {selectedAttendee.profiles?.student_id}</p>
+                <p className="text-sm text-muted-foreground tabular-nums">{t('common.id')}: {selectedAttendee.profiles?.student_id}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
