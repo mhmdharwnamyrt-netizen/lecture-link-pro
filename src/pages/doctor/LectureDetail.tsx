@@ -303,7 +303,7 @@ export default function LectureDetail() {
                 variant="outline"
                 className="w-full rounded-xl"
               >
-                View Student Profile
+                {t('common.viewStudentProfile')}
               </Button>
             </div>
           )}
