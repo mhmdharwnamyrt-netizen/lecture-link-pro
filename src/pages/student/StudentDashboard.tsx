@@ -242,7 +242,7 @@ export default function StudentDashboard() {
 
   return (
     <MobileLayout role="student">
-      <div className="md:ml-64">
+      <div>
         <div className="px-4 pt-6 md:px-8">
           {/* Welcome */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
