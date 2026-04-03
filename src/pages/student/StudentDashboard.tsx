@@ -263,7 +263,7 @@ export default function StudentDashboard() {
                 <Shield className="h-6 w-6 text-warning" />
                 <div>
                   <p className="font-medium text-sm">{t('profile.registerFace')}</p>
-                  <p className="text-xs text-muted-foreground">Register your face for secure attendance verification</p>
+                  <p className="text-xs text-muted-foreground">{t('student.registerFacePrompt')}</p>
                 </div>
               </div>
             </motion.div>
