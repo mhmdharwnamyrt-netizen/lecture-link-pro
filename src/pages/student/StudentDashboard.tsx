@@ -378,7 +378,7 @@ export default function StudentDashboard() {
                         <div className="h-4 w-4 rounded-full bg-primary" />
                         <div className="absolute inset-0 rounded-full bg-primary animate-pulse-ring" />
                       </div>
-                      <p className="ml-3 text-sm text-muted-foreground">Verifying location...</p>
+                      <p className="ml-3 text-sm text-muted-foreground">{t('common.verifyingLocation')}</p>
                     </div>
                   )}
                 </motion.div>
