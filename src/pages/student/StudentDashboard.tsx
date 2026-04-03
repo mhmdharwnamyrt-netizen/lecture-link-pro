@@ -205,7 +205,7 @@ export default function StudentDashboard() {
         timestamp: new Date().toISOString(),
       });
       localStorage.setItem('offline_attendance', JSON.stringify(offlineAttendance));
-      toast({ title: 'Saved Offline', description: 'Will sync when internet is available.' });
+      toast({ title: t('common.savedOffline'), description: t('common.willSync') });
     }
   };
 
