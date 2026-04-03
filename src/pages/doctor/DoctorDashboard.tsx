@@ -81,7 +81,7 @@ export default function DoctorDashboard() {
 
   return (
     <MobileLayout role="doctor">
-      <div className="md:ml-64">
+      <div>
         <div className="px-4 pt-6 md:px-8">
           {/* Welcome */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
@@ -162,7 +162,7 @@ export default function DoctorDashboard() {
                       <div>
                         <p className="font-semibold">{lecture.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {lecture.departments?.name} • Level {lecture.level} • {lecture.type === 'section' ? `Section ${lecture.hall_number}` : `Hall ${lecture.hall_number}`}
+                          {lecture.departments?.name} • {t('common.level')} {lecture.level} • {lecture.type === 'section' ? `${t('common.section')} ${lecture.hall_number}` : `${t('common.hall')} ${lecture.hall_number}`}
                         </p>
                         {lecture.day_of_week && (
                           <p className="text-xs text-muted-foreground mt-0.5">

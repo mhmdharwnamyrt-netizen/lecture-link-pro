@@ -55,18 +55,18 @@ export default function LectureDetail() {
       // Create notification for student
       const student = await supabase.from('profiles').select('user_id').eq('id', studentId).single();
       if (student.data) {
+        const approvedMsg = t('notifications.approvedMessage').replace('{lecture}', lecture?.title || '');
+        const rejectedMsg = t('notifications.rejectedMessage').replace('{lecture}', lecture?.title || '');
         await supabase.from('notifications').insert({
           user_id: student.data.user_id,
           title: action === 'approved' ? t('notifications.excuseApproved') : t('notifications.excuseRejected'),
-          message: action === 'approved'
-            ? `Your excuse for "${lecture?.title}" has been approved. 3 points added.`
-            : `Your excuse for "${lecture?.title}" has been rejected.`,
+          message: action === 'approved' ? approvedMsg : rejectedMsg,
           type: action === 'approved' ? 'success' : 'warning',
           related_id: excuseId,
         });
       }
 
-      toast({ title: `Excuse ${action}` });
+      toast({ title: t('notifications.excuseAction').replace('{action}', action) });
       loadData();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -93,7 +93,7 @@ export default function LectureDetail() {
 
   return (
     <MobileLayout role="doctor">
-      <div className="md:ml-64">
+      <div>
         <div className="px-4 pt-6 md:px-8">
           <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
             <ArrowLeft className="h-4 w-4" /> {t('common.back')}
@@ -109,8 +109,8 @@ export default function LectureDetail() {
                   </span>
                 </div>
                 <h1 className="text-2xl font-bold">{lecture.title}</h1>
-                <p className="text-muted-foreground">{lecture.departments?.name} • Level {lecture.level} • Hall {lecture.hall_number}</p>
-                {lecture.subjects?.name && <p className="text-sm text-muted-foreground">Subject: {lecture.subjects.name}</p>}
+                <p className="text-muted-foreground">{lecture.departments?.name} • {t('common.level')} {lecture.level} • {t('common.hall')} {lecture.hall_number}</p>
+                {lecture.subjects?.name && <p className="text-sm text-muted-foreground">{t('common.subject')}: {lecture.subjects.name}</p>}
               </div>
               <div className="flex items-center gap-2">
                 {lecture.is_active && (
@@ -179,7 +179,7 @@ export default function LectureDetail() {
           {tab === 'attendees' ? (
             <div className="space-y-2">
               {attendees.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">No attendees yet</p>
+                <p className="py-8 text-center text-muted-foreground">{t('common.noAttendeesYet')}</p>
               ) : (
                 attendees.map(a => (
                   <div
@@ -212,7 +212,7 @@ export default function LectureDetail() {
           ) : (
             <div className="space-y-3">
               {excuses.length === 0 ? (
-                <p className="py-8 text-center text-muted-foreground">No excuses submitted</p>
+                <p className="py-8 text-center text-muted-foreground">{t('common.noExcusesSubmitted')}</p>
               ) : (
                 excuses.map(e => (
                   <div key={e.id} className="rounded-2xl bg-card p-4 shadow-card">
@@ -256,31 +256,31 @@ export default function LectureDetail() {
       <Dialog open={!!selectedAttendee} onOpenChange={() => setSelectedAttendee(null)}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Attendance Details</DialogTitle>
+            <DialogTitle>{t('common.attendanceDetails')}</DialogTitle>
           </DialogHeader>
           {selectedAttendee && (
             <div className="space-y-4">
               <div>
                 <p className="font-semibold text-lg">{selectedAttendee.profiles?.full_name}</p>
-                <p className="text-sm text-muted-foreground tabular-nums">ID: {selectedAttendee.profiles?.student_id}</p>
+                <p className="text-sm text-muted-foreground tabular-nums">{t('common.id')}: {selectedAttendee.profiles?.student_id}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{selectedAttendee.status}</p>
-                </div>
+                    <p className="text-xs text-muted-foreground">{t('common.status')}</p>
+                    <p className="font-medium capitalize">{selectedAttendee.status}</p>
+                  </div>
                 <div className="rounded-xl bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Time</p>
+                    <p className="text-xs text-muted-foreground">{t('common.time')}</p>
                   <p className="font-medium tabular-nums">{new Date(selectedAttendee.created_at).toLocaleTimeString('en-US', { timeStyle: 'short' })}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">GPS Verified</p>
-                  <p className="font-medium">{selectedAttendee.location_verified ? '✓ Yes' : '✗ No'}</p>
+                    <p className="text-xs text-muted-foreground">{t('common.gpsVerified')}</p>
+                    <p className="font-medium">{selectedAttendee.location_verified ? `✓ ${t('common.yes')}` : `✗ ${t('common.no')}`}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-xs text-muted-foreground">{t('face.verified')}</p>
-                  <p className="font-medium">{selectedAttendee.biometric_verified ? `✓ ${selectedAttendee.face_match_score}%` : '✗ No'}</p>
+                  <p className="font-medium">{selectedAttendee.biometric_verified ? `✓ ${selectedAttendee.face_match_score}%` : `✗ ${t('common.no')}`}</p>
                 </div>
               </div>
 
@@ -303,7 +303,7 @@ export default function LectureDetail() {
                 variant="outline"
                 className="w-full rounded-xl"
               >
-                View Student Profile
+                {t('common.viewStudentProfile')}
               </Button>
             </div>
           )}

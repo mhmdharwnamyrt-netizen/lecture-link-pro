@@ -260,7 +260,7 @@ export default function ScheduleParser() {
   if (phase === 'loading') {
     return (
       <MobileLayout role="doctor">
-        <div className="flex h-screen items-center justify-center md:ml-64">
+        <div className="flex h-screen items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       </MobileLayout>
@@ -269,7 +269,7 @@ export default function ScheduleParser() {
 
   return (
     <MobileLayout role="doctor">
-      <div className="md:ml-64">
+      <div>
         <div className="px-4 pt-6 md:px-8 pb-6">
           <button onClick={() => navigate(-1)} className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
             <ArrowLeft className="h-4 w-4" /> {t('common.back')}

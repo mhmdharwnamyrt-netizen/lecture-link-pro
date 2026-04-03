@@ -10,7 +10,7 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   const doctorNav = [
     { path: '/doctor', icon: Home, label: t('nav.home') },
@@ -30,7 +30,6 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   const navItems = role === 'doctor' ? doctorNav : studentNav;
 
-  // Sidebar-only items for doctor
   const doctorSidebarExtra = [
     { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
     { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
@@ -38,7 +37,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <main className="flex-1 pb-20 md:pb-4">
+      <main className={`flex-1 pb-20 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
         {children}
       </main>
 
@@ -64,14 +63,20 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
       </nav>
 
       {/* Desktop Sidebar */}
-      <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-border bg-card p-4 md:block">
+      <aside
+        className={`fixed top-0 hidden h-full w-64 border-border bg-card p-4 md:block ${
+          isRTL ? 'right-0 border-l' : 'left-0 border-r'
+        }`}
+      >
         <div className="mb-8 flex items-center gap-3 px-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
           <div>
             <p className="text-sm font-semibold">BSUT Attendance</p>
-            <p className="text-xs text-muted-foreground capitalize">{role} Portal</p>
+            <p className="text-xs text-muted-foreground">
+              {role === 'doctor' ? t('common.doctor') : t('common.student')} {t('common.portal')}
+            </p>
           </div>
         </div>
         <div className="space-y-1">

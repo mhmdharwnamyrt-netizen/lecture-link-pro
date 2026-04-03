@@ -176,13 +176,13 @@ export default function StudentDashboard() {
         setGpsStatus('success');
         setShowBloom(true);
         setTimeout(() => setShowBloom(false), 1000);
-        toast({ title: '✓ ' + t('student.attendanceRegistered'), description: '+3 points earned!' });
+        toast({ title: '✓ ' + t('student.attendanceRegistered'), description: t('student.pointsEarned') });
         loadData();
       }
     } catch (err: any) {
       setGpsStatus('error');
       if (err.code === 1) {
-        toast({ title: 'Location Permission Required', description: 'Please enable GPS and try again.', variant: 'destructive' });
+        toast({ title: t('student.locationRequired'), description: t('student.enableGPS'), variant: 'destructive' });
       } else {
         toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
       }
@@ -205,7 +205,7 @@ export default function StudentDashboard() {
         timestamp: new Date().toISOString(),
       });
       localStorage.setItem('offline_attendance', JSON.stringify(offlineAttendance));
-      toast({ title: 'Saved Offline', description: 'Will sync when internet is available.' });
+      toast({ title: t('common.savedOffline'), description: t('common.willSync') });
     }
   };
 
@@ -242,13 +242,13 @@ export default function StudentDashboard() {
 
   return (
     <MobileLayout role="student">
-      <div className="md:ml-64">
+      <div>
         <div className="px-4 pt-6 md:px-8">
           {/* Welcome */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <p className="text-sm text-muted-foreground">{t('auth.welcomeBack')}</p>
             <h1 className="text-2xl font-bold">{profile.full_name}</h1>
-            <p className="text-sm text-muted-foreground tabular-nums">ID: {profile.student_id}</p>
+            <p className="text-sm text-muted-foreground tabular-nums">{t('common.id')}: {profile.student_id}</p>
           </motion.div>
 
           {/* Face Registration Prompt */}
@@ -263,7 +263,7 @@ export default function StudentDashboard() {
                 <Shield className="h-6 w-6 text-warning" />
                 <div>
                   <p className="font-medium text-sm">{t('profile.registerFace')}</p>
-                  <p className="text-xs text-muted-foreground">Register your face for secure attendance verification</p>
+                  <p className="text-xs text-muted-foreground">{t('student.registerFacePrompt')}</p>
                 </div>
               </div>
             </motion.div>
@@ -314,7 +314,7 @@ export default function StudentDashboard() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         {lecture.isNow && (
-                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success animate-pulse">● NOW</span>
+                          <span className="rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success animate-pulse">● {t('common.now')}</span>
                         )}
                         {lecture.day_of_week && !lecture.isNow && (
                           <span className="text-xs text-muted-foreground">{lecture.day_of_week}</span>
@@ -322,7 +322,7 @@ export default function StudentDashboard() {
                       </div>
                       <p className="font-semibold">{lecture.title}</p>
                       <p className="text-sm text-muted-foreground">
-                        {lecture.profiles?.full_name} • Hall {lecture.hall_number}
+                        {lecture.profiles?.full_name} • {t('common.hall')} {lecture.hall_number}
                       </p>
                       {lecture.start_time && (
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -334,7 +334,7 @@ export default function StudentDashboard() {
                       )}
                     </div>
                     <div className="rounded-xl bg-success/10 px-3 py-1">
-                      <p className="text-sm font-semibold text-success">{lecture.points} pts</p>
+                      <p className="text-sm font-semibold text-success">{lecture.points} {t('common.pts')}</p>
                     </div>
                   </div>
 
@@ -353,7 +353,7 @@ export default function StudentDashboard() {
                         {checkingIn === lecture.id ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            {gpsStatus === 'checking' ? t('student.checkingGPS') : gpsStatus === 'outside' ? t('student.outsideCampus') : 'Processing...'}
+                            {gpsStatus === 'checking' ? t('student.checkingGPS') : gpsStatus === 'outside' ? t('student.outsideCampus') : t('common.processing')}
                           </>
                         ) : (
                           <>
@@ -378,7 +378,7 @@ export default function StudentDashboard() {
                         <div className="h-4 w-4 rounded-full bg-primary" />
                         <div className="absolute inset-0 rounded-full bg-primary animate-pulse-ring" />
                       </div>
-                      <p className="ml-3 text-sm text-muted-foreground">Verifying location...</p>
+                      <p className="ml-3 text-sm text-muted-foreground">{t('common.verifyingLocation')}</p>
                     </div>
                   )}
                 </motion.div>

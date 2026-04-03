@@ -58,7 +58,7 @@ export default function DoctorLectures() {
 
   return (
     <MobileLayout role="doctor">
-      <div className="md:ml-64">
+      <div >
         <div className="px-4 pt-6 md:px-8">
           <h1 className="mb-4 text-2xl font-bold">Lectures</h1>
 
