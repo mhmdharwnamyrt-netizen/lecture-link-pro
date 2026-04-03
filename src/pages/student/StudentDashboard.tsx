@@ -334,7 +334,7 @@ export default function StudentDashboard() {
                       )}
                     </div>
                     <div className="rounded-xl bg-success/10 px-3 py-1">
-                      <p className="text-sm font-semibold text-success">{lecture.points} pts</p>
+                      <p className="text-sm font-semibold text-success">{lecture.points} {t('common.pts')}</p>
                     </div>
                   </div>
 
