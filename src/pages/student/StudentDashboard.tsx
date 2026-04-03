@@ -248,7 +248,7 @@ export default function StudentDashboard() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <p className="text-sm text-muted-foreground">{t('auth.welcomeBack')}</p>
             <h1 className="text-2xl font-bold">{profile.full_name}</h1>
-            <p className="text-sm text-muted-foreground tabular-nums">ID: {profile.student_id}</p>
+            <p className="text-sm text-muted-foreground tabular-nums">{t('common.id')}: {profile.student_id}</p>
           </motion.div>
 
           {/* Face Registration Prompt */}
