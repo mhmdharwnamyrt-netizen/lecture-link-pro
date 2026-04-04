@@ -18,6 +18,7 @@ import EarlyWarning from "./pages/doctor/EarlyWarning";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import StudentLectures from "./pages/student/StudentLectures";
 import StudentCalendar from "./pages/student/StudentCalendar";
+import StudentScheduleParser from "./pages/student/StudentScheduleParser";
 import FaceRegistration from "./pages/student/FaceRegistration";
 import NotificationsPage from "./pages/shared/Notifications";
 import ProfilePage from "./pages/shared/Profile";
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/student" element={<StudentDashboard />} />
                 <Route path="/student/lectures" element={<StudentLectures />} />
                 <Route path="/student/calendar" element={<StudentCalendar />} />
+                <Route path="/student/schedule-ai" element={<StudentScheduleParser />} />
                 <Route path="/student/face-registration" element={<FaceRegistration />} />
                 <Route path="/student/notifications" element={<NotificationsPage role="student" />} />
                 <Route path="/student/profile" element={<ProfilePage role="student" />} />
