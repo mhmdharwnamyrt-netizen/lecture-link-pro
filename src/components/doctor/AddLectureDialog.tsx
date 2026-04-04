@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export default function AddLectureDialog({ open, onClose, profileId, onCreated }: Props) {
+  const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'lecture' | 'section'>('lecture');
   const [subjectId, setSubjectId] = useState('');
@@ -53,14 +54,13 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
     if (dRes.data) setDoctorDepts(dRes.data);
     if (sRes.data) setSubjects(sRes.data);
 
-    // Auto-select if only one department
     const uniqueDepts = [...new Set(dRes.data?.map(d => d.department_id) || [])];
     if (uniqueDepts.length === 1) setDepartmentId(uniqueDepts[0]);
   };
 
   const handleCreate = async () => {
     if (!title || !departmentId || !level) {
-      toast({ title: 'Please fill required fields', variant: 'destructive' });
+      toast({ title: t('common.fillRequired'), variant: 'destructive' });
       return;
     }
 
@@ -79,26 +79,20 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
       });
       if (error) throw error;
 
-      toast({ title: 'Lecture created successfully!' });
+      toast({ title: t('common.createdSuccess') });
       resetForm();
       onCreated();
       onClose();
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setTitle('');
-    setType('lecture');
-    setSubjectId('');
-    setDepartmentId('');
-    setLevel(0);
-    setHallNumber(0);
-    setDescription('');
-    setNotes('');
+    setTitle(''); setType('lecture'); setSubjectId(''); setDepartmentId('');
+    setLevel(0); setHallNumber(0); setDescription(''); setNotes('');
   };
 
   if (!open) return null;
@@ -110,10 +104,10 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/20 backdrop-blur-sm md:items-center" onClick={onClose}>
       <div
         onClick={e => e.stopPropagation()}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-card p-6 shadow-elevated md:rounded-3xl"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-card p-6 pb-24 shadow-elevated md:rounded-3xl md:pb-6"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Add {type === 'lecture' ? 'Lecture' : 'Section'}</h2>
+          <h2 className="text-lg font-semibold">{t('doctor.addTitle')} {type === 'lecture' ? t('common.lecture') : t('common.section')}</h2>
           <button onClick={onClose} className="rounded-xl p-2 hover:bg-muted">
             <X className="h-5 w-5" />
           </button>
@@ -122,35 +116,31 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
         <div className="space-y-4">
           {/* Type Toggle */}
           <div className="flex gap-2 rounded-xl bg-muted p-1">
-            {(['lecture', 'section'] as const).map(t => (
+            {(['lecture', 'section'] as const).map(tp => (
               <button
-                key={t}
-                onClick={() => setType(t)}
-                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${type === t ? 'bg-card shadow-card' : 'text-muted-foreground'}`}
+                key={tp}
+                onClick={() => setType(tp)}
+                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${type === tp ? 'bg-card shadow-card' : 'text-muted-foreground'}`}
               >
-                {t === 'lecture' ? 'Lecture' : 'Section'}
+                {tp === 'lecture' ? t('common.lecture') : t('common.section')}
               </button>
             ))}
           </div>
 
           <div>
-            <Label>Title *</Label>
+            <Label>{t('common.title')} *</Label>
             <Input value={title} onChange={e => setTitle(e.target.value)} className="mt-1 h-12 rounded-xl" placeholder="e.g. IoT Fundamentals" />
           </div>
 
-          {/* Department Selection */}
           {uniqueDeptIds.length > 1 && (
             <div>
-              <Label>Department *</Label>
+              <Label>{t('common.department')} *</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {uniqueDeptIds.map(dId => {
                   const dept = doctorDepts.find(d => d.department_id === dId);
                   return (
-                    <button
-                      key={dId}
-                      onClick={() => { setDepartmentId(dId); setLevel(0); }}
-                      className={`rounded-xl px-3 py-2 text-sm transition-colors ${departmentId === dId ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                    >
+                    <button key={dId} onClick={() => { setDepartmentId(dId); setLevel(0); }}
+                      className={`rounded-xl px-3 py-2 text-sm transition-colors ${departmentId === dId ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                       {dept?.departments?.name}
                     </button>
                   );
@@ -159,35 +149,27 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
             </div>
           )}
 
-          {/* Level Selection */}
           {departmentId && availableLevels.length > 1 && (
             <div>
-              <Label>Level *</Label>
+              <Label>{t('common.level')} *</Label>
               <div className="mt-2 flex gap-2">
                 {availableLevels.map(l => (
-                  <button
-                    key={l}
-                    onClick={() => setLevel(l)}
-                    className={`flex-1 rounded-xl py-2 text-sm font-medium transition-colors ${level === l ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                  >
-                    Level {l}
+                  <button key={l} onClick={() => setLevel(l)}
+                    className={`flex-1 rounded-xl py-2 text-sm font-medium transition-colors ${level === l ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                    {t('common.level')} {l}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Subject */}
           {subjects.length > 0 && (
             <div>
-              <Label>Subject</Label>
+              <Label>{t('common.subject')}</Label>
               <div className="mt-2 flex flex-wrap gap-2">
                 {subjects.map(s => (
-                  <button
-                    key={s.subject_id}
-                    onClick={() => setSubjectId(s.subject_id)}
-                    className={`rounded-xl px-3 py-2 text-sm transition-colors ${subjectId === s.subject_id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-                  >
+                  <button key={s.subject_id} onClick={() => setSubjectId(s.subject_id)}
+                    className={`rounded-xl px-3 py-2 text-sm transition-colors ${subjectId === s.subject_id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                     {s.subjects?.name}
                   </button>
                 ))}
@@ -195,34 +177,30 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
             </div>
           )}
 
-          {/* Hall */}
           <div>
-            <Label>Hall Number</Label>
-            <select
-              value={hallNumber}
-              onChange={e => setHallNumber(Number(e.target.value))}
-              className="mt-1 h-12 w-full rounded-xl border border-input bg-background px-3 text-sm"
-            >
-              <option value={0}>Select hall...</option>
-              {halls.map(h => (
-                <option key={h} value={h}>Hall {h}</option>
-              ))}
+            <Label>{t('common.hall')}</Label>
+            <select value={hallNumber} onChange={e => setHallNumber(Number(e.target.value))}
+              className="mt-1 h-12 w-full rounded-xl border border-input bg-background px-3 text-sm">
+              <option value={0}>{t('common.selectHall')}</option>
+              {halls.map(h => (<option key={h} value={h}>{t('common.hall')} {h}</option>))}
             </select>
           </div>
 
           <div>
-            <Label>Description (optional)</Label>
+            <Label>{t('common.description')} ({t('common.optional')})</Label>
             <Input value={description} onChange={e => setDescription(e.target.value)} className="mt-1 h-12 rounded-xl" />
           </div>
 
           <div>
-            <Label>Notes (optional)</Label>
+            <Label>{t('common.notes')} ({t('common.optional')})</Label>
             <Input value={notes} onChange={e => setNotes(e.target.value)} className="mt-1 h-12 rounded-xl" />
           </div>
 
-          <Button onClick={handleCreate} className="h-14 w-full rounded-2xl text-base" disabled={loading || !title || !departmentId || !level}>
-            {loading ? 'Creating...' : 'Create'}
-          </Button>
+          <div className="sticky bottom-0 bg-card pt-2">
+            <Button onClick={handleCreate} className="h-14 w-full rounded-2xl text-base" disabled={loading || !title || !departmentId || !level}>
+              {loading ? t('common.creating') : t('common.create')}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
