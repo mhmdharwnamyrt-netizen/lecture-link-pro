@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
+import IdentityVerification from '@/components/student/IdentityVerification';
 import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
@@ -89,6 +90,13 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
             </div>
           )}
 
+          {/* Identity Verification - Student Only */}
+          {role === 'student' && (
+            <div className="rounded-2xl bg-card p-4 shadow-card">
+              <IdentityVerification />
+            </div>
+          )}
+
           {/* Theme Toggle */}
           <div className="rounded-2xl bg-card p-4 shadow-card">
             <div className="flex items-center gap-3 mb-3">
@@ -143,7 +151,7 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
         </div>
 
         <Button onClick={handleSignOut} variant="outline" className="mt-8 h-14 w-full rounded-2xl text-destructive">
-          <LogOut className="mr-2 h-5 w-5" /> {t('common.signOut')}
+          <LogOut className="me-2 h-5 w-5" /> {t('common.signOut')}
         </Button>
       </div>
     </MobileLayout>

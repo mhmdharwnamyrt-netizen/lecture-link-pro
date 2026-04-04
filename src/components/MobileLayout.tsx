@@ -23,7 +23,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const studentNav = [
     { path: '/student', icon: Home, label: t('nav.home') },
     { path: '/student/lectures', icon: BookOpen, label: t('nav.lectures') },
-    { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
+    { path: '/student/schedule-ai', icon: Bot, label: t('nav.mySchedule') },
     { path: '/student/notifications', icon: Bell, label: t('nav.alerts') },
     { path: '/student/profile', icon: User, label: t('nav.profile') },
   ];
@@ -34,6 +34,12 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
     { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
   ];
+
+  const studentSidebarExtra = [
+    { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
+  ];
+
+  const sidebarExtra = role === 'doctor' ? doctorSidebarExtra : studentSidebarExtra;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -95,7 +101,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
               </Link>
             );
           })}
-          {role === 'doctor' && doctorSidebarExtra.map(item => {
+          {sidebarExtra.map(item => {
             const isActive = location.pathname === item.path;
             return (
               <Link

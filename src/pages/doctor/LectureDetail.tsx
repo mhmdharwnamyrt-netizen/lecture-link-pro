@@ -218,7 +218,12 @@ export default function LectureDetail() {
                   <div key={e.id} className="rounded-2xl bg-card p-4 shadow-card">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-medium">{e.profiles?.full_name}</p>
+                        <p
+                          className="font-medium text-primary cursor-pointer hover:underline"
+                          onClick={() => navigate(`/doctor/student/${e.student_id}`)}
+                        >
+                          {e.profiles?.full_name}
+                        </p>
                         <p className="text-sm text-muted-foreground">{e.reason}</p>
                         {e.description && <p className="mt-1 text-sm">{e.description}</p>}
                       </div>
