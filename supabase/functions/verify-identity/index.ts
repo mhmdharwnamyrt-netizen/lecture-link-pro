@@ -30,12 +30,12 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an identity verification AI for Beni Suef Technological University (BTU/BSUT). You verify student identity by comparing their ID card (front and back) and university carnet with their profile information. Check if the name and ID number on the documents match the provided student info. Return verified=true if the documents appear genuine and match, false otherwise.`,
+            content: `You are an identity verification AI for Beni Suef Technological University (BTU/BSUT). You verify student identity by comparing their ID card (front and back) and university carnet with their profile information. Check if the name and ID number on the documents match the provided student info. ALSO extract all data visible on the ID card: full name (Arabic and English if available), national ID number, address/residence, gender, date of birth. Return verified=true if the documents appear genuine and match, false otherwise.`,
           },
           {
             role: "user",
             content: [
-              { type: "text", text: `Verify this student's identity:\nName: ${studentName}\nUniversity ID: ${universityId}\n\nPlease check the following 3 documents and verify they match the student information.` },
+              { type: "text", text: `Verify this student's identity:\nName: ${studentName}\nUniversity ID: ${universityId}\n\nPlease check the following 3 documents, verify they match the student information, and extract all visible personal data from the ID card.` },
               { type: "image_url", image_url: { url: idFrontUrl } },
               { type: "image_url", image_url: { url: idBackUrl } },
               { type: "image_url", image_url: { url: carnetUrl } },
@@ -47,7 +47,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "identity_verification_result",
-              description: "Return the identity verification result",
+              description: "Return the identity verification result with extracted data",
               parameters: {
                 type: "object",
                 properties: {
@@ -56,6 +56,11 @@ serve(async (req) => {
                   name_match: { type: "boolean", description: "Whether the name matches" },
                   id_match: { type: "boolean", description: "Whether the ID number matches" },
                   reason: { type: "string", description: "Brief explanation" },
+                  extracted_name: { type: "string", description: "Full name extracted from ID card" },
+                  national_id: { type: "string", description: "National ID number from the card" },
+                  address: { type: "string", description: "Address/residence from the ID card" },
+                  gender: { type: "string", description: "Gender from the ID card (male/female or ذكر/أنثى)" },
+                  date_of_birth: { type: "string", description: "Date of birth from the ID card" },
                 },
                 required: ["verified", "confidence", "reason"],
                 additionalProperties: false,

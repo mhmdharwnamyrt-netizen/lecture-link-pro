@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Bot, BookOpen, Clock, MapPin, Loader2, Calendar, Bell, CheckCircle2 } from 'lucide-react';
+import { Upload, Bot, BookOpen, Clock, MapPin, Loader2, Calendar, Bell, CheckCircle2, ChevronRight, User, ArrowLeft } from 'lucide-react';
 
 interface ParsedLecture {
   title: string;
@@ -16,6 +16,8 @@ interface ParsedLecture {
   start_time: string;
   end_time: string;
   hall_number?: number;
+  doctor_name?: string;
+  group?: string;
 }
 
 const DAY_ORDER = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -34,8 +36,10 @@ export default function StudentScheduleParser() {
   const [hasSchedule, setHasSchedule] = useState(false);
   const [parsedLectures, setParsedLectures] = useState<ParsedLecture[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedLecture, setSelectedLecture] = useState<ParsedLecture | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'student')) navigate('/login');
@@ -68,8 +72,17 @@ export default function StudentScheduleParser() {
     reader.readAsDataURL(file);
 
     setAnalyzing(true);
+    setAnalyzeProgress(0);
+
+    // Animated progress
+    const progressInterval = setInterval(() => {
+      setAnalyzeProgress(prev => {
+        if (prev >= 90) { clearInterval(progressInterval); return 90; }
+        return prev + Math.random() * 15;
+      });
+    }, 400);
+
     try {
-      // Upload to storage
       const fileName = `student-schedules/${profile!.id}/${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('face-photos')
@@ -78,12 +91,14 @@ export default function StudentScheduleParser() {
 
       const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(fileName);
 
-      // Call AI parser
       const { data, error } = await supabase.functions.invoke('parse-schedule', {
         body: { imageUrl: urlData.publicUrl },
       });
 
       if (error) throw error;
+
+      clearInterval(progressInterval);
+      setAnalyzeProgress(100);
 
       const lectures = data.lectures || [];
       setParsedLectures(lectures);
@@ -95,9 +110,11 @@ export default function StudentScheduleParser() {
         description: `${lectures.length} ${t('student.lecturesFound')}`,
       });
     } catch (err: any) {
+      clearInterval(progressInterval);
       toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
     } finally {
       setAnalyzing(false);
+      setAnalyzeProgress(0);
     }
   };
 
@@ -139,19 +156,113 @@ export default function StudentScheduleParser() {
 
   if (loading || !profile) return null;
 
+  // Lecture detail view
+  if (selectedLecture) {
+    const isNow = selectedLecture.day_of_week === currentDay &&
+      selectedLecture.start_time <= currentTime &&
+      selectedLecture.end_time > currentTime;
+
+    // Calculate duration
+    const [sh, sm] = selectedLecture.start_time.split(':').map(Number);
+    const [eh, em] = selectedLecture.end_time.split(':').map(Number);
+    const durationMin = (eh * 60 + em) - (sh * 60 + sm);
+    const durationText = durationMin >= 60
+      ? `${Math.floor(durationMin / 60)}${language === 'ar' ? ' ساعة' : 'h'} ${durationMin % 60 > 0 ? `${durationMin % 60}${language === 'ar' ? ' دقيقة' : 'm'}` : ''}`
+      : `${durationMin} ${language === 'ar' ? 'دقيقة' : 'min'}`;
+
+    return (
+      <MobileLayout role="student">
+        <div className="px-4 pt-2 md:pt-6 md:px-8">
+          <button onClick={() => setSelectedLecture(null)} className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <ArrowLeft className="h-4 w-4" /> {t('common.back')}
+          </button>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {/* Status Badge */}
+            {isNow && (
+              <div className="mb-4 rounded-2xl bg-success/10 p-3 text-center">
+                <span className="text-sm font-bold text-success animate-pulse">● {language === 'ar' ? 'جارية الآن' : 'Happening Now'}</span>
+              </div>
+            )}
+
+            {/* Lecture Title */}
+            <div className="mb-6">
+              <span className={`inline-block rounded-lg px-2.5 py-1 text-xs font-medium mb-2 ${
+                selectedLecture.type === 'section' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'
+              }`}>
+                {selectedLecture.type === 'section' ? t('common.section') : t('common.lecture')}
+              </span>
+              <h1 className="text-2xl font-bold">{selectedLecture.title}</h1>
+            </div>
+
+            {/* Details Card */}
+            <div className="rounded-2xl bg-card p-5 shadow-card space-y-4 mb-6">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{language === 'ar' ? 'اليوم' : 'Day'}</p>
+                  <p className="font-medium">{language === 'ar' ? DAY_AR[selectedLecture.day_of_week] : selectedLecture.day_of_week}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{t('common.time')}</p>
+                  <p className="font-medium">{selectedLecture.start_time?.substring(0, 5)} - {selectedLecture.end_time?.substring(0, 5)}</p>
+                  <p className="text-xs text-muted-foreground">{language === 'ar' ? 'المدة:' : 'Duration:'} {durationText}</p>
+                </div>
+              </div>
+              {selectedLecture.hall_number && (
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('common.hall')}</p>
+                    <p className="font-medium">{t('common.hall')} {selectedLecture.hall_number}</p>
+                  </div>
+                </div>
+              )}
+              {selectedLecture.doctor_name && (
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('common.doctor')}</p>
+                    <p className="font-medium">{selectedLecture.doctor_name}</p>
+                  </div>
+                </div>
+              )}
+              {selectedGroup && (
+                <div className="flex items-center gap-3">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('student.yourGroup')}</p>
+                    <p className="font-medium">{t('common.group')} {selectedGroup}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Reminder Info */}
+            <div className="rounded-2xl bg-primary/5 p-4 text-center">
+              <Bell className="mx-auto mb-1 h-5 w-5 text-primary" />
+              <p className="text-sm text-muted-foreground">
+                {language === 'ar' ? 'سيتم تذكيرك قبل 15 دقيقة من بداية المحاضرة' : 'You\'ll be reminded 15 minutes before this lecture starts'}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </MobileLayout>
+    );
+  }
+
   // Upload view
   if (!hasSchedule) {
     return (
       <MobileLayout role="student">
-        <div className="px-4 pt-6 md:px-8">
+        <div className="px-4 pt-2 md:pt-6 md:px-8">
           <h1 className="mb-2 text-2xl font-bold">{t('student.scheduleAI')}</h1>
           <p className="mb-6 text-muted-foreground">{t('student.uploadScheduleHint')}</p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             {/* Group Selection */}
             <div className="mb-6 rounded-2xl bg-card p-4 shadow-card">
               <p className="mb-3 text-sm font-medium">{t('student.yourGroup')}</p>
@@ -160,8 +271,8 @@ export default function StudentScheduleParser() {
                   <button
                     key={g}
                     onClick={() => setSelectedGroup(g)}
-                    className={`flex-1 rounded-xl py-3 text-sm font-medium transition-colors ${
-                      selectedGroup === g ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                    className={`flex-1 rounded-xl py-3 text-sm font-medium transition-all ${
+                      selectedGroup === g ? 'bg-primary text-primary-foreground shadow-md scale-[1.02]' : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {t('common.group')} {g}
@@ -172,24 +283,51 @@ export default function StudentScheduleParser() {
 
             {/* Upload Area */}
             <div
-              onClick={() => fileRef.current?.click()}
-              className="cursor-pointer rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center transition-colors hover:bg-primary/10"
+              onClick={() => !analyzing && fileRef.current?.click()}
+              className={`cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all ${
+                analyzing ? 'border-primary/50 bg-primary/5' : 'border-primary/30 bg-primary/5 hover:bg-primary/10'
+              }`}
             >
-              {analyzing ? (
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                  <p className="font-medium">{t('schedule.analyzing')}</p>
-                  <p className="text-sm text-muted-foreground">{t('schedule.analyzingHint')}</p>
-                </div>
-              ) : imagePreview ? (
-                <img src={imagePreview} alt="Schedule" className="mx-auto max-h-48 rounded-xl object-contain" />
-              ) : (
-                <>
-                  <Upload className="mx-auto mb-3 h-10 w-10 text-primary" />
-                  <p className="font-medium">{t('student.uploadSchedule')}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{t('schedule.uploadHint')}</p>
-                </>
-              )}
+              <AnimatePresence mode="wait">
+                {analyzing ? (
+                  <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-4">
+                    {/* Animated AI Brain */}
+                    <div className="relative">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                        className="h-16 w-16 rounded-full border-4 border-primary/20 border-t-primary"
+                      />
+                      <Bot className="absolute inset-0 m-auto h-7 w-7 text-primary" />
+                    </div>
+                    <div className="w-full max-w-xs">
+                      <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                        <span>{t('schedule.analyzing')}</span>
+                        <span>{Math.round(analyzeProgress)}%</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-primary"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${analyzeProgress}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">{t('schedule.analyzingHint')}</p>
+                    </div>
+                  </motion.div>
+                ) : imagePreview ? (
+                  <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <img src={imagePreview} alt="Schedule" className="mx-auto max-h-48 rounded-xl object-contain" />
+                  </motion.div>
+                ) : (
+                  <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <Upload className="mx-auto mb-3 h-10 w-10 text-primary" />
+                    <p className="font-medium">{t('student.uploadSchedule')}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t('schedule.uploadHint')}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
           </motion.div>
@@ -201,7 +339,7 @@ export default function StudentScheduleParser() {
   // Dashboard view
   return (
     <MobileLayout role="student">
-      <div className="px-4 pt-6 md:px-8 pb-4">
+      <div className="px-4 pt-2 md:pt-6 md:px-8 pb-4">
         <h1 className="mb-2 text-2xl font-bold">{t('student.scheduleAI')}</h1>
 
         {/* Group */}
@@ -216,7 +354,8 @@ export default function StudentScheduleParser() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 rounded-2xl bg-primary/10 p-4 shadow-card"
+            onClick={() => setSelectedLecture(nextLecture)}
+            className="mb-6 rounded-2xl bg-primary/10 p-4 shadow-card cursor-pointer active:scale-[0.98] transition-transform"
           >
             <p className="text-xs font-medium text-primary mb-1">{t('student.nextLecture')}</p>
             <p className="text-lg font-bold">{nextLecture.title}</p>
@@ -253,7 +392,6 @@ export default function StudentScheduleParser() {
           </div>
           <div className="rounded-2xl bg-card p-3 shadow-card text-center">
             <Bell className="mx-auto mb-1 h-5 w-5 text-warning" />
-            <CheckCircle2 className="mx-auto mb-1 h-5 w-5 text-success hidden" />
             <p className="text-xl font-bold">15</p>
             <p className="text-[10px] text-muted-foreground">{language === 'ar' ? 'دقيقة تنبيه' : 'min remind'}</p>
           </div>
@@ -273,27 +411,42 @@ export default function StudentScheduleParser() {
                 )}
               </p>
               <div className="space-y-2">
-                {lectures.sort((a, b) => a.start_time.localeCompare(b.start_time)).map((l, i) => (
-                  <div key={i} className={`rounded-2xl bg-card p-3 shadow-card ${
-                    day === currentDay && l.start_time <= currentTime && l.end_time > currentTime
-                      ? 'ring-2 ring-success' : ''
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{l.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {l.start_time?.substring(0, 5)} - {l.end_time?.substring(0, 5)}
-                          {l.hall_number ? ` • ${t('common.hall')} ${l.hall_number}` : ''}
-                        </p>
+                {lectures.sort((a, b) => a.start_time.localeCompare(b.start_time)).map((l, i) => {
+                  const isNow = day === currentDay && l.start_time <= currentTime && l.end_time > currentTime;
+                  return (
+                    <motion.div
+                      key={i}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setSelectedLecture(l)}
+                      className={`rounded-2xl bg-card p-3 shadow-card cursor-pointer transition-all active:shadow-elevated ${
+                        isNow ? 'ring-2 ring-success' : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            {isNow && (
+                              <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[9px] font-bold text-success animate-pulse">● {t('common.now')}</span>
+                            )}
+                            <p className="font-medium text-sm">{l.title}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {l.start_time?.substring(0, 5)} - {l.end_time?.substring(0, 5)}
+                            {l.hall_number ? ` • ${t('common.hall')} ${l.hall_number}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${
+                            l.type === 'section' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'
+                          }`}>
+                            {l.type === 'section' ? t('common.section') : t('common.lecture')}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
-                      <span className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${
-                        l.type === 'section' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'
-                      }`}>
-                        {l.type === 'section' ? t('common.section') : t('common.lecture')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           ))}
