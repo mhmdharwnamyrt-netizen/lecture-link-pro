@@ -1,18 +1,27 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Upload, Shield, CheckCircle2, Loader2, X } from 'lucide-react';
+import { Camera, Shield, CheckCircle2, Loader2, X, User, MapPin, CreditCard } from 'lucide-react';
 
 interface Props {
   onVerified?: () => void;
 }
 
+interface ExtractedData {
+  full_name?: string;
+  national_id?: string;
+  address?: string;
+  gender?: string;
+  date_of_birth?: string;
+  [key: string]: string | undefined;
+}
+
 export default function IdentityVerification({ onVerified }: Props) {
   const { profile, refreshProfile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
 
   const [idFront, setIdFront] = useState<string | null>(null);
@@ -20,10 +29,23 @@ export default function IdentityVerification({ onVerified }: Props) {
   const [carnet, setCarnet] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
 
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
   const carnetRef = useRef<HTMLInputElement>(null);
+
+  // Check if already verified
+  useEffect(() => {
+    if (profile) {
+      const saved = localStorage.getItem(`identity_verified_${profile.id}`);
+      const savedData = localStorage.getItem(`identity_data_${profile.id}`);
+      if (saved === 'true') {
+        setVerified(true);
+        if (savedData) setExtractedData(JSON.parse(savedData));
+      }
+    }
+  }, [profile]);
 
   const handleCapture = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,14 +60,12 @@ export default function IdentityVerification({ onVerified }: Props) {
     setVerifying(true);
 
     try {
-      // Upload all 3 photos
       const uploads = await Promise.all([
         uploadPhoto(idFront, 'id-front'),
         uploadPhoto(idBack, 'id-back'),
         uploadPhoto(carnet, 'carnet'),
       ]);
 
-      // Call AI verification
       const { data, error } = await supabase.functions.invoke('verify-identity', {
         body: {
           studentId: profile.id,
@@ -61,10 +81,24 @@ export default function IdentityVerification({ onVerified }: Props) {
 
       if (data?.verified) {
         setVerified(true);
+        const extracted: ExtractedData = {
+          full_name: data.extracted_name || profile.full_name,
+          national_id: data.national_id || '',
+          address: data.address || '',
+          gender: data.gender || '',
+          date_of_birth: data.date_of_birth || '',
+        };
+        setExtractedData(extracted);
+
+        // Save locally
+        localStorage.setItem(`identity_verified_${profile.id}`, 'true');
+        localStorage.setItem(`identity_data_${profile.id}`, JSON.stringify(extracted));
+        localStorage.setItem(`identity_photos_${profile.id}`, JSON.stringify(uploads));
+
         toast({ title: t('student.verificationSuccess') });
         onVerified?.();
       } else {
-        toast({ title: t('student.verificationFailed'), variant: 'destructive' });
+        toast({ title: t('student.verificationFailed'), description: data?.reason, variant: 'destructive' });
       }
     } catch (err: any) {
       toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
@@ -83,11 +117,45 @@ export default function IdentityVerification({ onVerified }: Props) {
     return data.publicUrl;
   };
 
-  if (verified) {
+  if (verified && extractedData) {
     return (
-      <div className="rounded-2xl bg-success/10 p-6 text-center">
-        <CheckCircle2 className="mx-auto mb-2 h-10 w-10 text-success" />
-        <p className="font-semibold text-success">{t('student.identityVerified')}</p>
+      <div className="space-y-4">
+        <div className="rounded-2xl bg-success/10 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle2 className="h-5 w-5 text-success" />
+            <p className="font-semibold text-success">{t('student.identityVerified')}</p>
+          </div>
+          <div className="space-y-2">
+            {extractedData.full_name && (
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{language === 'ar' ? 'الاسم:' : 'Name:'}</span>
+                <span className="font-medium">{extractedData.full_name}</span>
+              </div>
+            )}
+            {extractedData.national_id && (
+              <div className="flex items-center gap-2 text-sm">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{language === 'ar' ? 'الرقم القومي:' : 'National ID:'}</span>
+                <span className="font-medium tabular-nums">{extractedData.national_id}</span>
+              </div>
+            )}
+            {extractedData.address && (
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{language === 'ar' ? 'محل الإقامة:' : 'Address:'}</span>
+                <span className="font-medium">{extractedData.address}</span>
+              </div>
+            )}
+            {extractedData.gender && (
+              <div className="flex items-center gap-2 text-sm">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{language === 'ar' ? 'النوع:' : 'Gender:'}</span>
+                <span className="font-medium">{extractedData.gender}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
@@ -99,32 +167,9 @@ export default function IdentityVerification({ onVerified }: Props) {
         {t('student.idVerification')}
       </h3>
 
-      {/* ID Front */}
-      <PhotoSlot
-        label={t('student.uploadIdFront')}
-        photo={idFront}
-        inputRef={frontRef}
-        onCapture={handleCapture(setIdFront)}
-        onClear={() => setIdFront(null)}
-      />
-
-      {/* ID Back */}
-      <PhotoSlot
-        label={t('student.uploadIdBack')}
-        photo={idBack}
-        inputRef={backRef}
-        onCapture={handleCapture(setIdBack)}
-        onClear={() => setIdBack(null)}
-      />
-
-      {/* Carnet */}
-      <PhotoSlot
-        label={t('student.uploadCarnet')}
-        photo={carnet}
-        inputRef={carnetRef}
-        onCapture={handleCapture(setCarnet)}
-        onClear={() => setCarnet(null)}
-      />
+      <PhotoSlot label={t('student.uploadIdFront')} photo={idFront} inputRef={frontRef} onCapture={handleCapture(setIdFront)} onClear={() => setIdFront(null)} />
+      <PhotoSlot label={t('student.uploadIdBack')} photo={idBack} inputRef={backRef} onCapture={handleCapture(setIdBack)} onClear={() => setIdBack(null)} />
+      <PhotoSlot label={t('student.uploadCarnet')} photo={carnet} inputRef={carnetRef} onCapture={handleCapture(setCarnet)} onClear={() => setCarnet(null)} />
 
       <Button
         onClick={handleVerify}
