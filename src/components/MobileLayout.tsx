@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface MobileLayoutProps {
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
   const { t, isRTL } = useLanguage();
+  const { profile } = useAuth();
 
   const doctorNav = [
     { path: '/doctor', icon: Home, label: t('nav.home') },
@@ -41,9 +43,30 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   const sidebarExtra = role === 'doctor' ? doctorSidebarExtra : studentSidebarExtra;
 
+  // Determine display name for header
+  const displayName = profile?.full_name || '';
+  const subtitle = role === 'doctor'
+    ? (profile?.academic_title || 'Dr.')
+    : (profile?.student_id ? `${t('common.id')}: ${profile.student_id}` : '');
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className={`flex-1 pb-20 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
+        {/* Curved Header */}
+        <div className="relative overflow-hidden md:hidden">
+          <div className="bg-primary px-5 pb-10 pt-8 text-primary-foreground"
+            style={{ borderRadius: '0 0 2rem 2rem' }}>
+            <p className="text-sm opacity-80">{t('auth.welcomeBack')}</p>
+            <h1 className="text-xl font-bold mt-0.5">{role === 'doctor' ? `${subtitle} ` : ''}{displayName}</h1>
+            {role === 'student' && subtitle && (
+              <p className="text-xs opacity-70 mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          {/* Curved bottom edge */}
+          <svg viewBox="0 0 390 24" className="absolute -bottom-px left-0 right-0 w-full" preserveAspectRatio="none">
+            <path d="M0 0 C130 24, 260 24, 390 0 L390 24 L0 24 Z" fill="hsl(var(--background))" />
+          </svg>
+        </div>
         {children}
       </main>
 
