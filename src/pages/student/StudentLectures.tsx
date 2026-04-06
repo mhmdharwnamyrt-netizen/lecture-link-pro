@@ -18,6 +18,7 @@ export default function StudentLectures() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'active' | 'past'>('active');
   const [showExcuse, setShowExcuse] = useState<string | null>(null);
+  const [ratingLecture, setRatingLecture] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'student')) navigate('/login');
