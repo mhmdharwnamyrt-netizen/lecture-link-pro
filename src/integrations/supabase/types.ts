@@ -260,6 +260,48 @@ export type Database = {
           },
         ]
       }
+      lecture_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          lecture_id: string
+          rating: number
+          student_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lecture_id: string
+          rating: number
+          student_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          lecture_id?: string
+          rating?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lecture_ratings_lecture_id_fkey"
+            columns: ["lecture_id"]
+            isOneToOne: false
+            referencedRelation: "lectures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lecture_ratings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lectures: {
         Row: {
           created_at: string
@@ -342,6 +384,58 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lecture_id: string | null
+          read: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lecture_id?: string | null
+          read?: boolean
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lecture_id?: string | null
+          read?: boolean
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_lecture_id_fkey"
+            columns: ["lecture_id"]
+            isOneToOne: false
+            referencedRelation: "lectures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -374,6 +468,92 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      office_hour_bookings: {
+        Row: {
+          booking_date: string
+          created_at: string
+          id: string
+          notes: string | null
+          slot_id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          slot_id: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          slot_id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_hour_bookings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "office_hours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "office_hour_bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      office_hours: {
+        Row: {
+          created_at: string
+          day_of_week: string
+          doctor_id: string
+          end_time: string
+          id: string
+          location: string | null
+          max_bookings: number
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: string
+          doctor_id: string
+          end_time: string
+          id?: string
+          location?: string | null
+          max_bookings?: number
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: string
+          doctor_id?: string
+          end_time?: string
+          id?: string
+          location?: string | null
+          max_bookings?: number
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_hours_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
