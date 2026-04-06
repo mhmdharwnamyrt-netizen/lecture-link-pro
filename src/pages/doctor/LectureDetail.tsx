@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import QRCodeDisplay from '@/components/doctor/QRCodeDisplay';
 import ExportButtons from '@/components/shared/ExportButtons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LectureRatingSummary } from '@/pages/shared/LectureRating';
 
 export default function LectureDetail() {
   const { id } = useParams();
