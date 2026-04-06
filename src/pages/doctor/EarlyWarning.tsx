@@ -24,7 +24,7 @@ export default function EarlyWarning() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState('');
