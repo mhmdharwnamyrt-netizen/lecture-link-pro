@@ -11,7 +11,7 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
 
   const doctorNav = [
