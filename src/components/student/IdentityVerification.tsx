@@ -87,6 +87,10 @@ export default function IdentityVerification({ onVerified }: Props) {
           address: data.address || '',
           gender: data.gender || '',
           date_of_birth: data.date_of_birth || '',
+          religion: data.religion || '',
+          marital_status: data.marital_status || '',
+          job: data.job || '',
+          expiry_date: data.expiry_date || '',
         };
         setExtractedData(extracted);
 
@@ -98,7 +102,11 @@ export default function IdentityVerification({ onVerified }: Props) {
         toast({ title: t('student.verificationSuccess') });
         onVerified?.();
       } else {
-        toast({ title: t('student.verificationFailed'), description: data?.reason, variant: 'destructive' });
+        // LOCK ACCOUNT - data mismatch
+        setAccountLocked(true);
+        localStorage.setItem(`account_locked_${profile.id}`, 'true');
+        localStorage.setItem(`lock_reason_${profile.id}`, data?.reason || 'Identity mismatch');
+        toast({ title: language === 'ar' ? 'تم إغلاق الحساب' : 'Account Locked', description: data?.reason, variant: 'destructive' });
       }
     } catch (err: any) {
       toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
