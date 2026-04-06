@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,7 +11,7 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
 
   const doctorNav = [
@@ -35,10 +35,14 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const doctorSidebarExtra = [
     { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
     { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
+    { path: '/doctor/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
+    { path: '/doctor/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
   ];
 
   const studentSidebarExtra = [
     { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
+    { path: '/student/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
+    { path: '/student/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
   ];
 
   const sidebarExtra = role === 'doctor' ? doctorSidebarExtra : studentSidebarExtra;

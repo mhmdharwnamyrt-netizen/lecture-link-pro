@@ -4,9 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
+import { LectureRatingDialog, LectureRatingSummary } from '@/pages/shared/LectureRating';
 
 export default function StudentLectures() {
   const { profile, loading, user } = useAuth();
@@ -16,6 +18,7 @@ export default function StudentLectures() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'active' | 'past'>('active');
   const [showExcuse, setShowExcuse] = useState<string | null>(null);
+  const [ratingLecture, setRatingLecture] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'student')) navigate('/login');
@@ -87,16 +90,24 @@ export default function StudentLectures() {
                       <p className="text-xs text-muted-foreground">
                         {new Date(l.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' })}
                       </p>
+                      <LectureRatingSummary lectureId={l.id} />
                     </div>
-                    <span className={`rounded-xl px-3 py-1 text-xs font-medium ${
-                      l.attendanceStatus === 'present' ? 'bg-success/10 text-success' :
-                      l.attendanceStatus === 'excused' ? 'bg-warning/10 text-warning' :
-                      l.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
-                    }`}>
-                      {l.attendanceStatus === 'present' ? t('common.present') :
-                       l.attendanceStatus === 'excused' ? t('common.excused') :
-                       l.is_active ? t('common.active') : t('common.missed')}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`rounded-xl px-3 py-1 text-xs font-medium ${
+                        l.attendanceStatus === 'present' ? 'bg-success/10 text-success' :
+                        l.attendanceStatus === 'excused' ? 'bg-warning/10 text-warning' :
+                        l.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
+                      }`}>
+                        {l.attendanceStatus === 'present' ? t('common.present') :
+                         l.attendanceStatus === 'excused' ? t('common.excused') :
+                         l.is_active ? t('common.active') : t('common.missed')}
+                      </span>
+                      {l.attendanceStatus && (
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setRatingLecture(l.id)}>
+                          <Star className="h-3 w-3" /> {t('common.save') === 'حفظ' ? 'قيّم' : 'Rate'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -106,6 +117,9 @@ export default function StudentLectures() {
       </div>
       {showExcuse && (
         <ExcuseDialog lectureId={showExcuse} studentId={profile.id} onClose={() => setShowExcuse(null)} onSubmitted={loadLectures} />
+      )}
+      {ratingLecture && (
+        <LectureRatingDialog lectureId={ratingLecture} open={!!ratingLecture} onClose={() => setRatingLecture(null)} />
       )}
     </MobileLayout>
   );
