@@ -118,6 +118,9 @@ export default function StudentLectures() {
       {showExcuse && (
         <ExcuseDialog lectureId={showExcuse} studentId={profile.id} onClose={() => setShowExcuse(null)} onSubmitted={loadLectures} />
       )}
+      {ratingLecture && (
+        <LectureRatingDialog lectureId={ratingLecture} open={!!ratingLecture} onClose={() => setRatingLecture(null)} />
+      )}
     </MobileLayout>
   );
 }
