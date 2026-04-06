@@ -120,6 +120,7 @@ export default function LectureDetail() {
                 <h1 className="text-2xl font-bold">{lecture.title}</h1>
                 <p className="text-muted-foreground">{lecture.departments?.name} • {t('common.level')} {lecture.level} • {t('common.hall')} {lecture.hall_number}</p>
                 {lecture.subjects?.name && <p className="text-sm text-muted-foreground">{t('common.subject')}: {lecture.subjects.name}</p>}
+                <LectureRatingSummary lectureId={lecture.id} />
               </div>
               <div className="flex items-center gap-2">
                 {lecture.is_active && (
