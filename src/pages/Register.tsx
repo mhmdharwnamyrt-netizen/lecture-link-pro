@@ -441,8 +441,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
     }
-    if (studentIdNum.length !== 8) {
-      toast({ title: 'Student ID must be 8 digits', variant: 'destructive' });
+    if (studentIdNum.length !== 9) {
+      toast({ title: 'Student ID must be 9 digits', variant: 'destructive' });
       return;
     }
 
