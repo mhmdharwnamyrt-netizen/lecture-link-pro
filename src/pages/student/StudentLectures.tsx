@@ -4,9 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
+import { LectureRatingDialog, LectureRatingSummary } from '@/pages/shared/LectureRating';
 
 export default function StudentLectures() {
   const { profile, loading, user } = useAuth();
