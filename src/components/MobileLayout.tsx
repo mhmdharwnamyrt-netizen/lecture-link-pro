@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
