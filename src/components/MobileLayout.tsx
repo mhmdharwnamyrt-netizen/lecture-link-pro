@@ -35,10 +35,14 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const doctorSidebarExtra = [
     { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
     { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
+    { path: '/doctor/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
+    { path: '/doctor/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
   ];
 
   const studentSidebarExtra = [
     { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
+    { path: '/student/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
+    { path: '/student/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
   ];
 
   const sidebarExtra = role === 'doctor' ? doctorSidebarExtra : studentSidebarExtra;
