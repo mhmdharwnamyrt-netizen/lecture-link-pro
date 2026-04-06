@@ -29,15 +29,21 @@ export default function IdentityVerification({ onVerified }: Props) {
   const [carnet, setCarnet] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [accountLocked, setAccountLocked] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
 
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
   const carnetRef = useRef<HTMLInputElement>(null);
 
-  // Check if already verified
+  // Check if already verified or locked
   useEffect(() => {
     if (profile) {
+      const locked = localStorage.getItem(`account_locked_${profile.id}`);
+      if (locked === 'true') {
+        setAccountLocked(true);
+        return;
+      }
       const saved = localStorage.getItem(`identity_verified_${profile.id}`);
       const savedData = localStorage.getItem(`identity_data_${profile.id}`);
       if (saved === 'true') {
@@ -87,6 +93,10 @@ export default function IdentityVerification({ onVerified }: Props) {
           address: data.address || '',
           gender: data.gender || '',
           date_of_birth: data.date_of_birth || '',
+          religion: data.religion || '',
+          marital_status: data.marital_status || '',
+          job: data.job || '',
+          expiry_date: data.expiry_date || '',
         };
         setExtractedData(extracted);
 
@@ -98,7 +108,11 @@ export default function IdentityVerification({ onVerified }: Props) {
         toast({ title: t('student.verificationSuccess') });
         onVerified?.();
       } else {
-        toast({ title: t('student.verificationFailed'), description: data?.reason, variant: 'destructive' });
+        // LOCK ACCOUNT - data mismatch
+        setAccountLocked(true);
+        localStorage.setItem(`account_locked_${profile.id}`, 'true');
+        localStorage.setItem(`lock_reason_${profile.id}`, data?.reason || 'Identity mismatch');
+        toast({ title: language === 'ar' ? 'تم إغلاق الحساب' : 'Account Locked', description: data?.reason, variant: 'destructive' });
       }
     } catch (err: any) {
       toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
@@ -117,6 +131,29 @@ export default function IdentityVerification({ onVerified }: Props) {
     return data.publicUrl;
   };
 
+  // Account locked screen
+  if (accountLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+        <div className="rounded-full bg-destructive/10 p-6 mb-4">
+          <Shield className="h-12 w-12 text-destructive" />
+        </div>
+        <h2 className="text-2xl font-bold text-destructive mb-2">
+          {language === 'ar' ? 'تم إغلاق الحساب' : 'Account Locked'}
+        </h2>
+        <p className="text-muted-foreground max-w-xs mb-4">
+          {language === 'ar'
+            ? 'تم إغلاق حسابك لأن بيانات الهوية المرفوعة لا تتطابق مع بيانات التسجيل. يرجى التواصل مع إدارة الجامعة لحل المشكلة.'
+            : 'Your account has been locked because the uploaded identity documents do not match your registration data. Please contact the university administration to resolve this issue.'}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {language === 'ar' ? 'السبب: ' : 'Reason: '}
+          {localStorage.getItem(`lock_reason_${profile?.id}`) || 'Identity mismatch'}
+        </p>
+      </div>
+    );
+  }
+
   if (verified && extractedData) {
     return (
       <div className="space-y-4">
@@ -126,34 +163,31 @@ export default function IdentityVerification({ onVerified }: Props) {
             <p className="font-semibold text-success">{t('student.identityVerified')}</p>
           </div>
           <div className="space-y-2">
-            {extractedData.full_name && (
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{language === 'ar' ? 'الاسم:' : 'Name:'}</span>
-                <span className="font-medium">{extractedData.full_name}</span>
-              </div>
-            )}
-            {extractedData.national_id && (
-              <div className="flex items-center gap-2 text-sm">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{language === 'ar' ? 'الرقم القومي:' : 'National ID:'}</span>
-                <span className="font-medium tabular-nums">{extractedData.national_id}</span>
-              </div>
-            )}
-            {extractedData.address && (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{language === 'ar' ? 'محل الإقامة:' : 'Address:'}</span>
-                <span className="font-medium">{extractedData.address}</span>
-              </div>
-            )}
-            {extractedData.gender && (
-              <div className="flex items-center gap-2 text-sm">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{language === 'ar' ? 'النوع:' : 'Gender:'}</span>
-                <span className="font-medium">{extractedData.gender}</span>
-              </div>
-            )}
+            {Object.entries(extractedData).map(([key, value]) => {
+              if (!value) return null;
+              const labels: Record<string, [string, string]> = {
+                full_name: ['الاسم', 'Name'],
+                national_id: ['الرقم القومي', 'National ID'],
+                address: ['محل الإقامة', 'Address'],
+                gender: ['النوع', 'Gender'],
+                date_of_birth: ['تاريخ الميلاد', 'Date of Birth'],
+                religion: ['الديانة', 'Religion'],
+                marital_status: ['الحالة الاجتماعية', 'Marital Status'],
+                job: ['الوظيفة', 'Job'],
+                expiry_date: ['تاريخ الانتهاء', 'Expiry Date'],
+              };
+              const label = labels[key];
+              if (!label) return null;
+              const icons: Record<string, any> = { full_name: User, national_id: CreditCard, address: MapPin };
+              const Icon = icons[key] || Shield;
+              return (
+                <div key={key} className="flex items-center gap-2 text-sm">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{language === 'ar' ? label[0] : label[1]}:</span>
+                  <span className="font-medium">{value}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

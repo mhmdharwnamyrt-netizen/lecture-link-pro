@@ -441,8 +441,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
     }
-    if (studentIdNum.length !== 8) {
-      toast({ title: 'Student ID must be 8 digits', variant: 'destructive' });
+    if (studentIdNum.length !== 9) {
+      toast({ title: 'Student ID must be 9 digits', variant: 'destructive' });
       return;
     }
 
@@ -470,8 +470,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       if (profileError) throw profileError;
 
       toast({ title: 'Account created successfully!' });
-      // Redirect to face registration
-      setTimeout(() => navigate('/student/face-registration'), 500);
+      // Session is auto-established, redirect to face registration then dashboard
+      setTimeout(() => navigate('/student/face-registration'), 300);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -497,8 +497,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
         <Input value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1 h-12 rounded-xl" placeholder="Ahmed Mohamed" />
       </div>
       <div>
-        <Label>University ID (8 digits) *</Label>
-        <Input value={studentIdNum} onChange={e => setStudentIdNum(e.target.value.replace(/\D/g, '').slice(0, 8))} className="mt-1 h-12 rounded-xl tabular-nums" placeholder="12345678" />
+        <Label>University ID (9 digits) *</Label>
+        <Input value={studentIdNum} onChange={e => setStudentIdNum(e.target.value.replace(/\D/g, '').slice(0, 9))} className="mt-1 h-12 rounded-xl tabular-nums" placeholder="123456789" />
       </div>
       <div>
         <Label>Email *</Label>

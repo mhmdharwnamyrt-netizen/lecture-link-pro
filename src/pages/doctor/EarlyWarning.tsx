@@ -24,7 +24,7 @@ export default function EarlyWarning() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState('');
@@ -169,7 +169,7 @@ export default function EarlyWarning() {
                         {getRiskIcon(alert.risk_level)}
                         <div>
                           <p className="font-medium text-sm">{alert.message}</p>
-                          <p className="text-xs mt-1">{new Date(alert.created_at).toLocaleDateString('en-US', { dateStyle: 'medium' })}</p>
+                          <p className="text-xs mt-1">{new Date(alert.created_at).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium' })}</p>
                         </div>
                       </div>
                       <Button

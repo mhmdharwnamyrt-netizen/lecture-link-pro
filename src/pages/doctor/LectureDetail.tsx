@@ -44,12 +44,20 @@ export default function LectureDetail() {
       await supabase.from('excuses').update({ status: action, reviewed_by: profile?.id }).eq('id', excuseId);
 
       if (action === 'approved') {
+        // Mark student as present (excused) in attendance
         await supabase.from('attendance').upsert({
           student_id: studentId,
           lecture_id: id!,
           status: 'excused',
           location_verified: false,
         }, { onConflict: 'student_id,lecture_id' });
+
+        // Award points to student
+        const lecturePoints = lecture?.points || 3;
+        const { data: studentProfile } = await supabase.from('profiles').select('points').eq('id', studentId).single();
+        if (studentProfile) {
+          await supabase.from('profiles').update({ points: (studentProfile.points || 0) + lecturePoints }).eq('id', studentId);
+        }
       }
 
       // Create notification for student
