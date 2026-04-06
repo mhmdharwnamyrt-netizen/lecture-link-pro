@@ -29,15 +29,21 @@ export default function IdentityVerification({ onVerified }: Props) {
   const [carnet, setCarnet] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [accountLocked, setAccountLocked] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
 
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
   const carnetRef = useRef<HTMLInputElement>(null);
 
-  // Check if already verified
+  // Check if already verified or locked
   useEffect(() => {
     if (profile) {
+      const locked = localStorage.getItem(`account_locked_${profile.id}`);
+      if (locked === 'true') {
+        setAccountLocked(true);
+        return;
+      }
       const saved = localStorage.getItem(`identity_verified_${profile.id}`);
       const savedData = localStorage.getItem(`identity_data_${profile.id}`);
       if (saved === 'true') {
