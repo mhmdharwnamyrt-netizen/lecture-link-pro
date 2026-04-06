@@ -497,8 +497,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
         <Input value={fullName} onChange={e => setFullName(e.target.value)} className="mt-1 h-12 rounded-xl" placeholder="Ahmed Mohamed" />
       </div>
       <div>
-        <Label>University ID (8 digits) *</Label>
-        <Input value={studentIdNum} onChange={e => setStudentIdNum(e.target.value.replace(/\D/g, '').slice(0, 8))} className="mt-1 h-12 rounded-xl tabular-nums" placeholder="12345678" />
+        <Label>University ID (9 digits) *</Label>
+        <Input value={studentIdNum} onChange={e => setStudentIdNum(e.target.value.replace(/\D/g, '').slice(0, 9))} className="mt-1 h-12 rounded-xl tabular-nums" placeholder="123456789" />
       </div>
       <div>
         <Label>Email *</Label>
