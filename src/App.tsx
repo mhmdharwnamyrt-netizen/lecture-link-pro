@@ -8,6 +8,11 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
+// PWA Components
+import InstallPrompt from "@/components/pwa/InstallPrompt";
+import NetworkStatus from "@/components/pwa/NetworkStatus";
+import UpdatePrompt from "@/components/pwa/UpdatePrompt";
+
 // Lazy loaded pages
 const LoginPage = lazy(() => import("./pages/Login"));
 const RegisterPage = lazy(() => import("./pages/Register"));
@@ -50,6 +55,10 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            {/* PWA Components */}
+            <NetworkStatus />
+            <InstallPrompt />
+            <UpdatePrompt />
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>

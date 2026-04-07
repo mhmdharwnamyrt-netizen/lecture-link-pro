@@ -118,7 +118,8 @@ export function stopLectureReminders() {
 export async function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('/sw-push.js');
+      // Use the main PWA service worker which handles both caching and push notifications
+      await navigator.serviceWorker.register('/sw.js');
     } catch {
       // Service worker registration failed - notifications will use Notification API directly
     }
