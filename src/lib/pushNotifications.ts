@@ -29,8 +29,8 @@ export function showLocalNotification(title: string, body: string, tag?: string)
   try {
     const options: Record<string, any> = {
       body,
-      icon: '/placeholder.svg',
-      badge: '/placeholder.svg',
+      icon: '/icons/icon-192x192.jpg',
+      badge: '/icons/icon-192x192.jpg',
       tag: tag || 'lecture-reminder',
       renotify: true,
       vibrate: [200, 100, 200],
@@ -118,7 +118,8 @@ export function stopLectureReminders() {
 export async function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('/sw-push.js');
+      // The main PWA service worker (sw.js) handles both push notifications and offline caching
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     } catch {
       // Service worker registration failed - notifications will use Notification API directly
     }
