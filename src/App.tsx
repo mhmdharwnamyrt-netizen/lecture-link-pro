@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { PWAInstallBanner, OfflineIndicator, OnlineRestoredToast } from "@/components/PWAInstallBanner";
 
 // Lazy loaded pages
 const LoginPage = lazy(() => import("./pages/Login"));
@@ -50,6 +51,9 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <OfflineIndicator />
+            <OnlineRestoredToast />
+            <PWAInstallBanner />
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
