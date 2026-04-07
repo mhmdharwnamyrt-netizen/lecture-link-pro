@@ -1,5 +1,21 @@
 export const translations = {
   en: {
+    // PWA
+    'pwa.install': 'Install App',
+    'pwa.installDesc': 'Get a better experience with notifications and offline access',
+    'pwa.offline': 'You are offline',
+    'pwa.offlineDesc': 'App is working in offline mode',
+    'pwa.online': 'Back online',
+    'pwa.syncing': 'Syncing...',
+    'pwa.syncComplete': 'Sync complete',
+    'pwa.updateAvailable': 'Update Available',
+    'pwa.updateDesc': 'A new version of the app is available',
+    'pwa.updateNow': 'Update Now',
+    'pwa.iosInstall': 'Install on iOS',
+    'pwa.iosStep1': 'Tap the Share button',
+    'pwa.iosStep2': 'Select "Add to Home Screen"',
+    'pwa.iosStep3': 'Tap "Add" to confirm',
+
     // Navigation
     'nav.home': 'Home',
     'nav.lectures': 'Lectures',
@@ -261,6 +277,22 @@ export const translations = {
     'calendar.lectures': 'lectures',
   },
   ar: {
+    // PWA
+    'pwa.install': 'ثبّت التطبيق',
+    'pwa.installDesc': 'احصل على تجربة أفضل مع الإشعارات والعمل بدون إنترنت',
+    'pwa.offline': 'غير متصل بالإنترنت',
+    'pwa.offlineDesc': 'التطبيق يعمل في الوضع غير المتصل',
+    'pwa.online': 'متصل بالإنترنت',
+    'pwa.syncing': 'جاري المزامنة...',
+    'pwa.syncComplete': 'تم المزامنة',
+    'pwa.updateAvailable': 'تحديث متاح',
+    'pwa.updateDesc': 'نسخة جديدة من التطبيق متاحة الآن',
+    'pwa.updateNow': 'تحديث الآن',
+    'pwa.iosInstall': 'تثبيت على iOS',
+    'pwa.iosStep1': 'اضغط على زر المشاركة',
+    'pwa.iosStep2': 'اختر "إضافة إلى الشاشة الرئيسية"',
+    'pwa.iosStep3': 'اضغط "إضافة" للتأكيد',
+
     // Navigation
     'nav.home': 'الرئيسية',
     'nav.lectures': 'المحاضرات',
@@ -506,7 +538,7 @@ export const translations = {
     'warning.analysisComplete': 'اكتمل التحليل',
     'warning.analysisResults': 'نتائج التحليل',
     'warning.activeAlerts': 'التنبيهات النشطة',
-    'warning.attendanceRate': 'نسبة الحضور',
+    'warning.attendanceRate': 'نسبة ال��ضور',
     'warning.absences': 'غياب',
     'warning.resolve': 'حل',
     'warning.resolved': 'تم حل التنبيه',

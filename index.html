@@ -1,30 +1,243 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="auto">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project">
-    <meta name="author" content="Lovable" />
-
-    <!-- TODO: Update og:title to match your application name -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     
+    <!-- Primary Meta Tags -->
+    <title>BSUT Attendance - نظام الحضور الذكي</title>
+    <meta name="title" content="BSUT Attendance - نظام الحضور الذكي" />
+    <meta name="description" content="نظام حضور ذكي لجامعة بني سويف التكنولوجية - Smart Attendance System for Beni Suef Technological University" />
+    <meta name="author" content="BSUT" />
+    <meta name="keywords" content="attendance, university, BSUT, حضور, جامعة, بني سويف" />
     
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="BSUT Attendance" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="BSUT Attendance" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1e3a5f" media="(prefers-color-scheme: dark)" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/jpeg" sizes="32x32" href="/icons/icon-72x72.jpg" />
+    <link rel="icon" type="image/jpeg" sizes="16x16" href="/icons/icon-72x72.jpg" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.jpg" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.jpg" />
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.jpg" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.jpg" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.jpg" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.jpg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.jpg" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.jpg" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.jpg" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Apple Splash Screens -->
+    <link rel="apple-touch-startup-image" href="/icons/icon-512x512.jpg" />
+    
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/93b103cc-dfeb-46b6-a133-6ce971bcff19/id-preview-a0a38d96--f3bbeb6b-4c56-4e56-ab54-815ca6288290.lovable.app-1773443165803.png">
+    <meta property="og:url" content="https://bsut-attendance.vercel.app/" />
+    <meta property="og:title" content="BSUT Attendance - نظام الحضور الذكي" />
+    <meta property="og:description" content="نظام حضور ذكي لجامعة بني سويف التكنولوجية" />
+    <meta property="og:image" content="/icons/icon-512x512.jpg" />
+    <meta property="og:locale" content="ar_EG" />
+    <meta property="og:locale:alternate" content="en_US" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/93b103cc-dfeb-46b6-a133-6ce971bcff19/id-preview-a0a38d96--f3bbeb6b-4c56-4e56-ab54-815ca6288290.lovable.app-1773443165803.png">
-    <meta property="og:title" content="Lovable App">
-  <meta name="twitter:title" content="Lovable App">
-  <meta property="og:description" content="Lovable Generated Project">
-  <meta name="twitter:description" content="Lovable Generated Project">
-</head>
+    <meta name="twitter:url" content="https://bsut-attendance.vercel.app/" />
+    <meta name="twitter:title" content="BSUT Attendance - نظام الحضور الذكي" />
+    <meta name="twitter:description" content="نظام حضور ذكي لجامعة بني سويف التكنولوجية" />
+    <meta name="twitter:image" content="/icons/icon-512x512.jpg" />
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="//supabase.co" />
+    
+    <!-- Inline critical CSS for splash screen -->
+    <style>
+      /* Splash screen styles - shown before React loads */
+      #splash-screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+      
+      #splash-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .splash-logo {
+        width: 96px;
+        height: 96px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      .splash-logo svg {
+        width: 48px;
+        height: 48px;
+        color: white;
+      }
+      
+      .splash-title {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 8px;
+      }
+      
+      .splash-subtitle {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 32px;
+      }
+      
+      .splash-loader {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      
+      .splash-loader-bar {
+        width: 0%;
+        height: 100%;
+        background: white;
+        border-radius: 2px;
+        animation: loading 1.5s ease-out forwards;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.9; }
+      }
+      
+      @keyframes loading {
+        0% { width: 0%; }
+        50% { width: 70%; }
+        100% { width: 100%; }
+      }
+      
+      /* Prevent flash of unstyled content */
+      html {
+        background: #3b82f6;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      
+      /* Safe area padding for notched devices */
+      @supports (padding: env(safe-area-inset-top)) {
+        body {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
+        }
+      }
+    </style>
+  </head>
 
   <body>
+    <!-- Native splash screen shown before React loads -->
+    <div id="splash-screen">
+      <div class="splash-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+      </div>
+      <h1 class="splash-title">BSUT Attendance</h1>
+      <p class="splash-subtitle">Smart Attendance System</p>
+      <div class="splash-loader">
+        <div class="splash-loader-bar"></div>
+      </div>
+    </div>
+    
+    <!-- React root -->
     <div id="root"></div>
+    
+    <!-- Main app script -->
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- PWA Registration Script -->
+    <script>
+      // Hide splash screen when app is ready
+      window.hideSplash = function() {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+          splash.classList.add('hidden');
+          setTimeout(() => splash.remove(), 300);
+        }
+      };
+      
+      // Fallback: hide splash after 3 seconds if app doesn't load
+      setTimeout(window.hideSplash, 3000);
+      
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('[App] ServiceWorker registered:', registration.scope);
+            })
+            .catch(function(error) {
+              console.log('[App] ServiceWorker registration failed:', error);
+            });
+        });
+      }
+      
+      // Handle display mode changes
+      window.matchMedia('(display-mode: standalone)').addEventListener('change', function(evt) {
+        console.log('[App] Display mode changed:', evt.matches ? 'standalone' : 'browser');
+      });
+    </script>
+    
+    <!-- Noscript fallback -->
+    <noscript>
+      <style>#splash-screen { display: none; }</style>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; font-family: system-ui, sans-serif;">
+        <h1>BSUT Attendance</h1>
+        <p>This application requires JavaScript to run.</p>
+        <p>يتطلب هذا التطبيق تفعيل JavaScript للعمل.</p>
+      </div>
+    </noscript>
   </body>
 </html>
