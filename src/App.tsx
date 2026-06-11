@@ -28,6 +28,8 @@ const ProfilePage = lazy(() => import("./pages/shared/Profile"));
 const MessagesPage = lazy(() => import("./pages/shared/Messages"));
 const OfficeHoursPage = lazy(() => import("./pages/shared/OfficeHours"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+import OfflineBanner from "@/components/OfflineBanner";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <OfflineBanner />
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -81,6 +84,8 @@ const App = () => (
                   <Route path="/student/messages" element={<MessagesPage role="student" />} />
                   <Route path="/student/office-hours" element={<OfficeHoursPage role="student" />} />
                   
+                  <Route path="/admin" element={<AdminDashboard />} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
