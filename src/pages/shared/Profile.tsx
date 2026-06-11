@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import IdentityVerification from '@/components/student/IdentityVerification';
+import InstallApp from '@/components/InstallApp';
 import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
@@ -148,6 +149,9 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
               </button>
             </div>
           </div>
+
+          {/* Install App (PWA / APK) */}
+          <InstallApp />
         </div>
 
         <Button onClick={handleSignOut} variant="outline" className="mt-8 h-14 w-full rounded-2xl text-destructive">

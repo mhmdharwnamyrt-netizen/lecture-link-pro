@@ -125,13 +125,12 @@ export default function MessagesPage({ role }: { role: 'doctor' | 'student' }) {
   const searchUsers = async (q: string) => {
     setSearchQuery(q);
     if (q.length < 2) { setSearchResults([]); return; }
-    const targetRole = role === 'doctor' ? 'student' : 'doctor';
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, role, student_id, user_id')
-      .eq('role', targetRole)
-      .ilike('full_name', `%${q}%`)
-      .limit(10);
+      .neq('id', profile?.id || '')
+      .or(`full_name.ilike.%${q}%,student_id.ilike.%${q}%`)
+      .limit(15);
     if (data) setSearchResults(data);
   };
 
