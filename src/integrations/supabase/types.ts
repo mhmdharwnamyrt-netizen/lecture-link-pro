@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          status: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          status?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           biometric_verified: boolean
@@ -560,8 +596,11 @@ export type Database = {
           academic_title: string | null
           created_at: string
           department_id: string | null
+          disabled_at: string | null
+          disabled_reason: string | null
           full_name: string
           id: string
+          is_disabled: boolean
           level: number | null
           phone: string | null
           points: number
@@ -574,8 +613,11 @@ export type Database = {
           academic_title?: string | null
           created_at?: string
           department_id?: string | null
+          disabled_at?: string | null
+          disabled_reason?: string | null
           full_name: string
           id?: string
+          is_disabled?: boolean
           level?: number | null
           phone?: string | null
           points?: number
@@ -588,8 +630,11 @@ export type Database = {
           academic_title?: string | null
           created_at?: string
           department_id?: string | null
+          disabled_at?: string | null
+          disabled_reason?: string | null
           full_name?: string
           id?: string
+          is_disabled?: boolean
           level?: number | null
           phone?: string | null
           points?: number
