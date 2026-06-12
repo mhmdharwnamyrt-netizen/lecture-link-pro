@@ -47,6 +47,18 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
+            // Queue attendance POSTs while offline; replay on reconnect via Background Sync
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/attendance.*/i,
+            handler: "NetworkOnly",
+            method: "POST",
+            options: {
+              backgroundSync: {
+                name: "attendance-queue",
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: "NetworkFirst",
             options: {
