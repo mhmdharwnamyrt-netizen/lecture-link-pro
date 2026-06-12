@@ -397,7 +397,7 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3">Time</th>
                     <th className="px-4 py-3">Hall</th>
                     <th className="px-4 py-3">Level</th>
-                    <th className="px-4 py-3">Group</th>
+                    <th className="px-4 py-3">Type</th>
                     <th className="px-4 py-3">Active</th>
                   </tr>
                 </thead>
