@@ -32,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   profile: null,
+  isAdmin: false,
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -43,7 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const fetchAdmin = async (userId: string) => {
+    const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' as any });
+    setIsAdmin(!!data);
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
