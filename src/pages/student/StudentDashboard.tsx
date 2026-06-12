@@ -255,7 +255,7 @@ export default function StudentDashboard() {
       handleCheckIn(lectureId);
     } else {
       const { enqueueAttendance } = await import('@/lib/offlineQueue');
-      const lecture = lectures.find((l: any) => l.id === lectureId);
+      const lecture = activeLectures.find((l: any) => l.id === lectureId);
       enqueueAttendance({
         student_id: profile!.id,
         lecture_id: lectureId,
