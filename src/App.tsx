@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import AccountStatusGuard from "@/components/AccountStatusGuard";
+import OfflineBanner from "@/components/OfflineBanner";
 
 // Lazy loaded pages
 const LoginPage = lazy(() => import("./pages/Login"));
@@ -23,13 +25,15 @@ const StudentLectures = lazy(() => import("./pages/student/StudentLectures"));
 const StudentCalendar = lazy(() => import("./pages/student/StudentCalendar"));
 const StudentScheduleParser = lazy(() => import("./pages/student/StudentScheduleParser"));
 const FaceRegistration = lazy(() => import("./pages/student/FaceRegistration"));
+const OfflineQueue = lazy(() => import("./pages/student/OfflineQueue"));
 const NotificationsPage = lazy(() => import("./pages/shared/Notifications"));
 const ProfilePage = lazy(() => import("./pages/shared/Profile"));
 const MessagesPage = lazy(() => import("./pages/shared/Messages"));
 const OfficeHoursPage = lazy(() => import("./pages/shared/OfficeHours"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-import OfflineBanner from "@/components/OfflineBanner";
+const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 
 const queryClient = new QueryClient();
 
@@ -43,6 +47,10 @@ function PageLoader() {
     </div>
   );
 }
+
+const Guarded = ({ children }: { children: React.ReactNode }) => (
+  <AccountStatusGuard>{children}</AccountStatusGuard>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -59,32 +67,35 @@ const App = () => (
                   <Route path="/" element={<Navigate to="/login" replace />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
-                  
+
                   {/* Doctor Routes */}
-                  <Route path="/doctor" element={<DoctorDashboard />} />
-                  <Route path="/doctor/lectures" element={<DoctorLectures />} />
-                  <Route path="/doctor/lectures/:id" element={<LectureDetail />} />
-                  <Route path="/doctor/student/:studentId" element={<StudentDetail />} />
-                  <Route path="/doctor/analytics" element={<DoctorAnalytics />} />
-                  <Route path="/doctor/schedule-parser" element={<ScheduleParser />} />
-                  <Route path="/doctor/early-warning" element={<EarlyWarning />} />
-                  <Route path="/doctor/notifications" element={<NotificationsPage role="doctor" />} />
-                  <Route path="/doctor/profile" element={<ProfilePage role="doctor" />} />
-                  <Route path="/doctor/messages" element={<MessagesPage role="doctor" />} />
-                  <Route path="/doctor/office-hours" element={<OfficeHoursPage role="doctor" />} />
-                  
+                  <Route path="/doctor" element={<Guarded><DoctorDashboard /></Guarded>} />
+                  <Route path="/doctor/lectures" element={<Guarded><DoctorLectures /></Guarded>} />
+                  <Route path="/doctor/lectures/:id" element={<Guarded><LectureDetail /></Guarded>} />
+                  <Route path="/doctor/student/:studentId" element={<Guarded><StudentDetail /></Guarded>} />
+                  <Route path="/doctor/analytics" element={<Guarded><DoctorAnalytics /></Guarded>} />
+                  <Route path="/doctor/schedule-parser" element={<Guarded><ScheduleParser /></Guarded>} />
+                  <Route path="/doctor/early-warning" element={<Guarded><EarlyWarning /></Guarded>} />
+                  <Route path="/doctor/notifications" element={<Guarded><NotificationsPage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/profile" element={<Guarded><ProfilePage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/messages" element={<Guarded><MessagesPage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/office-hours" element={<Guarded><OfficeHoursPage role="doctor" /></Guarded>} />
+
                   {/* Student Routes */}
-                  <Route path="/student" element={<StudentDashboard />} />
-                  <Route path="/student/lectures" element={<StudentLectures />} />
-                  <Route path="/student/calendar" element={<StudentCalendar />} />
-                  <Route path="/student/schedule-ai" element={<StudentScheduleParser />} />
-                  <Route path="/student/face-registration" element={<FaceRegistration />} />
-                  <Route path="/student/notifications" element={<NotificationsPage role="student" />} />
-                  <Route path="/student/profile" element={<ProfilePage role="student" />} />
-                  <Route path="/student/messages" element={<MessagesPage role="student" />} />
-                  <Route path="/student/office-hours" element={<OfficeHoursPage role="student" />} />
-                  
+                  <Route path="/student" element={<Guarded><StudentDashboard /></Guarded>} />
+                  <Route path="/student/lectures" element={<Guarded><StudentLectures /></Guarded>} />
+                  <Route path="/student/calendar" element={<Guarded><StudentCalendar /></Guarded>} />
+                  <Route path="/student/schedule-ai" element={<Guarded><StudentScheduleParser /></Guarded>} />
+                  <Route path="/student/face-registration" element={<Guarded><FaceRegistration /></Guarded>} />
+                  <Route path="/student/offline-queue" element={<Guarded><OfflineQueue /></Guarded>} />
+                  <Route path="/student/notifications" element={<Guarded><NotificationsPage role="student" /></Guarded>} />
+                  <Route path="/student/profile" element={<Guarded><ProfilePage role="student" /></Guarded>} />
+                  <Route path="/student/messages" element={<Guarded><MessagesPage role="student" /></Guarded>} />
+                  <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
+
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/logs" element={<AdminLogs />} />
+                  <Route path="/admin/reports" element={<AdminReports />} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
