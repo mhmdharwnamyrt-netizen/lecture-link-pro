@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,7 +12,7 @@ interface MobileLayoutProps {
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
   const { t, isRTL, language } = useLanguage();
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
 
   const doctorNav = [
     { path: '/doctor', icon: Home, label: t('nav.home') },
@@ -41,11 +41,15 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   const studentSidebarExtra = [
     { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
+    { path: '/student/offline-queue', icon: CloudOff, label: language === 'ar' ? 'قائمة الانتظار' : 'Offline Queue' },
     { path: '/student/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
     { path: '/student/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
   ];
 
-  const sidebarExtra = role === 'doctor' ? doctorSidebarExtra : studentSidebarExtra;
+  const sidebarExtra = role === 'doctor' ? [...doctorSidebarExtra] : [...studentSidebarExtra];
+  if (isAdmin) {
+    sidebarExtra.push({ path: '/admin', icon: Shield, label: language === 'ar' ? 'لوحة الإدارة' : 'Admin Dashboard' });
+  }
 
   // Determine display name for header
   const displayName = profile?.full_name || '';
