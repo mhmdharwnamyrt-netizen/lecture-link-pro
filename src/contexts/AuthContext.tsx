@@ -13,12 +13,16 @@ interface Profile {
   department_id: string | null;
   level: number | null;
   points: number;
+  is_disabled?: boolean;
+  disabled_at?: string | null;
+  disabled_reason?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  isAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -28,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   profile: null,
+  isAdmin: false,
   loading: true,
   signOut: async () => {},
   refreshProfile: async () => {},
@@ -39,7 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const fetchAdmin = async (userId: string) => {
+    const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' as any });
+    setIsAdmin(!!data);
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -68,10 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(async () => {
             if (!mounted) return;
             await fetchProfile(session.user.id);
+            await fetchAdmin(session.user.id);
             setLoading(false);
           }, 0);
         } else {
           setProfile(null);
+          setIsAdmin(false);
           setLoading(false);
         }
       }
@@ -83,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user.id);
+        await fetchAdmin(session.user.id);
       }
       setLoading(false);
     });
@@ -98,10 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, isAdmin, loading, signOut, refreshProfile }}>
+
       {children}
     </AuthContext.Provider>
   );
