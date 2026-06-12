@@ -412,7 +412,7 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 tabular-nums">{l.start_time?.slice(0,5)} - {l.end_time?.slice(0,5)}</td>
                       <td className="px-4 py-3">{l.hall_number || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{l.level || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{l.group_name || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{l.type || '—'}</td>
                       <td className="px-4 py-3">{l.is_active ? '✓' : '—'}</td>
                     </tr>
                   ))}
@@ -522,11 +522,11 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 font-medium">{w.profiles?.full_name || '—'}</td>
                       <td className="px-4 py-3">
                         <span className={`rounded-full px-2 py-0.5 text-xs ${
-                          w.severity === 'high' ? 'bg-destructive/10 text-destructive' :
-                          w.severity === 'medium' ? 'bg-warning/10 text-warning' : 'bg-muted'
-                        }`}>{w.severity || w.level}</span>
+                          w.risk_level === 'high' ? 'bg-destructive/10 text-destructive' :
+                          w.risk_level === 'medium' ? 'bg-warning/10 text-warning' : 'bg-muted'
+                        }`}>{w.risk_level || '—'}</span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{w.message || w.reason}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{w.message || w.alert_type}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
@@ -610,7 +610,7 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{String(m.sender_id).slice(0, 8)}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{String(m.receiver_id).slice(0, 8)}</td>
                       <td className="px-4 py-3 text-muted-foreground max-w-md truncate">{m.content}</td>
-                      <td className="px-4 py-3">{m.read_at ? '✓' : '—'}</td>
+                      <td className="px-4 py-3">{m.read ? '✓' : '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString()}</td>
                     </tr>
                   ))}
