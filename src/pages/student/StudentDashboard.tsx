@@ -254,39 +254,25 @@ export default function StudentDashboard() {
     if (navigator.onLine) {
       handleCheckIn(lectureId);
     } else {
-      const offlineAttendance = JSON.parse(localStorage.getItem('offline_attendance') || '[]');
-      offlineAttendance.push({
+      const { enqueueAttendance } = await import('@/lib/offlineQueue');
+      const lecture = lectures.find((l: any) => l.id === lectureId);
+      enqueueAttendance({
         student_id: profile!.id,
         lecture_id: lectureId,
-        timestamp: new Date().toISOString(),
+        lecture_title: lecture?.title,
+        location_verified: false,
       });
-      localStorage.setItem('offline_attendance', JSON.stringify(offlineAttendance));
       toast({ title: t('common.savedOffline'), description: t('common.willSync') });
     }
   };
 
   useEffect(() => {
-    const syncOffline = async () => {
-      const offlineData = JSON.parse(localStorage.getItem('offline_attendance') || '[]');
-      if (offlineData.length === 0 || !profile) return;
-      for (const item of offlineData) {
-        try {
-          await supabase.from('attendance').insert({
-            student_id: item.student_id,
-            lecture_id: item.lecture_id,
-            status: 'present',
-            location_verified: false,
-            synced: true,
-          });
-        } catch { /* ignore duplicates */ }
-      }
-      localStorage.removeItem('offline_attendance');
-      loadData();
-    };
-    window.addEventListener('online', syncOffline);
-    if (navigator.onLine) syncOffline();
-    return () => window.removeEventListener('online', syncOffline);
+    if (!profile) return;
+    const reload = () => loadData();
+    window.addEventListener('online', reload);
+    return () => window.removeEventListener('online', reload);
   }, [profile]);
+
 
   if (loading || !profile) return (
     <MobileLayout role="student">
