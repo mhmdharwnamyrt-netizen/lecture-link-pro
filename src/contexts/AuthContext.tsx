@@ -13,12 +13,16 @@ interface Profile {
   department_id: string | null;
   level: number | null;
   points: number;
+  is_disabled?: boolean;
+  disabled_at?: string | null;
+  disabled_reason?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  isAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
