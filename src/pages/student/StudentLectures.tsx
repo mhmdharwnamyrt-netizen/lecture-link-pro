@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,6 +10,37 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
 import { LectureRatingDialog, LectureRatingSummary } from '@/pages/shared/LectureRating';
+
+function TiltCard({ children, status }: { children: React.ReactNode; status: 'present' | 'excused' | 'active' | 'missed' }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rx = useSpring(useTransform(y, [-50, 50], [8, -8]), { stiffness: 200, damping: 20 });
+  const ry = useSpring(useTransform(x, [-50, 50], [-8, 8]), { stiffness: 200, damping: 20 });
+
+  const onMove = (e: React.MouseEvent) => {
+    const r = ref.current?.getBoundingClientRect(); if (!r) return;
+    x.set(e.clientX - r.left - r.width / 2);
+    y.set(e.clientY - r.top - r.height / 2);
+  };
+  const onLeave = () => { x.set(0); y.set(0); };
+
+  const sideColor = status === 'present' ? 'bg-success' : status === 'excused' ? 'bg-warning' : status === 'active' ? 'bg-primary' : 'bg-destructive';
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+      style={{ rotateX: rx, rotateY: ry, transformStyle: 'preserve-3d', perspective: 1000 }}
+      className="relative overflow-hidden rounded-2xl bg-card p-4 shadow-card transition-shadow hover:shadow-elevated"
+    >
+      <span className={`absolute inset-y-0 left-0 w-1.5 ${sideColor} animate-pulse rtl:left-auto rtl:right-0`} />
+      <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary/5 blur-2xl" />
+      {children}
+    </motion.div>
+  );
+}
 
 export default function StudentLectures() {
   const { profile, loading, user } = useAuth();
@@ -81,9 +113,14 @@ export default function StudentLectures() {
                 <p className="text-muted-foreground">{t('common.noLecturesFound')}</p>
               </div>
             ) : (
-              filtered.map(l => (
-                <div key={l.id} className="rounded-2xl bg-card p-4 shadow-card">
-                  <div className="flex items-start justify-between">
+              filtered.map(l => {
+                const st: 'present' | 'excused' | 'active' | 'missed' =
+                  l.attendanceStatus === 'present' ? 'present' :
+                  l.attendanceStatus === 'excused' ? 'excused' :
+                  l.is_active ? 'active' : 'missed';
+                return (
+                <TiltCard key={l.id} status={st}>
+                  <div className="flex items-start justify-between pl-3 rtl:pl-0 rtl:pr-3">
                     <div>
                       <p className="font-semibold">{l.title}</p>
                       <p className="text-sm text-muted-foreground">{l.profiles?.full_name} • {t('common.hall')} {l.hall_number}</p>
@@ -94,13 +131,13 @@ export default function StudentLectures() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className={`rounded-xl px-3 py-1 text-xs font-medium ${
-                        l.attendanceStatus === 'present' ? 'bg-success/10 text-success' :
-                        l.attendanceStatus === 'excused' ? 'bg-warning/10 text-warning' :
-                        l.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
+                        st === 'present' ? 'bg-success/10 text-success' :
+                        st === 'excused' ? 'bg-warning/10 text-warning' :
+                        st === 'active' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'
                       }`}>
-                        {l.attendanceStatus === 'present' ? t('common.present') :
-                         l.attendanceStatus === 'excused' ? t('common.excused') :
-                         l.is_active ? t('common.active') : t('common.missed')}
+                        {st === 'present' ? t('common.present') :
+                         st === 'excused' ? t('common.excused') :
+                         st === 'active' ? t('common.active') : t('common.missed')}
                       </span>
                       {l.attendanceStatus && (
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setRatingLecture(l.id)}>
@@ -109,8 +146,9 @@ export default function StudentLectures() {
                       )}
                     </div>
                   </div>
-                </div>
-              ))
+                </TiltCard>
+                );
+              })
             )}
           </div>
         </div>
