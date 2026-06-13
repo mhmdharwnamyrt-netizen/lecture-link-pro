@@ -15,6 +15,9 @@ import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
 import FaceVerification from '@/components/student/FaceVerification';
 import { requestNotificationPermission, startLectureReminders, stopLectureReminders, registerServiceWorker, showLocalNotification } from '@/lib/pushNotifications';
+import DashboardHero from '@/components/DashboardHero';
+import AttendanceSuccess from '@/components/AttendanceSuccess';
+import { celebrate } from '@/lib/confetti';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
@@ -29,6 +32,7 @@ export default function StudentDashboard() {
   const [showExcuse, setShowExcuse] = useState<string | null>(null);
   const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
   const [showBloom, setShowBloom] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [hasFaceTemplate, setHasFaceTemplate] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
 
@@ -231,6 +235,8 @@ export default function StudentDashboard() {
       } else {
         setGpsStatus('success');
         setShowBloom(true);
+        setShowSuccess(true);
+        celebrate();
         setTimeout(() => setShowBloom(false), 1000);
         toast({ title: '✓ ' + t('student.attendanceRegistered'), description: t('student.pointsEarned') });
         loadData();
@@ -290,12 +296,14 @@ export default function StudentDashboard() {
   return (
     <MobileLayout role="student">
       <div className="px-4 pt-2 md:pt-6 md:px-8">
-        {/* Desktop-only welcome */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 hidden md:block">
-          <p className="text-sm text-muted-foreground">{t('auth.welcomeBack')}</p>
-          <h1 className="text-2xl font-bold">{profile.full_name}</h1>
-          <p className="text-sm text-muted-foreground tabular-nums">{t('common.id')}: {profile.student_id}</p>
-        </motion.div>
+        {/* Cinematic glass hero */}
+        <div className="-mt-6 md:mt-0 relative z-10 mb-4">
+          <DashboardHero
+            name={profile.full_name}
+            subtitle={profile.student_id ? `${t('common.id')}: ${profile.student_id}` : undefined}
+            nextLecture={activeLectures[0] ? { title: activeLectures[0].title, time: activeLectures[0].start_time?.substring(0,5), hall: activeLectures[0].hall_number } : null}
+          />
+        </div>
 
         {/* Identity Verification Warning */}
         {!isIdentityVerified && (
