@@ -535,6 +535,8 @@ export default function StudentDashboard() {
           }}
         />
       )}
+
+      <AttendanceSuccess open={showSuccess} points={3} onClose={() => setShowSuccess(false)} />
     </MobileLayout>
   );
 }
