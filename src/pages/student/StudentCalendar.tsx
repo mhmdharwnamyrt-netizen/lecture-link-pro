@@ -66,23 +66,40 @@ export default function StudentCalendar() {
             <h1 className="text-2xl font-bold">{t('calendar.title')}</h1>
           </div>
 
-          {/* Day Selector */}
-          <div className="mb-6 flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
-            {DAYS.filter(d => d !== 'Friday').map(day => (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`flex-shrink-0 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-                  selectedDay === day
-                    ? 'bg-primary text-primary-foreground'
-                    : day === today
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {language === 'ar' ? DAYS_AR[day] : day.substring(0, 3)}
-              </button>
-            ))}
+          {/* Cinematic horizontal timeline */}
+          <div className="mb-6 -mx-4 md:mx-0">
+            <div className="flex gap-3 overflow-x-auto px-4 md:px-0 pb-3 snap-x snap-mandatory scrollbar-hide">
+              {DAYS.filter(d => d !== 'Friday').map(day => {
+                const dayLectures = lectures.filter(l => l.day_of_week === day);
+                const isSelected = selectedDay === day;
+                const isToday = day === today;
+                return (
+                  <motion.button
+                    key={day}
+                    onClick={() => setSelectedDay(day)}
+                    whileTap={{ scale: 0.96 }}
+                    className={`relative flex-shrink-0 snap-center w-32 rounded-3xl p-4 text-left shadow-card transition-all ${
+                      isSelected
+                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-elevated scale-105'
+                        : 'bg-card text-foreground'
+                    }`}
+                  >
+                    {isToday && (
+                      <span className={`absolute top-2 right-2 h-2 w-2 rounded-full ${isSelected ? 'bg-white' : 'bg-primary'} animate-pulse`} />
+                    )}
+                    <p className={`text-xs uppercase tracking-wide ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
+                      {isToday ? t('calendar.today') : ''}
+                    </p>
+                    <p className={`text-lg font-bold mt-1 ${isSelected ? 'text-white' : ''}`}>
+                      {language === 'ar' ? DAYS_AR[day] : day.substring(0, 3)}
+                    </p>
+                    <p className={`text-xs mt-3 ${isSelected ? 'text-white/85' : 'text-muted-foreground'}`}>
+                      {dayLectures.length} {t('calendar.lectures')}
+                    </p>
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Lectures for selected day */}
