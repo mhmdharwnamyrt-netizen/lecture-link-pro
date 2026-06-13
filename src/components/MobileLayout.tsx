@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -47,6 +48,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   ];
 
   const sidebarExtra = role === 'doctor' ? [...doctorSidebarExtra] : [...studentSidebarExtra];
+  sidebarExtra.push({ path: '/leaderboard', icon: Trophy, label: language === 'ar' ? 'لوحة الصدارة' : 'Leaderboard' });
   if (isAdmin) {
     sidebarExtra.push({ path: '/admin', icon: Shield, label: language === 'ar' ? 'لوحة الإدارة' : 'Admin Dashboard' });
   }
@@ -78,24 +80,37 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
         {children}
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg safe-bottom md:hidden">
-        <div className="flex items-center justify-around px-2 py-2">
-          {navItems.map(item => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors ${
-                  isActive ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                <item.icon className={`h-5 w-5 ${isActive ? 'text-primary' : ''}`} />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+      {/* Mobile Bottom Navigation - Curved / Liquid */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 safe-bottom md:hidden">
+        <div className="relative mx-auto max-w-md">
+          {/* Curved svg backdrop */}
+          <svg viewBox="0 0 400 80" className="absolute -top-px left-0 right-0 w-full h-20 drop-shadow-[0_-4px_12px_rgba(0,0,0,0.08)]" preserveAspectRatio="none">
+            <path d="M0 20 L0 80 L400 80 L400 20 Q200 60 0 20 Z" fill="hsl(var(--card))" />
+          </svg>
+          <div className="relative flex items-end justify-around px-2 pb-2 pt-3 h-20">
+            {navItems.map(item => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className="relative flex flex-col items-center gap-0.5 px-3 py-1 flex-1"
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="navBubble"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      className="absolute -top-5 h-11 w-11 rounded-full bg-primary shadow-bloom flex items-center justify-center"
+                    >
+                      <item.icon className="h-5 w-5 text-primary-foreground" />
+                    </motion.div>
+                  )}
+                  {!isActive && <item.icon className="h-5 w-5 text-muted-foreground" />}
+                  <span className={`text-[10px] font-medium mt-0.5 ${isActive ? 'text-primary mt-6' : 'text-muted-foreground'}`}>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </nav>
 
