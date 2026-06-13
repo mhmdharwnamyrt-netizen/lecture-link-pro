@@ -8,6 +8,7 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, BookOpen, Clock, TrendingUp, Bot, AlertTriangle } from 'lucide-react';
 import AddLectureDialog from '@/components/doctor/AddLectureDialog';
+import DashboardHero from '@/components/DashboardHero';
 
 export default function DoctorDashboard() {
   const { profile, loading, user } = useAuth();
@@ -86,11 +87,13 @@ export default function DoctorDashboard() {
   return (
     <MobileLayout role="doctor">
       <div className="px-4 pt-2 md:pt-6 md:px-8">
-        {/* Desktop-only welcome (mobile uses curved header) */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 hidden md:block">
-          <p className="text-sm text-muted-foreground">{t('auth.welcomeBack')}</p>
-          <h1 className="text-2xl font-bold">{profile.academic_title ? `${profile.academic_title} ` : 'Dr. '}{profile.full_name}</h1>
-        </motion.div>
+        <div className="-mt-6 md:mt-0 relative z-10 mb-4">
+          <DashboardHero
+            name={`${profile.academic_title ? profile.academic_title + ' ' : 'Dr. '}${profile.full_name}`}
+            subtitle={language === 'ar' ? 'لوحة الدكتور' : 'Doctor Portal'}
+            nextLecture={recentLectures.find((l: any) => l.is_active) ? { title: recentLectures.find((l: any) => l.is_active).title, time: recentLectures.find((l: any) => l.is_active).start_time?.substring(0,5), hall: recentLectures.find((l: any) => l.is_active).hall_number } : null}
+          />
+        </div>
 
         {/* Stats Grid */}
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 -mt-6 md:mt-0 relative z-10">
