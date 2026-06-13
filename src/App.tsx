@@ -10,7 +10,11 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccountStatusGuard from "@/components/AccountStatusGuard";
 import OfflineBanner from "@/components/OfflineBanner";
 
+import CinematicLoader from "@/components/CinematicLoader";
+
 // Lazy loaded pages
+const Landing = lazy(() => import("./pages/Landing"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const LoginPage = lazy(() => import("./pages/Login"));
 const RegisterPage = lazy(() => import("./pages/Register"));
 const DoctorDashboard = lazy(() => import("./pages/doctor/DoctorDashboard"));
@@ -38,14 +42,7 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const queryClient = new QueryClient();
 
 function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
-      </div>
-    </div>
-  );
+  return <CinematicLoader fullscreen={false} />;
 }
 
 const Guarded = ({ children }: { children: React.ReactNode }) => (
@@ -64,9 +61,10 @@ const App = () => (
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/leaderboard" element={<Guarded><Leaderboard /></Guarded>} />
 
                   {/* Doctor Routes */}
                   <Route path="/doctor" element={<Guarded><DoctorDashboard /></Guarded>} />
