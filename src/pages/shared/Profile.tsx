@@ -9,6 +9,7 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import IdentityVerification from '@/components/student/IdentityVerification';
 import InstallApp from '@/components/InstallApp';
+import AvatarUploader from '@/components/AvatarUploader';
 import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
@@ -53,10 +54,10 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
 
   return (
     <MobileLayout role={role}>
-      <div className="px-4 pt-2 md:px-8">
+      <div className="px-4 pt-4 md:px-8">
         {/* Hero Cover with animated gradient */}
-        <div className="relative -mx-4 md:-mx-8 mb-20 h-44 overflow-hidden md:rounded-3xl md:h-52">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-primary" />
+        <div className="relative -mx-4 md:-mx-8 mb-16 h-40 overflow-hidden md:rounded-3xl md:h-48">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />
           <motion.div
             className="absolute -top-10 -left-10 h-48 w-48 rounded-full bg-white/20 blur-3xl"
             animate={{ x: [0, 40, 0], y: [0, 20, 0] }}
@@ -68,22 +69,24 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
             transition={{ duration: 11, repeat: Infinity }}
           />
 
-          {/* Avatar with progress ring */}
-          <div className="absolute -bottom-14 left-1/2 -translate-x-1/2">
+          {/* Avatar with progress ring + upload */}
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
             <div className="relative h-28 w-28">
-              <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="44" fill="none" stroke="hsl(var(--card))" strokeWidth="6" />
-                <motion.circle
-                  cx="50" cy="50" r="44" fill="none"
-                  stroke="hsl(var(--success))" strokeWidth="6" strokeLinecap="round"
-                  strokeDasharray={circ}
-                  initial={{ strokeDashoffset: circ }}
-                  animate={{ strokeDashoffset: circ - dash }}
-                  transition={{ duration: 1.4, ease: 'easeOut' }}
-                />
-              </svg>
-              <div className="absolute inset-2 flex items-center justify-center rounded-full bg-card shadow-elevated">
-                {role === 'doctor' ? <GraduationCap className="h-10 w-10 text-primary" /> : <User className="h-10 w-10 text-primary" />}
+              {role === 'student' && (
+                <svg className="absolute inset-0 -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="3" />
+                  <motion.circle
+                    cx="50" cy="50" r="46" fill="none"
+                    stroke="hsl(var(--success))" strokeWidth="3" strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 46}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 46 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 46 - (ringPct / 100) * 2 * Math.PI * 46 }}
+                    transition={{ duration: 1.4, ease: 'easeOut' }}
+                  />
+                </svg>
+              )}
+              <div className="absolute inset-1.5">
+                <AvatarUploader size={100} role={role} />
               </div>
               {role === 'student' && (
                 <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-success px-2 py-0.5 text-[10px] font-bold text-success-foreground shadow">
@@ -100,6 +103,7 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
           {profile.academic_title && <p className="text-sm text-muted-foreground">{profile.academic_title}</p>}
           {profile.student_id && <p className="text-sm tabular-nums text-muted-foreground">{t('common.id')}: {profile.student_id}</p>}
         </div>
+
 
         <div className="space-y-3">
           <div className="rounded-2xl bg-card p-4 shadow-card">

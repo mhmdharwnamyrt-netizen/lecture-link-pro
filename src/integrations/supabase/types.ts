@@ -594,6 +594,7 @@ export type Database = {
       profiles: {
         Row: {
           academic_title: string | null
+          avatar_url: string | null
           created_at: string
           department_id: string | null
           disabled_at: string | null
@@ -611,6 +612,7 @@ export type Database = {
         }
         Insert: {
           academic_title?: string | null
+          avatar_url?: string | null
           created_at?: string
           department_id?: string | null
           disabled_at?: string | null
@@ -628,6 +630,7 @@ export type Database = {
         }
         Update: {
           academic_title?: string | null
+          avatar_url?: string | null
           created_at?: string
           department_id?: string | null
           disabled_at?: string | null

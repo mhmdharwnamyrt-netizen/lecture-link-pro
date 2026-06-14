@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, User as UserIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardHeroProps {
   name: string;
@@ -11,6 +12,8 @@ interface DashboardHeroProps {
 
 export default function DashboardHero({ name, subtitle, nextLecture }: DashboardHeroProps) {
   const { t, language } = useLanguage();
+  const { profile } = useAuth();
+  const avatarUrl = (profile as any)?.avatar_url as string | undefined;
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -50,9 +53,23 @@ export default function DashboardHero({ name, subtitle, nextLecture }: Dashboard
 
       {/* Glass card */}
       <div className="relative">
-        <p className="text-xs font-medium uppercase tracking-wider text-white/80">{t('auth.welcomeBack')}</p>
-        <h1 className="mt-1 text-2xl font-bold text-white drop-shadow-sm">{name}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-white/85">{subtitle}</p>}
+        <div className="flex items-center gap-3">
+          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/40 bg-white/15 backdrop-blur-md">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <UserIcon className="h-7 w-7 text-white" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-white/80">{t('auth.welcomeBack')}</p>
+            <h1 className="mt-0.5 truncate text-lg font-bold text-white drop-shadow-sm md:text-xl">{name}</h1>
+            {subtitle && <p className="mt-0.5 truncate text-xs text-white/85">{subtitle}</p>}
+          </div>
+        </div>
+
 
         <div className="mt-4 flex gap-2">
           <div className="flex-1 rounded-2xl bg-white/15 p-3 backdrop-blur-md border border-white/25">
