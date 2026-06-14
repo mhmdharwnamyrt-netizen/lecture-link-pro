@@ -55,12 +55,13 @@ export default function Landing() {
 
   useEffect(() => {
     (async () => {
-      const [{ count: s }, { count: d }, { count: l }] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'doctor'),
-        supabase.from('lectures').select('*', { count: 'exact', head: true }),
-      ]);
-      setCounts({ students: s || 0, doctors: d || 0, lectures: l || 0 });
+      const { data } = await supabase.rpc('get_public_stats' as any);
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) setCounts({
+        students: Number(row.students) || 0,
+        doctors: Number(row.doctors) || 0,
+        lectures: Number(row.lectures) || 0,
+      });
     })();
   }, []);
 
