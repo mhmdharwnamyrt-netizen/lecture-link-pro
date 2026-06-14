@@ -17,6 +17,7 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [hasFace, setHasFace] = useState(false);
+  const [stats, setStats] = useState({ attendance: 0 });
 
   useEffect(() => {
     if (profile && role === 'student') {
@@ -29,15 +30,6 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
     }
   }, [profile, role]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
-  if (!profile) return null;
-
-  // Calculate attendance percentage for ring
-  const [stats, setStats] = useState({ attendance: 0 });
   useEffect(() => {
     if (!profile || role !== 'student') return;
     (async () => {
@@ -47,6 +39,13 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
       setStats({ attendance: Math.round((present / data.length) * 100) });
     })();
   }, [profile, role]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
+  if (!profile) return null;
 
   const ringPct = role === 'student' ? stats.attendance : 100;
   const circ = 2 * Math.PI * 44;
