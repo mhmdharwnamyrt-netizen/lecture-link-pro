@@ -9,6 +9,7 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import IdentityVerification from '@/components/student/IdentityVerification';
 import InstallApp from '@/components/InstallApp';
+import AvatarUploader from '@/components/AvatarUploader';
 import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
