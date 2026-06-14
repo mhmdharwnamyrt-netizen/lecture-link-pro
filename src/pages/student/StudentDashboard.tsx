@@ -295,9 +295,9 @@ export default function StudentDashboard() {
 
   return (
     <MobileLayout role="student">
-      <div className="px-4 pt-2 md:pt-6 md:px-8">
+      <div className="px-4 pt-4 md:pt-6 md:px-8">
         {/* Cinematic glass hero */}
-        <div className="-mt-6 md:mt-0 relative z-10 mb-4">
+        <div className="mb-4">
           <DashboardHero
             name={profile.full_name}
             subtitle={profile.student_id ? `${t('common.id')}: ${profile.student_id}` : undefined}
@@ -310,7 +310,7 @@ export default function StudentDashboard() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-4 rounded-2xl bg-destructive/10 p-4 shadow-card cursor-pointer border border-destructive/20 -mt-4 md:mt-0 relative z-10"
+            className="mb-4 rounded-2xl bg-destructive/10 p-4 shadow-card cursor-pointer border border-destructive/20"
             onClick={() => navigate('/student/profile')}
           >
             <div className="flex items-center gap-3">
@@ -332,7 +332,7 @@ export default function StudentDashboard() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 rounded-2xl bg-warning/10 p-4 shadow-card cursor-pointer -mt-2 md:mt-0 relative z-10"
+            className="mb-4 rounded-2xl bg-warning/10 p-4 shadow-card cursor-pointer"
             onClick={() => navigate('/student/face-registration')}
           >
             <div className="flex items-center gap-3">
@@ -346,7 +346,8 @@ export default function StudentDashboard() {
         )}
 
         {/* Stats */}
-        <div className={`mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 ${!isIdentityVerified || !hasFaceTemplate ? '' : '-mt-6 md:mt-0'} relative z-10`}>
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+
           <div className="rounded-2xl bg-card p-4 shadow-card">
             <Award className={`h-5 w-5 text-primary mb-2 ${showBloom ? 'animate-bloom' : ''}`} />
             <p className="text-2xl font-bold tabular-nums">{stats.points}</p>
