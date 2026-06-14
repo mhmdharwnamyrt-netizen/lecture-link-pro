@@ -86,8 +86,8 @@ export default function DoctorDashboard() {
 
   return (
     <MobileLayout role="doctor">
-      <div className="px-4 pt-2 md:pt-6 md:px-8">
-        <div className="-mt-6 md:mt-0 relative z-10 mb-4">
+      <div className="px-4 pt-4 md:pt-6 md:px-8">
+        <div className="mb-4">
           <DashboardHero
             name={`${profile.academic_title ? profile.academic_title + ' ' : 'Dr. '}${profile.full_name}`}
             subtitle={language === 'ar' ? 'لوحة الدكتور' : 'Doctor Portal'}
@@ -96,7 +96,8 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 -mt-6 md:mt-0 relative z-10">
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+
           {[
             { label: t('doctor.totalLectures'), value: stats.totalLectures, icon: BookOpen, color: 'text-primary' },
             { label: t('doctor.students'), value: stats.totalStudents, icon: Users, color: 'text-accent' },
