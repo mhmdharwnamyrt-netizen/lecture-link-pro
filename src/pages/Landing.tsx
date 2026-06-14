@@ -75,17 +75,17 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background">
+    <div className="min-h-screen overflow-x-hidden">
       {/* HERO */}
-      <section className="relative flex min-h-[100svh] items-center justify-center px-5">
+      <section className="relative flex min-h-[100svh] items-center justify-center px-5 overflow-hidden">
         {/* Parallax bg */}
         <motion.div
           style={{ y: heroY, scale: heroScale }}
-          className="absolute inset-0 -z-10"
+          className="absolute inset-0 z-0"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-accent" />
-          <div className="absolute inset-0 opacity-30" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,.4), transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,.25), transparent 40%)'
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />
+          <div className="absolute inset-0 opacity-40" style={{
+            backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,.35), transparent 45%), radial-gradient(circle at 80% 70%, rgba(255,255,255,.2), transparent 45%)'
           }} />
           {/* Floating orbs */}
           {[0,1,2,3].map(i => (
@@ -103,6 +103,7 @@ export default function Landing() {
             />
           ))}
         </motion.div>
+
 
         <div className="relative z-10 mx-auto max-w-3xl text-center text-white">
           <motion.div
