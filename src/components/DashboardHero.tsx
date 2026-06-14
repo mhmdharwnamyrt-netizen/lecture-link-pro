@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, User as UserIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardHeroProps {
   name: string;
@@ -11,6 +12,8 @@ interface DashboardHeroProps {
 
 export default function DashboardHero({ name, subtitle, nextLecture }: DashboardHeroProps) {
   const { t, language } = useLanguage();
+  const { profile } = useAuth();
+  const avatarUrl = (profile as any)?.avatar_url as string | undefined;
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
