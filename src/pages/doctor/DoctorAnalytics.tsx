@@ -148,6 +148,58 @@ export default function DoctorAnalytics() {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Smart AI Insights */}
+          <div className="mb-6 rounded-2xl bg-card p-4 shadow-card">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" /> Smart Insights
+              </h2>
+              <Button size="sm" onClick={runSmartInsights} disabled={insightsLoading} className="gap-2">
+                {insightsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {insightsLoading ? 'Analyzing…' : 'Run AI Analysis'}
+              </Button>
+            </div>
+            {!insights && !insightsLoading && (
+              <p className="text-sm text-muted-foreground">
+                Run AI to detect at-risk students and absence patterns.
+              </p>
+            )}
+            {insights && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">{insights.summary}</p>
+                {insights.alerts.length === 0 ? (
+                  <p className="rounded-xl bg-success/10 p-3 text-sm text-success">No at-risk students detected.</p>
+                ) : (
+                  insights.alerts.slice(0, 8).map((a, i) => (
+                    <button
+                      key={i}
+                      onClick={() => navigate(`/doctor/student/${a.student_id}`)}
+                      className="flex w-full items-start gap-3 rounded-xl border border-border bg-background p-3 text-left transition-colors hover:bg-muted"
+                    >
+                      <AlertTriangle
+                        className={`mt-0.5 h-4 w-4 shrink-0 ${
+                          a.risk_level === 'critical' ? 'text-destructive' :
+                          a.risk_level === 'high' ? 'text-orange-500' : 'text-amber-500'
+                        }`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-medium">{a.student_name}</p>
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                            {a.risk_level}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {a.attendance_rate}% • {a.absence_count}/{a.total_lectures} absences
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </MobileLayout>
