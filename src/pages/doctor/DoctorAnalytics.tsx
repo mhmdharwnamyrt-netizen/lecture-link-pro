@@ -73,6 +73,24 @@ export default function DoctorAnalytics() {
     });
   };
 
+  const runSmartInsights = async () => {
+    if (!profile) return;
+    setInsightsLoading(true);
+    setInsights(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-attendance', {
+        body: { doctorId: profile.id },
+      });
+      if (error) throw error;
+      setInsights({ alerts: data?.alerts || [], summary: data?.summary || '' });
+      toast.success(data?.summary || 'Analysis complete');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to run AI insights');
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
   if (loading || !profile) return null;
 
   return (
