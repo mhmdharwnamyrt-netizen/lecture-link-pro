@@ -67,7 +67,8 @@ export default function ScheduleParser() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<'loading' | 'dashboard' | 'upload' | 'parsing' | 'review' | 'creating' | 'done'>('loading');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [subjectsFilter, setSubjectsFilter] = useState<string>('');
   const [parsedLectures, setParsedLectures] = useState<ParsedLecture[]>([]);
   const [summary, setSummary] = useState('');
   const [createdCount, setCreatedCount] = useState(0);
