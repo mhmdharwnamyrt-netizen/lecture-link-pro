@@ -618,7 +618,7 @@ export default function ScheduleParser() {
                   {createdCount} {t('schedule.lecturesCreated')}
                 </p>
                 <div className="space-y-3 w-full">
-                  <Button onClick={() => { setPhase('dashboard'); setShowUpload(false); setImagePreview(null); setParsedLectures([]); }} className="h-14 w-full rounded-2xl text-base gap-2">
+                  <Button onClick={() => { setPhase('dashboard'); setShowUpload(false); setImagePreviews([]); setParsedLectures([]); }} className="h-14 w-full rounded-2xl text-base gap-2">
                     <Calendar className="h-5 w-5" /> View My Schedule
                   </Button>
                   <Button variant="outline" onClick={() => navigate('/doctor/lectures')} className="h-12 w-full rounded-2xl">
