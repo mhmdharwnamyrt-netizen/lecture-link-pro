@@ -112,34 +112,50 @@ export default function ScheduleParser() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast({ title: t('common.error'), description: 'Please select an image file', variant: 'destructive' });
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      toast({ title: t('common.error'), description: 'Please select image files', variant: 'destructive' });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const readers = imageFiles.map(f => new Promise<string>((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.readAsDataURL(f);
+    }));
+    Promise.all(readers).then(results => setImagePreviews(prev => [...prev, ...results]));
+    // Reset input so the same file(s) can be re-selected
+    e.target.value = '';
   };
 
   const handleParse = async () => {
-    if (!imagePreview || !profile) return;
+    if (imagePreviews.length === 0 || !profile) return;
     setPhase('parsing');
 
     try {
-      const base64 = imagePreview.split(',')[1];
-      const byteChars = atob(base64);
-      const byteNums = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
+      const imageUrls: string[] = [];
+      for (let idx = 0; idx < imagePreviews.length; idx++) {
+        const preview = imagePreviews[idx];
+        const base64 = preview.split(',')[1];
+        const byteChars = atob(base64);
+        const byteNums = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
 
-      const path = `${profile.id}/schedule_${Date.now()}.jpg`;
-      await supabase.storage.from('face-photos').upload(path, blob, { contentType: 'image/jpeg' });
-      const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(path);
+        const path = `${profile.id}/schedule_${Date.now()}_${idx}.jpg`;
+        await supabase.storage.from('face-photos').upload(path, blob, { contentType: 'image/jpeg' });
+        const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(path);
+        imageUrls.push(urlData.publicUrl);
+      }
+
+      const subjects = subjectsFilter
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
 
       const { data, error } = await supabase.functions.invoke('parse-schedule', {
-        body: { imageUrl: urlData.publicUrl },
+        body: { imageUrls, subjects },
       });
 
       if (error) throw error;
@@ -150,7 +166,7 @@ export default function ScheduleParser() {
 
       await supabase.from('schedule_uploads').insert({
         doctor_id: profile.id,
-        image_url: urlData.publicUrl,
+        image_url: imageUrls[0],
         status: 'parsed',
         parsed_data: data,
         lectures_created: 0,
