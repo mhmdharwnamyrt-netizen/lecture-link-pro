@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccountStatusGuard from "@/components/AccountStatusGuard";
 import OfflineBanner from "@/components/OfflineBanner";
+import GlobalCommandPalette from "@/components/GlobalCommandPalette";
 
 import CinematicLoader from "@/components/CinematicLoader";
 
@@ -59,6 +60,7 @@ const App = () => (
             <Sonner />
             <OfflineBanner />
             <BrowserRouter>
+              <GlobalCommandPalette />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />

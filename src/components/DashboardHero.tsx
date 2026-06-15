@@ -39,20 +39,20 @@ export default function DashboardHero({ name, subtitle, nextLecture }: Dashboard
       className="relative mb-6 overflow-hidden rounded-3xl p-5 shadow-elevated"
     >
       {/* Animated mesh gradient background */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary via-primary to-accent" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />
       <motion.div
-        className="absolute -top-16 -left-16 -z-10 h-56 w-56 rounded-full bg-white/20 blur-3xl"
+        className="absolute -top-16 -left-16 h-56 w-56 rounded-full bg-white/20 blur-3xl"
         animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute -bottom-20 -right-12 -z-10 h-64 w-64 rounded-full bg-accent/40 blur-3xl"
+        className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-accent/40 blur-3xl"
         animate={{ x: [0, -25, 0], y: [0, -15, 0] }}
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
       />
 
       {/* Glass card */}
-      <div className="relative">
+      <div className="relative z-10">
         <div className="flex items-center gap-3">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/40 bg-white/15 backdrop-blur-md">
             {avatarUrl ? (

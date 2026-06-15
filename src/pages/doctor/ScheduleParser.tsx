@@ -67,7 +67,8 @@ export default function ScheduleParser() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<'loading' | 'dashboard' | 'upload' | 'parsing' | 'review' | 'creating' | 'done'>('loading');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [subjectsFilter, setSubjectsFilter] = useState<string>('');
   const [parsedLectures, setParsedLectures] = useState<ParsedLecture[]>([]);
   const [summary, setSummary] = useState('');
   const [createdCount, setCreatedCount] = useState(0);
@@ -111,34 +112,50 @@ export default function ScheduleParser() {
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast({ title: t('common.error'), description: 'Please select an image file', variant: 'destructive' });
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      toast({ title: t('common.error'), description: 'Please select image files', variant: 'destructive' });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const readers = imageFiles.map(f => new Promise<string>((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.readAsDataURL(f);
+    }));
+    Promise.all(readers).then(results => setImagePreviews(prev => [...prev, ...results]));
+    // Reset input so the same file(s) can be re-selected
+    e.target.value = '';
   };
 
   const handleParse = async () => {
-    if (!imagePreview || !profile) return;
+    if (imagePreviews.length === 0 || !profile) return;
     setPhase('parsing');
 
     try {
-      const base64 = imagePreview.split(',')[1];
-      const byteChars = atob(base64);
-      const byteNums = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
+      const imageUrls: string[] = [];
+      for (let idx = 0; idx < imagePreviews.length; idx++) {
+        const preview = imagePreviews[idx];
+        const base64 = preview.split(',')[1];
+        const byteChars = atob(base64);
+        const byteNums = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
 
-      const path = `${profile.id}/schedule_${Date.now()}.jpg`;
-      await supabase.storage.from('face-photos').upload(path, blob, { contentType: 'image/jpeg' });
-      const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(path);
+        const path = `${profile.id}/schedule_${Date.now()}_${idx}.jpg`;
+        await supabase.storage.from('face-photos').upload(path, blob, { contentType: 'image/jpeg' });
+        const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(path);
+        imageUrls.push(urlData.publicUrl);
+      }
+
+      const subjects = subjectsFilter
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
 
       const { data, error } = await supabase.functions.invoke('parse-schedule', {
-        body: { imageUrl: urlData.publicUrl },
+        body: { imageUrls, subjects },
       });
 
       if (error) throw error;
@@ -149,7 +166,7 @@ export default function ScheduleParser() {
 
       await supabase.from('schedule_uploads').insert({
         doctor_id: profile.id,
-        image_url: urlData.publicUrl,
+        image_url: imageUrls[0],
         status: 'parsed',
         parsed_data: data,
         lectures_created: 0,
@@ -422,27 +439,51 @@ export default function ScheduleParser() {
 
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="mb-6 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 shadow-card cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5"
+                  className="mb-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 shadow-card cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5"
                 >
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Schedule" className="max-h-64 rounded-xl object-contain mb-4" />
+                  {imagePreviews.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      {imagePreviews.map((src, i) => (
+                        <div key={i} className="relative">
+                          <img src={src} alt={`Schedule ${i + 1}`} className="max-h-40 w-full rounded-xl object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setImagePreviews(prev => prev.filter((_, idx) => idx !== i)); }}
+                            className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-1 shadow"
+                            aria-label="Remove"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 min-h-[6rem] text-xs text-muted-foreground">
+                        + Add more
+                      </div>
+                    </div>
                   ) : (
                     <>
                       <Upload className="h-12 w-12 text-muted-foreground mb-4" />
                       <p className="font-medium mb-1">{t('schedule.uploadImage')}</p>
-                      <p className="text-sm text-muted-foreground text-center">{t('schedule.uploadHint')}</p>
+                      <p className="text-sm text-muted-foreground text-center">{t('schedule.uploadHint')} (multi-image supported)</p>
                     </>
                   )}
                 </div>
 
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
 
-                {imagePreview && (
+                {imagePreviews.length > 0 && (
                   <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={subjectsFilter}
+                      onChange={(e) => setSubjectsFilter(e.target.value)}
+                      placeholder="Optional: filter subjects (comma separated, e.g. Python, Data Structures)"
+                      className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm"
+                    />
                     <Button onClick={handleParse} className="h-14 w-full rounded-2xl text-base gap-2">
-                      <Sparkles className="h-5 w-5" /> {t('schedule.parseWithAI')}
+                      <Sparkles className="h-5 w-5" /> {t('schedule.parseWithAI')} ({imagePreviews.length})
                     </Button>
-                    <Button variant="outline" onClick={() => setImagePreview(null)} className="h-12 w-full rounded-2xl">
+                    <Button variant="outline" onClick={() => setImagePreviews([])} className="h-12 w-full rounded-2xl">
                       {t('schedule.chooseAnother')}
                     </Button>
                   </div>
@@ -577,7 +618,7 @@ export default function ScheduleParser() {
                   {createdCount} {t('schedule.lecturesCreated')}
                 </p>
                 <div className="space-y-3 w-full">
-                  <Button onClick={() => { setPhase('dashboard'); setShowUpload(false); setImagePreview(null); setParsedLectures([]); }} className="h-14 w-full rounded-2xl text-base gap-2">
+                  <Button onClick={() => { setPhase('dashboard'); setShowUpload(false); setImagePreviews([]); setParsedLectures([]); }} className="h-14 w-full rounded-2xl text-base gap-2">
                     <Calendar className="h-5 w-5" /> View My Schedule
                   </Button>
                   <Button variant="outline" onClick={() => navigate('/doctor/lectures')} className="h-12 w-full rounded-2xl">
