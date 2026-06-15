@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import MobileLayout from '@/components/MobileLayout';
-import { BarChart3, TrendingUp, Users, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { BarChart3, TrendingUp, Users, BookOpen, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
 
 export default function DoctorAnalytics() {
@@ -12,6 +14,8 @@ export default function DoctorAnalytics() {
   const [lectureStats, setLectureStats] = useState<any[]>([]);
   const [weeklyTrend, setWeeklyTrend] = useState<any[]>([]);
   const [totalStats, setTotalStats] = useState({ lectures: 0, students: 0, rate: 0 });
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insights, setInsights] = useState<{ alerts: any[]; summary: string } | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'doctor')) navigate('/login');
