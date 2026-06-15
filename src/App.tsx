@@ -60,6 +60,7 @@ const App = () => (
             <Sonner />
             <OfflineBanner />
             <BrowserRouter>
+              <GlobalCommandPalette />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
