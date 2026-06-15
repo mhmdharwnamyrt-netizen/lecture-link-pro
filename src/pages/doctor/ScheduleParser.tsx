@@ -439,27 +439,51 @@ export default function ScheduleParser() {
 
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="mb-6 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 shadow-card cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5"
+                  className="mb-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 shadow-card cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5"
                 >
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Schedule" className="max-h-64 rounded-xl object-contain mb-4" />
+                  {imagePreviews.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                      {imagePreviews.map((src, i) => (
+                        <div key={i} className="relative">
+                          <img src={src} alt={`Schedule ${i + 1}`} className="max-h-40 w-full rounded-xl object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setImagePreviews(prev => prev.filter((_, idx) => idx !== i)); }}
+                            className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground p-1 shadow"
+                            aria-label="Remove"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 min-h-[6rem] text-xs text-muted-foreground">
+                        + Add more
+                      </div>
+                    </div>
                   ) : (
                     <>
                       <Upload className="h-12 w-12 text-muted-foreground mb-4" />
                       <p className="font-medium mb-1">{t('schedule.uploadImage')}</p>
-                      <p className="text-sm text-muted-foreground text-center">{t('schedule.uploadHint')}</p>
+                      <p className="text-sm text-muted-foreground text-center">{t('schedule.uploadHint')} (multi-image supported)</p>
                     </>
                   )}
                 </div>
 
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileSelect} />
 
-                {imagePreview && (
+                {imagePreviews.length > 0 && (
                   <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={subjectsFilter}
+                      onChange={(e) => setSubjectsFilter(e.target.value)}
+                      placeholder="Optional: filter subjects (comma separated, e.g. Python, Data Structures)"
+                      className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm"
+                    />
                     <Button onClick={handleParse} className="h-14 w-full rounded-2xl text-base gap-2">
-                      <Sparkles className="h-5 w-5" /> {t('schedule.parseWithAI')}
+                      <Sparkles className="h-5 w-5" /> {t('schedule.parseWithAI')} ({imagePreviews.length})
                     </Button>
-                    <Button variant="outline" onClick={() => setImagePreview(null)} className="h-12 w-full rounded-2xl">
+                    <Button variant="outline" onClick={() => setImagePreviews([])} className="h-12 w-full rounded-2xl">
                       {t('schedule.chooseAnother')}
                     </Button>
                   </div>
