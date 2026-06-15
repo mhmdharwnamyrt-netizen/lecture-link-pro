@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccountStatusGuard from "@/components/AccountStatusGuard";
 import OfflineBanner from "@/components/OfflineBanner";
+import GlobalCommandPalette from "@/components/GlobalCommandPalette";
 
 import CinematicLoader from "@/components/CinematicLoader";
 
