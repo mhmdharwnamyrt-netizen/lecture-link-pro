@@ -25,7 +25,48 @@ export async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+
+    // Lazy import sonner so the worker registration code stays light
+    const notify = async (worker: ServiceWorker) => {
+      try {
+        const { toast } = await import("sonner");
+        toast("A new version is available", {
+          description: "Reload to update the app.",
+          duration: 10000,
+          action: {
+            label: "Reload",
+            onClick: () => {
+              worker.postMessage({ type: "SKIP_WAITING" });
+            },
+          },
+        });
+      } catch {
+        // Fallback: ask the worker to skip waiting and reload
+        worker.postMessage({ type: "SKIP_WAITING" });
+      }
+    };
+
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      notify(reg.waiting);
+    }
+
+    reg.addEventListener("updatefound", () => {
+      const installing = reg.installing;
+      if (!installing) return;
+      installing.addEventListener("statechange", () => {
+        if (installing.state === "installed" && navigator.serviceWorker.controller) {
+          notify(installing);
+        }
+      });
+    });
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   } catch (err) {
     console.warn("SW registration failed:", err);
   }
