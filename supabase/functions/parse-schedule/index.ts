@@ -9,16 +9,25 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { imageUrl } = await req.json();
+    const body = await req.json();
+    const imageUrls: string[] = body.imageUrls && Array.isArray(body.imageUrls)
+      ? body.imageUrls
+      : body.imageUrl ? [body.imageUrl] : [];
+    const subjectsFilter: string[] = Array.isArray(body.subjects) ? body.subjects : [];
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    if (!imageUrl) {
-      return new Response(JSON.stringify({ error: "Missing imageUrl" }), {
+    if (imageUrls.length === 0) {
+      return new Response(JSON.stringify({ error: "Missing imageUrl(s)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userContent: any[] = [
+      { type: "text", text: `Parse ${imageUrls.length > 1 ? `these ${imageUrls.length} university schedule images` : "this university schedule image"}. Extract every lecture/section with its day, time, hall number, and subject name.${subjectsFilter.length ? ` Only include lectures whose subject matches one of: ${subjectsFilter.join(", ")}.` : ""} Merge duplicate entries across images.` },
+      ...imageUrls.map(url => ({ type: "image_url", image_url: { url } })),
+    ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -31,15 +40,9 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a university schedule parser AI agent. You analyze images of academic schedules/timetables and extract structured lecture information. Extract ALL lectures visible in the schedule. For each lecture, extract: title (subject name), day of week, start time, end time, hall/room number, and type (lecture or section). If any field is unclear, make your best guess. Use the tool to return results.`,
+            content: `You are a university schedule parser AI agent. You analyze images of academic schedules/timetables and extract structured lecture information. Extract ALL lectures visible. For each lecture, extract: title (subject name), day of week, start time, end time, hall/room number, and type (lecture or section). If multiple images are given, merge duplicates. Use the tool to return results.`,
           },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Parse this university schedule image. Extract every lecture/section with its day, time, hall number, and subject name. Return all entries found." },
-              { type: "image_url", image_url: { url: imageUrl } },
-            ],
-          },
+          { role: "user", content: userContent },
         ],
         tools: [
           {
