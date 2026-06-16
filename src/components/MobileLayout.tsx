@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff, Trophy } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff, Trophy, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +64,17 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
       <main className={`flex-1 pb-20 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
         {children}
       </main>
+
+      {/* Floating search FAB (opens global command palette) */}
+      <button
+        type="button"
+        onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+        aria-label="Open search"
+        className={`fixed bottom-24 md:bottom-6 ${isRTL ? 'left-4' : 'right-4'} z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-bloom hover:scale-105 transition-transform`}
+      >
+        <Search className="h-5 w-5" />
+      </button>
+
 
       {/* Mobile Bottom Navigation - Curved / Liquid */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 safe-bottom md:hidden">
