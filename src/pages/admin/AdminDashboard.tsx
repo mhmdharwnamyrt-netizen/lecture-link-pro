@@ -735,6 +735,172 @@ export default function AdminDashboard() {
               })}
             </div>
           </TabsContent>
+
+          {/* Broadcast */}
+          <TabsContent value="broadcast">
+            <div className="rounded-2xl bg-card p-6 shadow-card max-w-3xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Megaphone className="h-5 w-5" /></div>
+                <div>
+                  <h2 className="font-bold">Send a Broadcast</h2>
+                  <p className="text-xs text-muted-foreground">Deliver an announcement to all users' Notifications inbox.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <Select value={broadcastTarget} onValueChange={(v: any) => setBroadcastTarget(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All users ({users.filter(u => !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="student">Students only ({users.filter(u => u.role === 'student' && !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="doctor">Doctors only ({users.filter(u => u.role === 'doctor' && !u.is_disabled).length})</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input className="md:col-span-2" placeholder="Title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} />
+              </div>
+              <Textarea rows={5} placeholder="Message body…" value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} />
+              <div className="flex justify-end">
+                <Button onClick={sendBroadcast} disabled={broadcasting}>
+                  <Send className="me-2 h-4 w-4" /> {broadcasting ? 'Sending…' : 'Send broadcast'}
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Bulk Ops */}
+          <TabsContent value="bulk" className="space-y-4">
+            <div className="rounded-2xl bg-card p-4 shadow-card flex flex-wrap items-center gap-3">
+              <p className="text-sm font-medium">{selectedIds.length} selected</p>
+              <Button size="sm" variant="outline" onClick={() => bulkAction('enable')} disabled={bulkBusy}><CheckCircle2 className="me-1.5 h-4 w-4" /> Enable</Button>
+              <Button size="sm" variant="outline" onClick={() => bulkAction('disable')} disabled={bulkBusy}><Ban className="me-1.5 h-4 w-4" /> Disable</Button>
+              <Button size="sm" variant="destructive" onClick={() => bulkAction('delete')} disabled={bulkBusy}><Trash2 className="me-1.5 h-4 w-4" /> Delete</Button>
+              <Button size="sm" variant="ghost" className="ms-auto" onClick={() => setSelected({})}>Clear selection</Button>
+            </div>
+            <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={filteredUsers.length > 0 && filteredUsers.every(u => selected[u.id])}
+                        onChange={(e) => {
+                          const next = { ...selected };
+                          filteredUsers.forEach(u => { next[u.id] = e.target.checked; });
+                          setSelected(next);
+                        }}
+                      />
+                    </th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Department</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.slice(0, 200).map(u => (
+                    <tr key={u.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-2">
+                        <input
+                          type="checkbox"
+                          checked={!!selected[u.id]}
+                          onChange={(e) => setSelected({ ...selected, [u.id]: e.target.checked })}
+                        />
+                      </td>
+                      <td className="px-4 py-2 font-medium">{u.full_name}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{u.role}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{u.departments?.name || '—'}</td>
+                      <td className="px-4 py-2">
+                        {u.is_disabled
+                          ? <span className="rounded-full bg-destructive/10 text-destructive px-2 py-0.5 text-xs">Disabled</span>
+                          : <span className="rounded-full bg-success/10 text-success px-2 py-0.5 text-xs">Active</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="px-4 py-2 text-xs text-muted-foreground">Tip: use the Users tab filters to narrow this list, then come back to Bulk Ops.</p>
+            </div>
+          </TabsContent>
+
+          {/* System Health */}
+          <TabsContent value="health">
+            <div className="grid gap-3 md:grid-cols-4">
+              <StatCard icon={Activity} label="Attendance / 24h" value={last24h.length} tone="success" />
+              <StatCard icon={ClipboardCheck} label="Present rate" value={`${presentRate}%`} tone={presentRate >= 70 ? 'success' : presentRate >= 50 ? 'warning' : 'destructive'} />
+              <StatCard icon={AlertTriangle} label="Pending sync" value={offlineQueueSize} tone={offlineQueueSize ? 'warning' : 'primary'} />
+              <StatCard icon={Users} label="Active accounts" value={users.filter(u => !u.is_disabled).length} />
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <p className="font-semibold mb-2 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-primary" /> Data freshness</p>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>Profiles loaded: {users.length}</li>
+                  <li>Lectures loaded: {lectures.length}</li>
+                  <li>Attendance loaded: {attendance.length}</li>
+                  <li>Excuses pending: {excuses.filter(e => e.status === 'pending').length}</li>
+                </ul>
+                <Button size="sm" variant="outline" className="mt-3" onClick={loadAll}>Refresh now</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <p className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Security signals</p>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>Admins: {userRoles.filter(r => r.role === 'admin').length}</li>
+                  <li>Disabled users: {stats.disabled}</li>
+                  <li>High-risk warnings: {warnings.filter(w => w.risk_level === 'high').length}</li>
+                </ul>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* AI Insights */}
+          <TabsContent value="insights" className="space-y-4">
+            <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-accent/10 to-transparent p-6 shadow-card">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Sparkles className="h-5 w-5" /></div>
+                <div>
+                  <h2 className="font-bold">Smart system insights</h2>
+                  <p className="text-xs text-muted-foreground">Derived from your live data, refreshed every load.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl bg-card/70 backdrop-blur p-4">
+                  <p className="text-xs text-muted-foreground">Overall attendance health</p>
+                  <p className="mt-1 text-2xl font-bold">{presentRate}% present</p>
+                  <p className="text-xs mt-1 text-muted-foreground">
+                    {presentRate >= 75 ? '🌟 Excellent — keep current policies.' : presentRate >= 55 ? '⚠️ Acceptable but improvable — consider attendance incentives.' : '🚨 Low — investigate scheduling or doctor engagement.'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-card/70 backdrop-blur p-4">
+                  <p className="text-xs text-muted-foreground">Top absentees (last batch)</p>
+                  {topAbsentees.length === 0 ? (
+                    <p className="mt-1 text-sm text-muted-foreground">No absences yet.</p>
+                  ) : (
+                    <ul className="mt-1 space-y-1 text-sm">
+                      {topAbsentees.map(({ u, absents }) => (
+                        <li key={u.id} className="flex items-center justify-between">
+                          <span className="font-medium">{u.full_name}</span>
+                          <span className="rounded-full bg-destructive/10 text-destructive px-2 py-0.5 text-xs">{absents}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="rounded-xl bg-card/70 backdrop-blur p-4">
+                  <p className="text-xs text-muted-foreground">Engagement</p>
+                  <p className="mt-1 text-2xl font-bold">{ratings.length ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1) : '—'} / 5</p>
+                  <p className="text-xs text-muted-foreground mt-1">{ratings.length} ratings collected</p>
+                </div>
+                <div className="rounded-xl bg-card/70 backdrop-blur p-4">
+                  <p className="text-xs text-muted-foreground">Recommendation</p>
+                  <p className="text-sm mt-1">
+                    {warnings.filter(w => w.risk_level === 'high').length > 0
+                      ? `Reach out to ${warnings.filter(w => w.risk_level === 'high').length} high-risk students before next week.`
+                      : 'No urgent interventions needed. Schedule a review next cycle.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
