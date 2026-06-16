@@ -70,6 +70,16 @@ export default function AdminDashboard() {
   const [disableTarget, setDisableTarget] = useState<any | null>(null);
   const [disableReason, setDisableReason] = useState('');
 
+  // Broadcast
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastBody, setBroadcastBody] = useState('');
+  const [broadcastTarget, setBroadcastTarget] = useState<'all' | 'student' | 'doctor'>('all');
+  const [broadcasting, setBroadcasting] = useState(false);
+
+  // Bulk ops
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   useEffect(() => { if (!loading && !user) navigate('/login'); }, [loading, user]);
   useEffect(() => {
     if (!user) return;
