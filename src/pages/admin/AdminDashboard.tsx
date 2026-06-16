@@ -231,6 +231,75 @@ export default function AdminDashboard() {
     kind === 'pdf' ? exportToPDF(rows, 'Attendance') : exportToExcel(rows, 'Attendance');
   };
 
+  // Broadcast notification to many users
+  const sendBroadcast = async () => {
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+      return toast({ title: 'Title & message required', variant: 'destructive' });
+    }
+    setBroadcasting(true);
+    try {
+      const targets = users.filter(u => !u.is_disabled && (broadcastTarget === 'all' || u.role === broadcastTarget));
+      const rows = targets.map(u => ({
+        user_id: u.user_id,
+        title: broadcastTitle.trim(),
+        message: broadcastBody.trim(),
+        type: 'announcement',
+      }));
+      // chunk insert to keep request size sane
+      for (let i = 0; i < rows.length; i += 200) {
+        const chunk = rows.slice(i, i + 200);
+        const { error } = await supabase.from('notifications').insert(chunk);
+        if (error) throw error;
+      }
+      await logAdminAction({
+        action: 'broadcast.send',
+        details: { target: broadcastTarget, count: rows.length, title: broadcastTitle },
+      });
+      toast({ title: 'Broadcast sent', description: `${rows.length} recipients` });
+      setBroadcastTitle(''); setBroadcastBody('');
+    } catch (e: any) {
+      toast({ title: 'Broadcast failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setBroadcasting(false);
+    }
+  };
+
+  const selectedIds = Object.keys(selected).filter(k => selected[k]);
+
+  const bulkAction = async (kind: 'enable' | 'disable' | 'delete') => {
+    if (selectedIds.length === 0) return toast({ title: 'Select users first', variant: 'destructive' });
+    if (!confirm(`Apply "${kind}" to ${selectedIds.length} user(s)?`)) return;
+    setBulkBusy(true);
+    try {
+      if (kind === 'enable') {
+        await supabase.from('profiles').update({ is_disabled: false, disabled_at: null, disabled_reason: null }).in('id', selectedIds);
+      } else if (kind === 'disable') {
+        await supabase.from('profiles').update({ is_disabled: true, disabled_at: new Date().toISOString(), disabled_reason: 'Bulk disabled by admin' }).in('id', selectedIds);
+      } else {
+        await supabase.from('profiles').delete().in('id', selectedIds);
+      }
+      await logAdminAction({ action: `bulk.${kind}`, details: { count: selectedIds.length } });
+      toast({ title: `Bulk ${kind} done`, description: `${selectedIds.length} user(s)` });
+      setSelected({});
+      loadAll();
+    } catch (e: any) {
+      toast({ title: 'Bulk action failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // ---- Derived analytics for AI insights & health ----
+  const last24h = attendance.filter(a => Date.now() - new Date(a.created_at).getTime() < 86400_000);
+  const presentRate = attendance.length ? Math.round((attendance.filter(a => a.status === 'present').length / attendance.length) * 100) : 0;
+  const offlineQueueSize = attendance.filter(a => !a.synced).length;
+  const topAbsentees = users
+    .filter(u => u.role === 'student')
+    .map(u => ({ u, absents: attendance.filter(a => a.profiles?.full_name === u.full_name && a.status === 'absent').length }))
+    .sort((a, b) => b.absents - a.absents)
+    .slice(0, 5);
+
+
   if (loading || isAdmin === null) {
     return <CinematicLoader />;
   }
