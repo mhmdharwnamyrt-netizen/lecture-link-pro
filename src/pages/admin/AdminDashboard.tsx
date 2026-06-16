@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Users, GraduationCap, BookOpen, ClipboardCheck, Search, LogOut, Shield, Ban, CheckCircle2,
+  Users, GraduationCap, BookOpen, ClipboardCheck, Search, ArrowLeft, Shield, Ban, CheckCircle2,
   AlertTriangle, MessageSquare, Calendar, FileText, FileSpreadsheet, ScrollText, BarChart3,
-  Activity, UserCog, Trash2, Building2, ShieldCheck
+  Activity, UserCog, Trash2, Building2, ShieldCheck, Megaphone, Layers, HeartPulse, Sparkles, Send
 } from 'lucide-react';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { logAdminAction } from '@/lib/adminLog';
 import { useToast } from '@/hooks/use-toast';
+import CinematicLoader from '@/components/CinematicLoader';
 
 function StatCard({ icon: Icon, label, value, hint, tone = 'primary' }: any) {
   const tones: any = {
@@ -221,7 +222,7 @@ export default function AdminDashboard() {
   };
 
   if (loading || isAdmin === null) {
-    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading admin panel...</p></div>;
+    return <CinematicLoader />;
   }
 
   if (!isAdmin) {
@@ -257,8 +258,8 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> Reports</Link></Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> Logs</Link></Button>
-            <Button variant="outline" size="sm" onClick={() => signOut().then(() => navigate('/login'))}>
-              <LogOut className="me-2 h-4 w-4" /> Sign out
+            <Button variant="outline" size="sm" onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')}>
+              <ArrowLeft className="me-2 h-4 w-4" /> Back to App
             </Button>
           </div>
         </div>
