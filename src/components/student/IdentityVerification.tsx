@@ -20,7 +20,7 @@ interface ExtractedData {
 }
 
 export default function IdentityVerification({ onVerified }: Props) {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const { t, language } = useLanguage();
   const { toast } = useToast();
 
@@ -124,11 +124,12 @@ export default function IdentityVerification({ onVerified }: Props) {
   const uploadPhoto = async (dataUrl: string, type: string): Promise<string> => {
     const res = await fetch(dataUrl);
     const blob = await res.blob();
-    const fileName = `identity/${profile!.id}/${type}-${Date.now()}.jpg`;
+    // Path must start with auth.uid() per storage RLS
+    const fileName = `${user!.id}/identity/${type}-${Date.now()}.jpg`;
     const { error } = await supabase.storage.from('face-photos').upload(fileName, blob);
     if (error) throw error;
-    const { data } = supabase.storage.from('face-photos').getPublicUrl(fileName);
-    return data.publicUrl;
+    // Return bare object path — bucket is private
+    return fileName;
   };
 
   // Account locked screen
