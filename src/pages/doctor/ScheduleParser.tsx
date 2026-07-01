@@ -60,7 +60,7 @@ function getNextLectures(lectures: any[], count = 3) {
 }
 
 export default function ScheduleParser() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -130,7 +130,7 @@ export default function ScheduleParser() {
   };
 
   const handleParse = async () => {
-    if (imagePreviews.length === 0 || !profile) return;
+    if (imagePreviews.length === 0 || !profile || !user) return;
     setPhase('parsing');
 
     try {
@@ -143,10 +143,11 @@ export default function ScheduleParser() {
         for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
         const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
 
-        const path = `${profile.id}/schedule_${Date.now()}_${idx}.jpg`;
+        // Path must start with auth.uid() per storage RLS
+        const path = `${user.id}/schedules/${Date.now()}_${idx}.jpg`;
         await supabase.storage.from('face-photos').upload(path, blob, { contentType: 'image/jpeg' });
-        const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(path);
-        imageUrls.push(urlData.publicUrl);
+        const { data: signed } = await supabase.storage.from('face-photos').createSignedUrl(path, 300);
+        if (signed?.signedUrl) imageUrls.push(signed.signedUrl);
       }
 
       const subjects = subjectsFilter
