@@ -238,19 +238,19 @@ export default function StudentDetail() {
             <div className="grid grid-cols-3 gap-2">
               {faceTemplate.front_photo_url && (
                 <div>
-                  <img src={faceTemplate.front_photo_url} alt="Front" className="w-full rounded-xl object-cover aspect-square" />
+                  <StorageImage path={faceTemplate.front_photo_url} alt="Front" className="w-full rounded-xl object-cover aspect-square" />
                   <p className="text-xs text-center text-muted-foreground mt-1">{t('face.captureFront')}</p>
                 </div>
               )}
               {faceTemplate.right_photo_url && (
                 <div>
-                  <img src={faceTemplate.right_photo_url} alt="Right" className="w-full rounded-xl object-cover aspect-square" />
+                  <StorageImage path={faceTemplate.right_photo_url} alt="Right" className="w-full rounded-xl object-cover aspect-square" />
                   <p className="text-xs text-center text-muted-foreground mt-1">{t('face.captureRight')}</p>
                 </div>
               )}
               {faceTemplate.left_photo_url && (
                 <div>
-                  <img src={faceTemplate.left_photo_url} alt="Left" className="w-full rounded-xl object-cover aspect-square" />
+                  <StorageImage path={faceTemplate.left_photo_url} alt="Left" className="w-full rounded-xl object-cover aspect-square" />
                   <p className="text-xs text-center text-muted-foreground mt-1">{t('face.captureLeft')}</p>
                 </div>
               )}
