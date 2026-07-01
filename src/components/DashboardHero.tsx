@@ -57,7 +57,11 @@ export default function DashboardHero({ name, subtitle, nextLecture }: Dashboard
         <div className="flex items-center gap-3">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/40 bg-white/15 backdrop-blur-md">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+              <StorageImage path={avatarUrl} alt="" className="h-full w-full object-cover" fallback={
+                <div className="flex h-full w-full items-center justify-center">
+                  <UserIcon className="h-7 w-7 text-white" />
+                </div>
+              } />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
                 <UserIcon className="h-7 w-7 text-white" />
