@@ -27,7 +27,7 @@ export default function AdminReports() {
   useEffect(() => { if (!loading && !user) navigate('/login'); }, [loading, user]);
   useEffect(() => {
     if (!user) return;
-    supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).then(({ data }) => setIsAdmin(!!data));
+    supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle().then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
   useEffect(() => {
