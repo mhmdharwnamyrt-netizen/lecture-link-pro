@@ -53,16 +53,9 @@ export default function Landing() {
     }
   }, [user, profile, loading, navigate]);
 
+  // Public counts are no longer exposed via API for privacy; keep zeros as placeholder
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.rpc('get_public_stats' as any);
-      const row = Array.isArray(data) ? data[0] : data;
-      if (row) setCounts({
-        students: Number(row.students) || 0,
-        doctors: Number(row.doctors) || 0,
-        lectures: Number(row.lectures) || 0,
-      });
-    })();
+    setCounts({ students: 0, doctors: 0, lectures: 0 });
   }, []);
 
   const sStudents = useCountUp(counts.students);
