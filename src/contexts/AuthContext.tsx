@@ -76,17 +76,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Use setTimeout to avoid Supabase auth deadlock
+          // While we fetch profile+role, keep guards from bouncing to /login
+          setLoading(true);
+          // Defer to avoid Supabase auth deadlock
           setTimeout(async () => {
             if (!mounted) return;
-            await fetchProfile(session.user.id);
-            await fetchAdmin(session.user.id);
-            setLoading(false);
+            await Promise.all([
+              fetchProfile(session.user.id),
+              fetchAdmin(session.user.id),
+            ]);
+            if (mounted) setLoading(false);
           }, 0);
         } else {
           setProfile(null);
@@ -101,10 +105,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchProfile(session.user.id);
-        await fetchAdmin(session.user.id);
+        await Promise.all([
+          fetchProfile(session.user.id),
+          fetchAdmin(session.user.id),
+        ]);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     });
 
     return () => {
