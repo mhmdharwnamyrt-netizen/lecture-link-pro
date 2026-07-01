@@ -50,15 +50,16 @@ export default function FaceRegistration() {
     const byteArray = new Uint8Array(byteNumbers);
     const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-    const path = `${profile!.id}/${fileName}`;
+    // Path must start with auth user id per storage RLS
+    const path = `${user!.id}/face/${fileName}`;
     const { error } = await supabase.storage.from('face-photos').upload(path, blob, {
       upsert: true,
       contentType: 'image/jpeg',
     });
     if (error) throw error;
 
-    const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(path);
-    return urlData.publicUrl;
+    // Store the bare object path — bucket is private, signed URLs generated on read.
+    return path;
   };
 
   const handleComplete = async () => {

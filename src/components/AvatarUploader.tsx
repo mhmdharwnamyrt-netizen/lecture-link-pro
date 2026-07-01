@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Loader2, User, GraduationCap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { createSignedUrl } from '@/lib/storage';
 
 interface AvatarUploaderProps {
   size?: number; // px
@@ -12,19 +13,30 @@ interface AvatarUploaderProps {
 }
 
 export default function AvatarUploader({ size = 112, role, showButton = true }: AvatarUploaderProps) {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const { language } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [displaySrc, setDisplaySrc] = useState<string | null>(null);
 
-  const avatarUrl = (profile as any)?.avatar_url as string | undefined;
+  const avatarPath = (profile as any)?.avatar_url as string | undefined;
+
+  // Resolve signed URL for private-bucket avatar
+  useEffect(() => {
+    let mounted = true;
+    if (!avatarPath) { setDisplaySrc(null); return; }
+    createSignedUrl('face-photos', avatarPath, 60 * 60 * 24).then((url) => {
+      if (mounted) setDisplaySrc(url);
+    });
+    return () => { mounted = false; };
+  }, [avatarPath]);
 
   const handlePick = () => inputRef.current?.click();
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !profile) return;
+    if (!file || !profile || !user) return;
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: language === 'ar' ? 'الصورة كبيرة جداً (الحد 5MB)' : 'Image too large (max 5MB)', variant: 'destructive' });
       return;
@@ -32,16 +44,16 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
     setUploading(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const path = `avatars/${profile.user_id}-${Date.now()}.${ext}`;
+      // Path must start with auth.uid() per storage RLS policy
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from('face-photos')
         .upload(path, file, { cacheControl: '3600', upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from('face-photos').getPublicUrl(path);
-      const url = pub.publicUrl;
+      // Store the bare object path (not a public URL) — bucket is private
       const { error: updErr } = await supabase
         .from('profiles')
-        .update({ avatar_url: url } as any)
+        .update({ avatar_url: path } as any)
         .eq('id', profile.id);
       if (updErr) throw updErr;
       await refreshProfile();
@@ -62,8 +74,8 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
         className="relative overflow-hidden rounded-full bg-card shadow-elevated"
         style={{ width: size, height: size }}
       >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+        {displaySrc ? (
+          <img src={displaySrc} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
             <Icon className="h-1/2 w-1/2 text-primary" />
@@ -96,3 +108,4 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
     </>
   );
 }
+
