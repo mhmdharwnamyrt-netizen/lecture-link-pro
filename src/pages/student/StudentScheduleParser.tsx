@@ -83,16 +83,19 @@ export default function StudentScheduleParser() {
     }, 400);
 
     try {
-      const fileName = `student-schedules/${profile!.id}/${Date.now()}.jpg`;
+      // Path must start with auth.uid() per storage RLS
+      const fileName = `${user!.id}/schedules/${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('face-photos')
         .upload(fileName, file);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(fileName);
+      const { data: signed } = await supabase.storage
+        .from('face-photos')
+        .createSignedUrl(fileName, 300);
 
       const { data, error } = await supabase.functions.invoke('parse-schedule', {
-        body: { imageUrl: urlData.publicUrl },
+        body: { imageUrl: signed?.signedUrl },
       });
 
       if (error) throw error;
