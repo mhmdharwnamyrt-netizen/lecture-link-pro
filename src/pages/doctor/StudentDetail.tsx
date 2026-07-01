@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
+import StorageImage from '@/components/StorageImage';
 import { ArrowLeft, BookOpen, CheckCircle2, XCircle, Award, Shield, User, CreditCard, MapPin, Calendar } from 'lucide-react';
 
 interface IdentityData {
@@ -102,7 +103,16 @@ export default function StudentDetail() {
         <div className="mb-6 rounded-2xl bg-card p-6 shadow-card">
           <div className="flex items-start gap-4">
             {faceTemplate?.front_photo_url ? (
-              <img src={faceTemplate.front_photo_url} alt="Student" className="h-16 w-16 rounded-2xl object-cover" />
+              <StorageImage
+                path={faceTemplate.front_photo_url}
+                alt="Student"
+                className="h-16 w-16 rounded-2xl object-cover"
+                fallback={
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                    <span className="text-2xl font-bold text-primary">{student.full_name?.[0]}</span>
+                  </div>
+                }
+              />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
                 <span className="text-2xl font-bold text-primary">{student.full_name?.[0]}</span>
@@ -228,19 +238,19 @@ export default function StudentDetail() {
             <div className="grid grid-cols-3 gap-2">
               {faceTemplate.front_photo_url && (
                 <div>
-                  <img src={faceTemplate.front_photo_url} alt="Front" className="w-full rounded-xl object-cover aspect-square" />
+                  <StorageImage path={faceTemplate.front_photo_url} alt="Front" className="w-full rounded-xl object-cover aspect-square" />
                   <p className="text-xs text-center text-muted-foreground mt-1">{t('face.captureFront')}</p>
                 </div>
               )}
               {faceTemplate.right_photo_url && (
                 <div>
-                  <img src={faceTemplate.right_photo_url} alt="Right" className="w-full rounded-xl object-cover aspect-square" />
+                  <StorageImage path={faceTemplate.right_photo_url} alt="Right" className="w-full rounded-xl object-cover aspect-square" />
                   <p className="text-xs text-center text-muted-foreground mt-1">{t('face.captureRight')}</p>
                 </div>
               )}
               {faceTemplate.left_photo_url && (
                 <div>
-                  <img src={faceTemplate.left_photo_url} alt="Left" className="w-full rounded-xl object-cover aspect-square" />
+                  <StorageImage path={faceTemplate.left_photo_url} alt="Left" className="w-full rounded-xl object-cover aspect-square" />
                   <p className="text-xs text-center text-muted-foreground mt-1">{t('face.captureLeft')}</p>
                 </div>
               )}

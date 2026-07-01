@@ -24,7 +24,7 @@ export default function FaceVerification({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { t } = useLanguage();
   const [phase, setPhase] = useState<'camera' | 'analyzing' | 'success' | 'failed'>('camera');
   const [cameraReady, setCameraReady] = useState(false);
@@ -93,10 +93,15 @@ export default function FaceVerification({
         return;
       }
 
+      // Convert stored path/legacy URL to a short-lived signed URL for the AI service
+      const { createSignedUrl } = await import('@/lib/storage');
+      const registeredSignedUrl = await createSignedUrl('face-photos', faceTemplate.front_photo_url, 300);
+      if (!registeredSignedUrl) throw new Error('Registered face photo unavailable');
+
       // Call edge function for face comparison
       const { data: result, error } = await supabase.functions.invoke('face-verify', {
         body: {
-          registeredPhotoUrl: faceTemplate.front_photo_url,
+          registeredPhotoUrl: registeredSignedUrl,
           verificationPhotoBase64: base64,
         },
       });
@@ -115,11 +120,11 @@ export default function FaceVerification({
         for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
         const blob = new Blob([new Uint8Array(byteNums)], { type: 'image/jpeg' });
 
-        const verifyPath = `${profile.id}/verify_${Date.now()}.jpg`;
+        // Path must start with auth.uid() per storage RLS
+        const verifyPath = `${user!.id}/verify/${Date.now()}.jpg`;
         await supabase.storage.from('face-photos').upload(verifyPath, blob, { contentType: 'image/jpeg' });
-        const { data: urlData } = supabase.storage.from('face-photos').getPublicUrl(verifyPath);
 
-        // Register attendance with face verification
+        // Register attendance with face verification (store bare path)
         const { error: attError } = await supabase.from('attendance').insert({
           student_id: profile.id,
           lecture_id: lectureId,
@@ -128,7 +133,7 @@ export default function FaceVerification({
           biometric_verified: true,
           latitude: latitude ?? null,
           longitude: longitude ?? null,
-          verification_photo_url: urlData.publicUrl,
+          verification_photo_url: verifyPath,
           face_match_score: score,
         });
 
