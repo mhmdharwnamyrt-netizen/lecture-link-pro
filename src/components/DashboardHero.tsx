@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Clock, Calendar as CalendarIcon, User as UserIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import StorageImage from '@/components/StorageImage';
 
 interface DashboardHeroProps {
   name: string;
