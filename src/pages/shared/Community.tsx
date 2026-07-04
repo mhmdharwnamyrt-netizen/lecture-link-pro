@@ -874,6 +874,17 @@ export default function Community({ role }: { role: Role }) {
                             <Pin className="h-4 w-4 me-2" /> {p.is_pinned ? t('إلغاء التثبيت', 'Unpin') : t('تثبيت', 'Pin')}
                           </DropdownMenuItem>
                         )}
+                        {p.category === 'question' && (p.author_id === user?.id || isAdmin) && (
+                          <DropdownMenuItem onClick={() => markAnswered(p)}>
+                            <CheckCircle2 className="h-4 w-4 me-2" /> {p.is_answered ? t('إلغاء الإجابة', 'Unmark answered') : t('تعليم كإجابة', 'Mark answered')}
+                          </DropdownMenuItem>
+                        )}
+                        {user && (
+                          <DropdownMenuItem onClick={() => toggleSave(p)}>
+                            {p.saved ? <BookmarkCheck className="h-4 w-4 me-2 text-primary" /> : <Bookmark className="h-4 w-4 me-2" />}
+                            {p.saved ? t('إلغاء الحفظ', 'Unsave') : t('حفظ', 'Save')}
+                          </DropdownMenuItem>
+                        )}
                         {p.author_id !== user?.id && (
                           <DropdownMenuItem onClick={() => { setReportTarget({ kind: 'post', id: p.id }); setReportReason(''); setReportDetails(''); }}>
                             <Flag className="h-4 w-4 me-2" /> {t('إبلاغ', 'Report')}
