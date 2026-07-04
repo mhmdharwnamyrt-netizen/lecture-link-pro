@@ -364,6 +364,31 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
                 ))}
               </div>
             </div>
+            {[
+              { key: 'hobbies', label: language === 'ar' ? 'الهوايات' : 'Hobbies', placeholder: language === 'ar' ? 'أضف هواية واضغط Enter' : 'Add a hobby, press Enter', list: hobbies, setList: setHobbies, input: hobbyInput, setInput: setHobbyInput, variant: 'secondary' as const },
+              { key: 'favorites', label: language === 'ar' ? 'المفضلات' : 'Favorites', placeholder: language === 'ar' ? 'أضف عنصرًا مفضلاً واضغط Enter' : 'Add a favorite, press Enter', list: favorites, setList: setFavorites, input: favoriteInput, setInput: setFavoriteInput, variant: 'outline' as const },
+            ].map((f) => (
+              <div key={f.key}>
+                <label className="text-sm font-medium mb-1.5 block">{f.label}</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={f.input}
+                    onChange={(e) => f.setInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(f.list, f.setList, f.input, f.setInput); } }}
+                    placeholder={f.placeholder}
+                  />
+                  <Button type="button" variant="outline" onClick={() => addTag(f.list, f.setList, f.input, f.setInput)}>+</Button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {f.list.map((s, i) => (
+                    <Badge key={i} variant={f.variant} className="rounded-full gap-1">
+                      {s}
+                      <button onClick={() => f.setList(f.list.filter((_, j) => j !== i))}><X className="h-3 w-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>{language === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
