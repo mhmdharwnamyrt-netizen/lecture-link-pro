@@ -402,7 +402,9 @@ export default function AdminDashboard() {
         await logAdminAction({ action: 'maintenance.recompute_points', details: { updated } });
         toast({ title: 'Points recomputed', description: `${updated} student(s) updated` });
       } else if (kind === 'mark-synced') {
-        const { error, count } = await supabase.from('attendance').update({ synced: true }).eq('synced', false).select('*', { count: 'exact', head: true });
+        const { data, error } = await supabase.from('attendance').update({ synced: true }).eq('synced', false).select('id');
+        if (error) throw error;
+        const count = data?.length || 0;
         if (error) throw error;
         await logAdminAction({ action: 'maintenance.mark_synced', details: { count } });
         toast({ title: 'Attendance rows marked synced', description: `${count || 0} row(s)` });
