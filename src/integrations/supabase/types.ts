@@ -478,30 +478,54 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_type: string | null
+          attachment_url: string | null
           content: string
           created_at: string
+          deleted_at: string | null
+          delivered_at: string | null
+          edited_at: string | null
           id: string
           lecture_id: string | null
+          reaction: string | null
           read: boolean
+          read_at: string | null
           receiver_id: string
+          reply_to_id: string | null
           sender_id: string
         }
         Insert: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           content: string
           created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
+          edited_at?: string | null
           id?: string
           lecture_id?: string | null
+          reaction?: string | null
           read?: boolean
+          read_at?: string | null
           receiver_id: string
+          reply_to_id?: string | null
           sender_id: string
         }
         Update: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string
           created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
+          edited_at?: string | null
           id?: string
           lecture_id?: string | null
+          reaction?: string | null
           read?: boolean
+          read_at?: string | null
           receiver_id?: string
+          reply_to_id?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -524,6 +548,13 @@ export type Database = {
             columns: ["receiver_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
@@ -578,27 +609,39 @@ export type Database = {
       office_hour_bookings: {
         Row: {
           booking_date: string
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           id: string
           notes: string | null
+          reason: string | null
+          reminder_sent: boolean
           slot_id: string
           status: string
           student_id: string
         }
         Insert: {
           booking_date: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           id?: string
           notes?: string | null
+          reason?: string | null
+          reminder_sent?: boolean
           slot_id: string
           status?: string
           student_id: string
         }
         Update: {
           booking_date?: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           id?: string
           notes?: string | null
+          reason?: string | null
+          reminder_sent?: boolean
           slot_id?: string
           status?: string
           student_id?: string
@@ -634,8 +677,10 @@ export type Database = {
           doctor_id: string
           end_time: string
           id: string
+          is_active: boolean
           location: string | null
           max_bookings: number
+          notes: string | null
           start_time: string
         }
         Insert: {
@@ -644,8 +689,10 @@ export type Database = {
           doctor_id: string
           end_time: string
           id?: string
+          is_active?: boolean
           location?: string | null
           max_bookings?: number
+          notes?: string | null
           start_time: string
         }
         Update: {
@@ -654,8 +701,10 @@ export type Database = {
           doctor_id?: string
           end_time?: string
           id?: string
+          is_active?: boolean
           location?: string | null
           max_bookings?: number
+          notes?: string | null
           start_time?: string
         }
         Relationships: [
@@ -806,6 +855,24 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      typing_indicators: {
+        Row: {
+          peer_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          peer_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          peer_id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
