@@ -186,6 +186,19 @@ export default function StudentDashboard() {
         totalLectures: allAttendance.length,
       });
     }
+
+    // Trainings preview
+    const { data: trs } = await supabase
+      .from('trainings').select('id,title,type,company_name,apply_url,deadline,tags')
+      .eq('is_active', true).order('created_at', { ascending: false }).limit(3);
+    setTrainings(trs || []);
+
+    // Community feed preview (shown always but especially useful during quiet weeks)
+    const { data: fp } = await supabase
+      .from('community_posts')
+      .select('id,content,author_id,likes_count,comments_count,category,created_at,profiles!community_posts_author_id_fkey(full_name,avatar_url,user_id)')
+      .eq('is_hidden', false).order('created_at', { ascending: false }).limit(5);
+    setFeedPosts(fp || []);
   };
 
   const handleCheckIn = async (lectureId: string) => {
