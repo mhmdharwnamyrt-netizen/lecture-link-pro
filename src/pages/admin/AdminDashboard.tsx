@@ -1420,7 +1420,7 @@ export default function AdminDashboard() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>{t('admin.action.cancel')}</Button>
-            <Button onClick={saveSubj}>{subjDialog.edit ? 'Save' : 'Create'}</Button>
+            <Button onClick={saveSubj}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
