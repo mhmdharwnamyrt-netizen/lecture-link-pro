@@ -181,9 +181,14 @@ export default function Community({ role }: { role: Role }) {
       savedIds = (saves || []).map((s: any) => s.post_id);
       if (!savedIds.length) { setPosts([]); setLoading(false); return; }
     }
+    // "Following" tab: only posts from users I follow
+    if (tab === 'following') {
+      if (!user || followingIds.length === 0) { setPosts([]); setLoading(false); return; }
+    }
     let q = supabase.from('community_posts').select('*').eq('is_hidden', false);
     if (tab === 'mine' && user) q = q.eq('author_id', user.id);
     if (tab === 'saved') q = q.in('id', savedIds);
+    if (tab === 'following') q = q.in('author_id', followingIds);
     if (categoryFilter) q = q.eq('category', categoryFilter);
     if (activeTag) q = q.contains('tags', [activeTag]);
     if (query.trim()) q = q.ilike('content', `%${query.trim()}%`);
@@ -195,7 +200,7 @@ export default function Community({ role }: { role: Role }) {
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
     const postIds = (rows || []).map((r: any) => r.id);
-    const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }] = await Promise.all([
+    const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }, { data: mentionRows }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
@@ -208,6 +213,9 @@ export default function Community({ role }: { role: Role }) {
       postIds.length
         ? (supabase as any).from('community_post_media').select('*').in('post_id', postIds).order('created_at', { ascending: true })
         : Promise.resolve({ data: [] as any[] }),
+      postIds.length
+        ? supabase.from('community_mentions').select('post_id, mentioned_user_id').in('post_id', postIds)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
     const mediaWithUrls = await Promise.all(((mediaRows as PostMedia[]) || []).map(async (m) => {
       const { data } = await supabase.storage.from(MEDIA_BUCKET).createSignedUrl(m.storage_path, 60 * 60);
@@ -217,16 +225,45 @@ export default function Community({ role }: { role: Role }) {
       (acc[m.post_id] ||= []).push(m);
       return acc;
     }, {});
+    // Resolve mention names → link data
+    const mentionedIds = [...new Set(((mentionRows as any[]) || []).map((r) => r.mentioned_user_id))];
+    let mentionProfiles: Record<string, string> = {};
+    if (mentionedIds.length) {
+      const { data: mp } = await supabase
+        .from('profiles').select('user_id,full_name').in('user_id', mentionedIds);
+      mentionProfiles = ((mp as any[]) || []).reduce((acc, r) => { acc[r.user_id] = r.full_name; return acc; }, {} as Record<string, string>);
+    }
+    const mentionsByPost: Record<string, { name: string; user_id: string }[]> = {};
+    ((mentionRows as any[]) || []).forEach((r) => {
+      const name = mentionProfiles[r.mentioned_user_id];
+      if (!name) return;
+      (mentionsByPost[r.post_id] ||= []).push({ name, user_id: r.mentioned_user_id });
+    });
+
     const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
     const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
     const saved = new Set(((mySaves as any[]) || []).map((r: any) => r.post_id));
-    setPosts((rows || []).map((p: any) => ({
+    const followingSet = new Set(followingIds);
+    let mapped = (rows || []).map((p: any) => ({
       ...p,
       author: map.get(p.author_id) || (p.author_id === user?.id ? profile : undefined),
       liked: liked.has(p.id),
       saved: saved.has(p.id),
       media: mediaByPost[p.id] || [],
-    })));
+      mentions: mentionsByPost[p.id] || [],
+    })) as Post[];
+
+    // Prioritize followed users in the default feed (pinned still first)
+    if (tab === 'all' && followingSet.size > 0) {
+      mapped = mapped.slice().sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        const aF = followingSet.has(a.author_id) ? 1 : 0;
+        const bF = followingSet.has(b.author_id) ? 1 : 0;
+        if (aF !== bF) return bF - aF;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+    setPosts(mapped);
     setLoading(false);
 
     // trending tags (client aggregation of latest posts)
