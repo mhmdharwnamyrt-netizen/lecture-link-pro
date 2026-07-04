@@ -103,6 +103,9 @@ const App = () => (
                   <Route path="/admin/reports" element={<Guarded><AdminReports /></Guarded>} />
                   <Route path="/admin/moderation" element={<Guarded><AdminModeration /></Guarded>} />
 
+                  {/* Public user profile (shared) */}
+                  <Route path="/u/:userId" element={<Guarded><PublicProfilePage /></Guarded>} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
