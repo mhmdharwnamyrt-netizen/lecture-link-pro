@@ -701,6 +701,7 @@ export default function Community({ role }: { role: Role }) {
 
   const tabs = useMemo(() => ([
     { k: 'all', label: t('الكل', 'All') },
+    { k: 'following', label: t('المتابَعون', 'Following') },
     { k: 'trending', label: t('الأكثر تفاعلاً', 'Trending') },
     { k: 'saved', label: t('المحفوظة', 'Saved') },
     { k: 'mine', label: t('منشوراتي', 'Mine') },
