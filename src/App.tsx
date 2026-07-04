@@ -35,6 +35,7 @@ const NotificationsPage = lazy(() => import("./pages/shared/Notifications"));
 const ProfilePage = lazy(() => import("./pages/shared/Profile"));
 const MessagesPage = lazy(() => import("./pages/shared/Messages"));
 const OfficeHoursPage = lazy(() => import("./pages/shared/OfficeHours"));
+const CommunityPage = lazy(() => import("./pages/shared/Community"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
@@ -80,6 +81,7 @@ const App = () => (
                   <Route path="/doctor/profile" element={<Guarded><ProfilePage role="doctor" /></Guarded>} />
                   <Route path="/doctor/messages" element={<Guarded><MessagesPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/office-hours" element={<Guarded><OfficeHoursPage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/community" element={<Guarded><CommunityPage role="doctor" /></Guarded>} />
 
                   {/* Student Routes */}
                   <Route path="/student" element={<Guarded><StudentDashboard /></Guarded>} />
@@ -92,6 +94,7 @@ const App = () => (
                   <Route path="/student/profile" element={<Guarded><ProfilePage role="student" /></Guarded>} />
                   <Route path="/student/messages" element={<Guarded><MessagesPage role="student" /></Guarded>} />
                   <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
+                  <Route path="/student/community" element={<Guarded><CommunityPage role="student" /></Guarded>} />
 
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />

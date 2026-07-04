@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff, Trophy, Search } from 'lucide-react';
+import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +38,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
     { path: '/doctor/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
     { path: '/doctor/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/doctor/community', icon: Users, label: language === 'ar' ? 'الملتقى الطلابي' : 'Community' },
   ];
 
   const studentSidebarExtra = [
@@ -45,6 +46,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/student/offline-queue', icon: CloudOff, label: language === 'ar' ? 'قائمة الانتظار' : 'Offline Queue' },
     { path: '/student/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
     { path: '/student/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/student/community', icon: Users, label: language === 'ar' ? 'الملتقى الطلابي' : 'Community' },
   ];
 
   const sidebarExtra = role === 'doctor' ? [...doctorSidebarExtra] : [...studentSidebarExtra];
