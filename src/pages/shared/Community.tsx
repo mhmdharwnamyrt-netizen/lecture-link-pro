@@ -451,11 +451,13 @@ export default function Community({ role }: { role: Role }) {
     if (!user) return;
     const content = (commentDrafts[postId] || '').trim();
     if (!content) return;
-    const { error } = await supabase.from('community_comments').insert({
+    const { data: inserted, error } = await supabase.from('community_comments').insert({
       post_id: postId, parent_id: replyTo[postId] || null,
       author_id: user.id, content,
-    });
+    }).select('id').single();
     if (error) return toast.error(error.message);
+    const mentioned = await resolveMentions(content);
+    await insertMentions(mentioned, postId, inserted?.id);
     setCommentDrafts((d) => ({ ...d, [postId]: '' }));
     setReplyTo((r) => ({ ...r, [postId]: null }));
     loadComments(postId);
