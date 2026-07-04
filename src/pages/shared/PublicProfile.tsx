@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { createSignedUrl } from '@/lib/storage';
+import { parseCoverValue } from '@/lib/coverPresets';
 
 interface ProfileRow {
   id: string; user_id: string; full_name: string;
