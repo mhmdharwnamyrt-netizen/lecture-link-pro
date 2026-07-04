@@ -46,6 +46,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/student/offline-queue', icon: CloudOff, label: language === 'ar' ? 'قائمة الانتظار' : 'Offline Queue' },
     { path: '/student/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
     { path: '/student/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/student/community', icon: Users, label: language === 'ar' ? 'الملتقى الطلابي' : 'Community' },
   ];
 
   const sidebarExtra = role === 'doctor' ? [...doctorSidebarExtra] : [...studentSidebarExtra];
