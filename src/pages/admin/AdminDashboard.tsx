@@ -1067,25 +1067,25 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Megaphone className="h-5 w-5" /></div>
                 <div>
-                  <h2 className="font-bold">Send a Broadcast</h2>
-                  <p className="text-xs text-muted-foreground">Deliver an announcement to all users' Notifications inbox.</p>
+                  <h2 className="font-bold">{t('admin.broadcast.title')}</h2>
+                  <p className="text-xs text-muted-foreground">{t('admin.broadcast.subtitle')}</p>
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Select value={broadcastTarget} onValueChange={(v: any) => setBroadcastTarget(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All users ({users.filter(u => !u.is_disabled).length})</SelectItem>
-                    <SelectItem value="student">Students only ({users.filter(u => u.role === 'student' && !u.is_disabled).length})</SelectItem>
-                    <SelectItem value="doctor">Doctors only ({users.filter(u => u.role === 'doctor' && !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="all">{t('admin.broadcast.allUsers')} ({users.filter(u => !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="student">{t('admin.broadcast.studentsOnly')} ({users.filter(u => u.role === 'student' && !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="doctor">{t('admin.broadcast.doctorsOnly')} ({users.filter(u => u.role === 'doctor' && !u.is_disabled).length})</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input className="md:col-span-2" placeholder="Title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} />
+                <Input className="md:col-span-2" placeholder={t('admin.broadcast.titlePh')} value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} />
               </div>
-              <Textarea rows={5} placeholder="Message body…" value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} />
+              <Textarea rows={5} placeholder={t('admin.broadcast.bodyPh')} value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} />
               <div className="flex justify-end">
                 <Button onClick={sendBroadcast} disabled={broadcasting}>
-                  <Send className="me-2 h-4 w-4" /> {broadcasting ? 'Sending…' : 'Send broadcast'}
+                  <Send className="me-2 h-4 w-4" /> {broadcasting ? t('admin.action.working') : t('admin.action.sendBroadcast')}
                 </Button>
               </div>
             </div>
