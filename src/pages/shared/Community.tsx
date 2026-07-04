@@ -140,7 +140,12 @@ export default function Community({ role }: { role: Role }) {
     }, {});
     const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
     const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
-    setPosts((rows || []).map((p: any) => ({ ...p, author: map.get(p.author_id), liked: liked.has(p.id), media: mediaByPost[p.id] || [] })));
+    setPosts((rows || []).map((p: any) => ({
+      ...p,
+      author: map.get(p.author_id) || (p.author_id === user?.id ? profile : undefined),
+      liked: liked.has(p.id),
+      media: mediaByPost[p.id] || [],
+    })));
     setLoading(false);
 
     // trending tags (client aggregation of latest posts)
@@ -171,6 +176,12 @@ export default function Community({ role }: { role: Role }) {
     return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line
   }, [comments]);
+
+  useEffect(() => () => {
+    selectedMedia.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+    if (recordTimerRef.current) window.clearInterval(recordTimerRef.current);
+    recorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+  }, []);
 
   const onPickMedia = (files: FileList | File[] | null) => {
     if (!files) return;
@@ -663,11 +674,11 @@ export default function Community({ role }: { role: Role }) {
                     <div className="flex gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={p.author?.avatar_url || undefined} />
-                        <AvatarFallback>{(p.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
+                        <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold">{p.author?.full_name || '—'}</span>
+                          <span className="font-semibold">{displayName(p.author, p.author_id === user?.id ? user : undefined)}</span>
                           {p.author?.role === 'doctor' && <Badge variant="secondary" className="h-5 px-1.5 text-xs">Dr.</Badge>}
                           {p.is_pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
                         </div>
@@ -700,12 +711,14 @@ export default function Community({ role }: { role: Role }) {
                     </DropdownMenu>
                   </header>
 
-                  <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                    {p.content}
-                  </div>
-                  {p.image_url && (
-                    <img src={p.image_url} alt="" className="mt-3 max-h-96 w-full rounded-xl object-cover" loading="lazy" />
+                  {p.content && (
+                    <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+                      {p.content}
+                    </div>
                   )}
+                  {p.media?.length ? renderPostMedia(p.media) : (p.image_url?.startsWith('http') && (
+                    <img src={p.image_url} alt={t('صورة منشور', 'Post image')} className="mt-3 max-h-96 w-full rounded-xl object-cover" loading="lazy" />
+                  ))}
                   {p.tags && p.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {p.tags.map((tg) => (
