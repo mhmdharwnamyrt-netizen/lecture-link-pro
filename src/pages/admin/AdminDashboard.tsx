@@ -97,7 +97,12 @@ export default function AdminDashboard() {
   const [maintBusy, setMaintBusy] = useState<string | null>(null);
 
   // New: live feed
-  const [liveEvents, setLiveEvents] = useState<Array<{ id: string; kind: string; text: string; at: string }>>([]);
+  const [liveEvents, setLiveEvents] = useState<any[]>([]);
+  const [liveFilterKind, setLiveFilterKind] = useState<string>('all');
+  const [liveFilterSeverity, setLiveFilterSeverity] = useState<string>('all');
+  const [liveFilterDept, setLiveFilterDept] = useState<string>('all');
+  const [dbHealth, setDbHealth] = useState<any>(null);
+  const [integrity, setIntegrity] = useState<any>(null);
 
 
   useEffect(() => { if (!loading && !user) navigate('/login'); }, [loading, user]);
