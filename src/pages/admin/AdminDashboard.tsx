@@ -81,6 +81,23 @@ export default function AdminDashboard() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  // New: departments/subjects CRUD
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [deptDialog, setDeptDialog] = useState<{ open: boolean; edit?: any }>({ open: false });
+  const [deptForm, setDeptForm] = useState({ name: '', name_ar: '', code: '' });
+  const [subjDialog, setSubjDialog] = useState<{ open: boolean; edit?: any }>({ open: false });
+  const [subjForm, setSubjForm] = useState({ name: '', code: '', department_id: '' });
+
+  // New: notifications inbox admin
+  const [allNotifications, setAllNotifications] = useState<any[]>([]);
+
+  // New: maintenance
+  const [maintBusy, setMaintBusy] = useState<string | null>(null);
+
+  // New: live feed
+  const [liveEvents, setLiveEvents] = useState<Array<{ id: string; kind: string; text: string; at: string }>>([]);
+
+
   useEffect(() => { if (!loading && !user) navigate('/login'); }, [loading, user]);
   useEffect(() => {
     if (!user) return;
