@@ -29,8 +29,12 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   const [bio, setBio] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
+  const [hobbies, setHobbies] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState('');
   const [interestInput, setInterestInput] = useState('');
+  const [hobbyInput, setHobbyInput] = useState('');
+  const [favoriteInput, setFavoriteInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,6 +43,8 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
     setBio(p.bio || '');
     setSkills(Array.isArray(p.skills) ? p.skills : []);
     setInterests(Array.isArray(p.interests) ? p.interests : []);
+    setHobbies(Array.isArray(p.hobbies) ? p.hobbies : []);
+    setFavorites(Array.isArray(p.favorites) ? p.favorites : []);
   }, [profile]);
 
   const addTag = (list: string[], setter: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
@@ -53,7 +59,7 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
     setSaving(true);
     const { error } = await supabase
       .from('profiles')
-      .update({ bio: bio.trim() || null, skills, interests } as any)
+      .update({ bio: bio.trim() || null, skills, interests, hobbies, favorites } as any)
       .eq('id', profile.id);
     setSaving(false);
     if (error) {
