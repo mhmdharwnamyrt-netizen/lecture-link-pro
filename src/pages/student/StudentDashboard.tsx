@@ -388,9 +388,20 @@ export default function StudentDashboard() {
         {/* Active Lectures */}
         <h2 className="mb-3 text-lg font-semibold">{t('student.activeLectures')}</h2>
         {activeLectures.length === 0 ? (
-          <div className="mb-6 rounded-2xl bg-card p-8 text-center shadow-card">
-            <BookOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <p className="text-muted-foreground">{t('student.noActiveLectures')}</p>
+          <div className="mb-6 rounded-2xl bg-gradient-to-br from-primary/10 via-accent/5 to-warning/10 p-6 text-center shadow-card">
+            <Sparkles className="mx-auto mb-2 h-8 w-8 text-primary" />
+            <p className="font-semibold">{language === 'ar' ? 'وضع الإجازة — لا محاضرات اليوم' : 'Break mode — no lectures today'}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {language === 'ar' ? 'استكشف التدريبات وشارك في الملتقى الطلابي.' : 'Explore trainings and join the student community.'}
+            </p>
+            <div className="mt-3 flex justify-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => navigate('/student/trainings')}>
+                <Briefcase className="h-4 w-4 me-1.5" /> {language === 'ar' ? 'التدريبات' : 'Trainings'}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/student/community')}>
+                <MessageCircle className="h-4 w-4 me-1.5" /> {language === 'ar' ? 'الملتقى' : 'Community'}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="mb-6 space-y-3">
