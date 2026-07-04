@@ -1305,30 +1305,30 @@ export default function AdminDashboard() {
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><RotateCcw className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Recompute student points</p><p className="text-xs text-muted-foreground">Recalculates points and level from attendance + approved excuses (3 pts each).</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.recomputeTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.recomputeDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('recompute-points')} disabled={maintBusy === 'recompute-points'}>{maintBusy === 'recompute-points' ? 'Recomputing…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('recompute-points')} disabled={maintBusy === 'recompute-points'}>{maintBusy === 'recompute-points' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><CheckCircle2 className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Mark all attendance synced</p><p className="text-xs text-muted-foreground">Flags any leftover offline-queued rows as synced.</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.markSyncedTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.markSyncedDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('mark-synced')} disabled={maintBusy === 'mark-synced'}>{maintBusy === 'mark-synced' ? 'Working…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('mark-synced')} disabled={maintBusy === 'mark-synced'}>{maintBusy === 'mark-synced' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><MessageSquare className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Purge stale typing indicators</p><p className="text-xs text-muted-foreground">Removes typing rows older than 60 seconds.</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.purgeTypingTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.purgeTypingDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('purge-typing')} disabled={maintBusy === 'purge-typing'}>{maintBusy === 'purge-typing' ? 'Working…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('purge-typing')} disabled={maintBusy === 'purge-typing'}>{maintBusy === 'purge-typing' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive"><Trash2 className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Purge old read notifications</p><p className="text-xs text-muted-foreground">Deletes read notifications older than 7 days.</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.purgeNotifTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.purgeNotifDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? 'Working…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
             </div>
           </TabsContent>
