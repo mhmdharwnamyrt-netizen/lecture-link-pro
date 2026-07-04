@@ -649,6 +649,24 @@ export default function Community({ role }: { role: Role }) {
           />
         </div>
 
+        {/* Category filter chips */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setCategoryFilter(null)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${!categoryFilter ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}
+          >{t('كل التصنيفات', 'All categories')}</button>
+          {CATEGORIES.map((c) => {
+            const meta = CATEGORY_META[c]; const Icon = meta.icon;
+            const active = categoryFilter === c;
+            return (
+              <button key={c} onClick={() => setCategoryFilter(active ? null : c)}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${active ? 'bg-primary text-primary-foreground border-primary' : meta.color + ' hover:opacity-80'}`}>
+                <Icon className="h-3 w-3" /> {t(meta.ar, meta.en)}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Trending tags */}
         {trendingTags.length > 0 && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5">
@@ -667,8 +685,64 @@ export default function Community({ role }: { role: Role }) {
           </div>
         )}
 
+        {/* Leaderboard */}
+        <div className="mb-4 overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-500/10 via-card to-primary/5 shadow-sm">
+          <button onClick={() => setLeaderOpen((o) => !o)} className="flex w-full items-center justify-between px-4 py-3 text-left">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              <span className="font-semibold">{t('الأكثر تفاعلاً هذا الشهر', 'Top contributors this month')}</span>
+            </div>
+            {leaderOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          {leaderOpen && (
+            <div className="border-t px-2 py-2">
+              {leaderboard.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">{t('لا توجد بيانات بعد', 'No data yet')}</div>
+              ) : (
+                <ol className="space-y-1">
+                  {leaderboard.map((row, idx) => (
+                    <li key={row.user_id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-muted/50">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold">
+                        {idx === 0 ? <Crown className="h-4 w-4 text-amber-500" /> : idx === 1 ? <Medal className="h-4 w-4 text-slate-400" /> : idx === 2 ? <Medal className="h-4 w-4 text-orange-500" /> : idx + 1}
+                      </div>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={row.avatar_url || undefined} />
+                        <AvatarFallback>{avatarLetter(row.full_name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1 truncate text-sm font-medium">
+                          {row.full_name || t('مستخدم', 'User')}
+                          {row.role === 'doctor' && <Badge variant="secondary" className="h-4 px-1 text-[10px]">Dr.</Badge>}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {row.posts_count} {t('منشور', 'posts')} · {row.comments_count} {t('تعليق', 'comments')} · {row.likes_received} {t('إعجاب', 'likes')}
+                        </div>
+                      </div>
+                      <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600">
+                        <Sparkles className="h-3 w-3" /> {row.score}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Composer */}
         <form onSubmit={createPost} className="mb-4 rounded-2xl border bg-card p-3 shadow-sm">
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {CATEGORIES.map((c) => {
+              const meta = CATEGORY_META[c]; const Icon = meta.icon;
+              const active = composerCategory === c;
+              return (
+                <button key={c} type="button" onClick={() => setComposerCategory(c)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition ${active ? 'bg-primary text-primary-foreground border-primary' : meta.color}`}>
+                  <Icon className="h-3 w-3" /> {t(meta.ar, meta.en)}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex gap-2">
             <Avatar className="h-9 w-9">
               <AvatarImage src={profile?.avatar_url || undefined} />
@@ -677,7 +751,7 @@ export default function Community({ role }: { role: Role }) {
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={t('شارك فكرة، سؤالاً، أو إعلاناً...', 'Share a thought, question, or announcement...')}
+              placeholder={t('شارك فكرة، سؤالاً، أو إعلاناً... استخدم @اسم للإشارة و #وسم', 'Share... use @name to mention and #tag')}
               className="min-h-[60px] resize-none border-0 focus-visible:ring-0"
               maxLength={5000}
             />
