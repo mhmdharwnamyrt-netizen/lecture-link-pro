@@ -1150,28 +1150,28 @@ export default function AdminDashboard() {
           {/* System Health */}
           <TabsContent value="health">
             <div className="grid gap-3 md:grid-cols-4">
-              <StatCard icon={Activity} label="Attendance / 24h" value={last24h.length} tone="success" />
-              <StatCard icon={ClipboardCheck} label="Present rate" value={`${presentRate}%`} tone={presentRate >= 70 ? 'success' : presentRate >= 50 ? 'warning' : 'destructive'} />
-              <StatCard icon={AlertTriangle} label="Pending sync" value={offlineQueueSize} tone={offlineQueueSize ? 'warning' : 'primary'} />
-              <StatCard icon={Users} label="Active accounts" value={users.filter(u => !u.is_disabled).length} />
+              <StatCard icon={Activity} label={t('admin.health.att24')} value={last24h.length} tone="success" />
+              <StatCard icon={ClipboardCheck} label={t('admin.health.presentRate')} value={`${presentRate}%`} tone={presentRate >= 70 ? 'success' : presentRate >= 50 ? 'warning' : 'destructive'} />
+              <StatCard icon={AlertTriangle} label={t('admin.health.pendingSync')} value={offlineQueueSize} tone={offlineQueueSize ? 'warning' : 'primary'} />
+              <StatCard icon={Users} label={t('admin.health.activeAccounts')} value={users.filter(u => !u.is_disabled).length} />
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-2xl bg-card p-5 shadow-card">
-                <p className="font-semibold mb-2 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-primary" /> Data freshness</p>
+                <p className="font-semibold mb-2 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-primary" /> {t('admin.health.dataFresh')}</p>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>Profiles loaded: {users.length}</li>
-                  <li>Lectures loaded: {lectures.length}</li>
-                  <li>Attendance loaded: {attendance.length}</li>
-                  <li>Excuses pending: {excuses.filter(e => e.status === 'pending').length}</li>
+                  <li>{t('admin.stat.students')} + {t('admin.stat.doctors')}: {users.length}</li>
+                  <li>{t('admin.stat.lectures')}: {lectures.length}</li>
+                  <li>{t('admin.stat.attendance')}: {attendance.length}</li>
+                  <li>{t('admin.stat.excuses')}: {excuses.filter(e => e.status === 'pending').length}</li>
                 </ul>
-                <Button size="sm" variant="outline" className="mt-3" onClick={loadAll}>Refresh now</Button>
+                <Button size="sm" variant="outline" className="mt-3" onClick={loadAll}>{t('admin.action.refresh')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
-                <p className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Security signals</p>
+                <p className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> {t('admin.health.security')}</p>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>Admins: {userRoles.filter(r => r.role === 'admin').length}</li>
-                  <li>Disabled users: {stats.disabled}</li>
-                  <li>High-risk warnings: {warnings.filter(w => w.risk_level === 'high').length}</li>
+                  <li>{t('admin.filter.admins')}: {userRoles.filter(r => r.role === 'admin').length}</li>
+                  <li>{t('admin.stat.disabled')}: {stats.disabled}</li>
+                  <li>{t('admin.col.riskLevel')} (high): {warnings.filter(w => w.risk_level === 'high').length}</li>
                 </ul>
               </div>
             </div>
