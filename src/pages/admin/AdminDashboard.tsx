@@ -1230,13 +1230,17 @@ export default function AdminDashboard() {
           {/* Subjects CRUD */}
           <TabsContent value="subjects" className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{subjects.length} subjects</p>
-              <Button size="sm" onClick={() => openSubjDialog()}><Plus className="me-1.5 h-4 w-4" /> New subject</Button>
+              <p className="text-sm text-muted-foreground">{subjects.length} · {t('admin.tab.subjects')}</p>
+              <Button size="sm" onClick={() => openSubjDialog()}><Plus className="me-1.5 h-4 w-4" /> {t('admin.action.newSubject')}</Button>
             </div>
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Name</th><th className="px-4 py-3">Code</th><th className="px-4 py-3">Department</th><th className="px-4 py-3">Lectures</th><th className="px-4 py-3 text-right">Actions</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.name')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.code')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.department')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.stat.lectures')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
                   {subjects.map(s => (
@@ -1251,7 +1255,7 @@ export default function AdminDashboard() {
                       </div></td>
                     </tr>
                   ))}
-                  {subjects.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No subjects — create one to link with lectures.</td></tr>}
+                  {subjects.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.subjects')}</td></tr>}
                 </tbody>
               </table>
             </div>
