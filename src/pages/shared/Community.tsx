@@ -1,66 +1,63 @@
 import { useEffect, useMemo, useRef, useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X, Pin, Trash2, CornerDownRight, Loader2, Users } from 'lucide-react';
+import {
+  Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X,
+  Pin, Trash2, CornerDownRight, Loader2, Users, Search, Flag, Hash, Pencil,
+  ChevronDown, ChevronRight, Settings,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 
 interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string;
-  avatar_url: string | null;
-  role: string;
-  academic_title: string | null;
+  id: string; user_id: string; full_name: string;
+  avatar_url: string | null; role: string; academic_title: string | null;
 }
 interface Post {
-  id: string;
-  author_id: string;
-  content: string;
-  image_url: string | null;
-  tags: string[] | null;
-  likes_count: number;
-  comments_count: number;
-  shares_count: number;
-  is_pinned: boolean;
-  created_at: string;
-  author?: Profile;
-  liked?: boolean;
+  id: string; author_id: string; content: string; image_url: string | null;
+  tags: string[] | null; likes_count: number; comments_count: number; shares_count: number;
+  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean;
 }
 interface Comment {
-  id: string;
-  post_id: string;
-  parent_id: string | null;
-  author_id: string;
-  content: string;
-  likes_count: number;
-  created_at: string;
-  author?: Profile;
-  liked?: boolean;
+  id: string; post_id: string; parent_id: string | null; author_id: string;
+  content: string; likes_count: number; created_at: string;
+  edited_at?: string | null; author?: Profile; liked?: boolean;
 }
 
 type Role = 'doctor' | 'student';
 
+const REPORT_REASONS_AR = ['محتوى مسيء', 'محتوى مضلل', 'مضايقة', 'محتوى غير لائق', 'رسائل مزعجة', 'أخرى'];
+const REPORT_REASONS_EN = ['Offensive content', 'Misinformation', 'Harassment', 'Inappropriate', 'Spam', 'Other'];
+
 export default function Community({ role }: { role: Role }) {
   const { user, profile, isAdmin } = useAuth();
   const { language, isRTL } = useLanguage();
-  const t = (ar: string, en: string) => (language === 'ar' ? ar : en);
+  const t = (a: string, e: string) => (language === 'ar' ? a : e);
   const locale = language === 'ar' ? ar : enUS;
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'all' | 'mine' | 'trending'>('all');
+  const [query, setQuery] = useState('');
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
   const [text, setText] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -69,12 +66,22 @@ export default function Community({ role }: { role: Role }) {
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [replyTo, setReplyTo] = useState<Record<string, string | null>>({});
+  const [editingComment, setEditingComment] = useState<{ id: string; content: string } | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [reportTarget, setReportTarget] = useState<
+    { kind: 'post' | 'comment'; id: string } | null
+  >(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // -------- Load posts (with search/tag filters) --------
   const loadPosts = async () => {
     setLoading(true);
     let q = supabase.from('community_posts').select('*').eq('is_hidden', false);
     if (tab === 'mine' && user) q = q.eq('author_id', user.id);
+    if (activeTag) q = q.contains('tags', [activeTag]);
+    if (query.trim()) q = q.ilike('content', `%${query.trim()}%`);
     if (tab === 'trending') q = q.order('likes_count', { ascending: false });
     else q = q.order('is_pinned', { ascending: false }).order('created_at', { ascending: false });
 
@@ -82,21 +89,34 @@ export default function Community({ role }: { role: Role }) {
     if (error) { toast.error(error.message); setLoading(false); return; }
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
-    const [{ data: authors }, { data: myLikes }] = await Promise.all([
-      supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds),
+    const [{ data: authors }, myLikes] = await Promise.all([
+      authorIds.length
+        ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
+        : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('post_id').eq('user_id', user.id).not('post_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
-    const map = new Map((authors || []).map((a: any) => [a.user_id, a]));
-    const liked = new Set((myLikes || []).map((r: any) => r.post_id));
+    const map = new Map(((authors as any).data || []).map((a: any) => [a.user_id, a]));
+    const liked = new Set(((myLikes as any).data || []).map((r: any) => r.post_id));
     setPosts((rows || []).map((p: any) => ({ ...p, author: map.get(p.author_id), liked: liked.has(p.id) })));
     setLoading(false);
+
+    // trending tags (client aggregation of latest posts)
+    const tagCounts: Record<string, number> = {};
+    (rows || []).forEach((p: any) => (p.tags || []).forEach((tg: string) => { tagCounts[tg] = (tagCounts[tg] || 0) + 1; }));
+    setTrendingTags(Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([tag, count]) => ({ tag, count })));
   };
 
-  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, user?.id]);
+  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, user?.id]);
 
-  // realtime: refresh feed on any change
+  // debounced search
+  useEffect(() => {
+    const h = setTimeout(() => loadPosts(), 300);
+    return () => clearTimeout(h);
+    // eslint-disable-next-line
+  }, [query]);
+
   useEffect(() => {
     const channel = supabase
       .channel('community-feed')
@@ -114,8 +134,7 @@ export default function Community({ role }: { role: Role }) {
   const onPickImage = (f: File | null) => {
     if (!f) { setImage(null); setImagePreview(null); return; }
     if (f.size > 4 * 1024 * 1024) { toast.error(t('الصورة كبيرة (أقل من 4MB)', 'Image too large (<4MB)')); return; }
-    setImage(f);
-    setImagePreview(URL.createObjectURL(f));
+    setImage(f); setImagePreview(URL.createObjectURL(f));
   };
 
   const uploadImage = async (): Promise<string | null> => {
@@ -123,9 +142,7 @@ export default function Community({ role }: { role: Role }) {
     const path = `community/${user.id}/${Date.now()}-${image.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const { error } = await supabase.storage.from('message-attachments').upload(path, image, { upsert: false });
     if (error) { toast.error(error.message); return null; }
-    const { data } = supabase.storage.from('message-attachments').createSignedUrl
-      ? await supabase.storage.from('message-attachments').createSignedUrl(path, 60 * 60 * 24 * 365)
-      : { data: null } as any;
+    const { data } = await supabase.storage.from('message-attachments').createSignedUrl(path, 60 * 60 * 24 * 365);
     return data?.signedUrl ?? null;
   };
 
@@ -136,11 +153,8 @@ export default function Community({ role }: { role: Role }) {
     const image_url = image ? await uploadImage() : null;
     const tags = Array.from(text.matchAll(/#([\p{L}\p{N}_]+)/gu)).map((m) => m[1]).slice(0, 5);
     const { error } = await supabase.from('community_posts').insert({
-      author_id: user.id,
-      content: text.trim(),
-      image_url,
-      department_id: profile?.department_id ?? null,
-      tags,
+      author_id: user.id, content: text.trim(), image_url,
+      department_id: (profile as any)?.department_id ?? null, tags,
     });
     setPosting(false);
     if (error) { toast.error(error.message); return; }
@@ -151,10 +165,8 @@ export default function Community({ role }: { role: Role }) {
 
   const toggleLike = async (post: Post) => {
     if (!user) return;
-    // optimistic
     setPosts((prev) => prev.map((p) => p.id === post.id
-      ? { ...p, liked: !p.liked, likes_count: p.likes_count + (p.liked ? -1 : 1) }
-      : p));
+      ? { ...p, liked: !p.liked, likes_count: p.likes_count + (p.liked ? -1 : 1) } : p));
     if (post.liked) {
       await supabase.from('community_reactions').delete().eq('user_id', user.id).eq('post_id', post.id);
     } else {
@@ -170,7 +182,7 @@ export default function Community({ role }: { role: Role }) {
       else { await navigator.clipboard.writeText(url); toast.success(t('تم نسخ الرابط', 'Link copied')); }
       await supabase.from('community_shares').insert({ post_id: post.id, user_id: user.id, channel: 'link' });
       setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, shares_count: p.shares_count + 1 } : p));
-    } catch { /* user cancelled */ }
+    } catch { /* cancelled */ }
   };
 
   const deletePost = async (post: Post) => {
@@ -194,12 +206,14 @@ export default function Community({ role }: { role: Role }) {
     if (error) return;
     const authorIds = [...new Set((data || []).map((c: any) => c.author_id))];
     const [{ data: authors }, myLikes] = await Promise.all([
-      supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds),
+      authorIds.length
+        ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
+        : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('comment_id').eq('user_id', user.id).not('comment_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
-    const map = new Map((authors || []).map((a: any) => [a.user_id, a]));
+    const map = new Map(((authors as any).data || []).map((a: any) => [a.user_id, a]));
     const liked = new Set(((myLikes as any).data || []).map((r: any) => r.comment_id));
     setComments((prev) => ({
       ...prev,
@@ -218,10 +232,8 @@ export default function Community({ role }: { role: Role }) {
     const content = (commentDrafts[postId] || '').trim();
     if (!content) return;
     const { error } = await supabase.from('community_comments').insert({
-      post_id: postId,
-      parent_id: replyTo[postId] || null,
-      author_id: user.id,
-      content,
+      post_id: postId, parent_id: replyTo[postId] || null,
+      author_id: user.id, content,
     });
     if (error) return toast.error(error.message);
     setCommentDrafts((d) => ({ ...d, [postId]: '' }));
@@ -241,12 +253,35 @@ export default function Community({ role }: { role: Role }) {
   };
 
   const deleteComment = async (postId: string, id: string) => {
+    if (!confirm(t('حذف التعليق؟', 'Delete comment?'))) return;
     const { error } = await supabase.from('community_comments').delete().eq('id', id);
     if (error) return toast.error(error.message);
     loadComments(postId);
   };
 
-  // build nested comment tree
+  const saveCommentEdit = async (postId: string) => {
+    if (!editingComment) return;
+    const content = editingComment.content.trim();
+    if (!content) return;
+    const { error } = await supabase.from('community_comments')
+      .update({ content }).eq('id', editingComment.id);
+    if (error) return toast.error(error.message);
+    setEditingComment(null);
+    loadComments(postId);
+  };
+
+  const submitReport = async () => {
+    if (!user || !reportTarget || !reportReason) return;
+    const payload: any = { reporter_id: user.id, reason: reportReason, details: reportDetails.trim() || null };
+    if (reportTarget.kind === 'post') payload.post_id = reportTarget.id;
+    else payload.comment_id = reportTarget.id;
+    const { error } = await supabase.from('community_reports').insert(payload);
+    if (error) return toast.error(error.message);
+    toast.success(t('تم إرسال الإبلاغ، شكرًا لك', 'Report submitted, thank you'));
+    setReportTarget(null); setReportReason(''); setReportDetails('');
+  };
+
+  // build nested tree with children count
   const buildTree = (list: Comment[]) => {
     const map = new Map<string, Comment & { children: any[] }>();
     list.forEach((c) => map.set(c.id, { ...c, children: [] }));
@@ -258,38 +293,83 @@ export default function Community({ role }: { role: Role }) {
     return roots;
   };
 
-  const renderComment = (postId: string, c: any, depth = 0): JSX.Element => (
-    <div key={c.id} className={`${depth > 0 ? 'ms-6 border-s-2 border-border ps-3' : ''} mt-3`}>
-      <div className="flex gap-2">
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={c.author?.avatar_url || undefined} />
-          <AvatarFallback>{(c.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <div className="rounded-2xl bg-muted/60 px-3 py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{c.author?.full_name || '—'}</span>
-              {c.author?.role === 'doctor' && <Badge variant="secondary" className="h-4 px-1 text-[10px]">Dr.</Badge>}
+  const countDescendants = (c: any): number =>
+    (c.children || []).reduce((acc: number, ch: any) => acc + 1 + countDescendants(ch), 0);
+
+  const renderComment = (postId: string, c: any, depth = 0): JSX.Element => {
+    const isCollapsed = collapsed[c.id];
+    const replyCount = countDescendants(c);
+    const isMine = c.author_id === user?.id;
+    const isEditing = editingComment?.id === c.id;
+    return (
+      <div key={c.id} className={`${depth > 0 ? 'ms-6 border-s-2 border-border ps-3' : ''} mt-3`}>
+        <div className="flex gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={c.author?.avatar_url || undefined} />
+            <AvatarFallback>{(c.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="rounded-2xl bg-muted/60 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">{c.author?.full_name || '—'}</span>
+                {c.author?.role === 'doctor' && <Badge variant="secondary" className="h-4 px-1 text-[10px]">Dr.</Badge>}
+                {c.edited_at && <span className="text-[10px] text-muted-foreground">({t('معدّل', 'edited')})</span>}
+              </div>
+              {isEditing ? (
+                <div className="mt-1">
+                  <Textarea
+                    value={editingComment!.content}
+                    onChange={(e) => setEditingComment({ ...editingComment!, content: e.target.value })}
+                    className="min-h-[60px]"
+                  />
+                  <div className="mt-2 flex gap-2">
+                    <Button size="sm" onClick={() => saveCommentEdit(postId)}>{t('حفظ', 'Save')}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>{t('إلغاء', 'Cancel')}</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap break-words">{c.content}</p>
+              )}
             </div>
-            <p className="text-sm whitespace-pre-wrap break-words">{c.content}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale })}</span>
+              <button onClick={() => toggleCommentLike(postId, c)} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? 'text-primary font-medium' : ''}`}>
+                <Heart className={`h-3.5 w-3.5 ${c.liked ? 'fill-primary' : ''}`} /> {c.likes_count}
+              </button>
+              <button onClick={() => setReplyTo((r) => ({ ...r, [postId]: c.id }))} className="inline-flex items-center gap-1 hover:text-primary">
+                <CornerDownRight className="h-3.5 w-3.5" /> {t('رد', 'Reply')}
+              </button>
+              {replyCount > 0 && (
+                <button
+                  onClick={() => setCollapsed((s) => ({ ...s, [c.id]: !s[c.id] }))}
+                  className="inline-flex items-center gap-1 hover:text-primary"
+                >
+                  {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  {isCollapsed
+                    ? t(`عرض ${replyCount} ردود`, `Show ${replyCount} replies`)
+                    : t(`إخفاء الردود`, 'Hide replies')}
+                </button>
+              )}
+              {isMine && !isEditing && (
+                <button onClick={() => setEditingComment({ id: c.id, content: c.content })} className="hover:text-primary">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {(isMine || isAdmin) && (
+                <button onClick={() => deleteComment(postId, c.id)} className="hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+              )}
+              {!isMine && (
+                <button onClick={() => { setReportTarget({ kind: 'comment', id: c.id }); setReportReason(''); setReportDetails(''); }} className="hover:text-destructive">
+                  <Flag className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            {!isCollapsed && c.children.map((child: any) => renderComment(postId, child, depth + 1))}
           </div>
-          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale })}</span>
-            <button onClick={() => toggleCommentLike(postId, c)} className={`inline-flex items-center gap-1 hover:text-primary ${c.liked ? 'text-primary font-medium' : ''}`}>
-              <Heart className={`h-3.5 w-3.5 ${c.liked ? 'fill-primary' : ''}`} /> {c.likes_count}
-            </button>
-            <button onClick={() => setReplyTo((r) => ({ ...r, [postId]: c.id }))} className="inline-flex items-center gap-1 hover:text-primary">
-              <CornerDownRight className="h-3.5 w-3.5" /> {t('رد', 'Reply')}
-            </button>
-            {(c.author_id === user?.id || isAdmin) && (
-              <button onClick={() => deleteComment(postId, c.id)} className="hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-            )}
-          </div>
-          {c.children.map((child: any) => renderComment(postId, child, depth + 1))}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const tabs = useMemo(() => ([
     { k: 'all', label: t('الكل', 'All') },
@@ -297,13 +377,49 @@ export default function Community({ role }: { role: Role }) {
     { k: 'mine', label: t('منشوراتي', 'Mine') },
   ] as const), [language]);
 
+  const reasons = language === 'ar' ? REPORT_REASONS_AR : REPORT_REASONS_EN;
+
   return (
     <MobileLayout role={role}>
       <div dir={isRTL ? 'rtl' : 'ltr'} className="mx-auto max-w-2xl px-4 py-4 pb-24">
-        <div className="mb-4 flex items-center gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold">{t('الملتقى الطلابي', 'Student Community')}</h1>
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-bold">{t('الملتقى الطلابي', 'Student Community')}</h1>
+          </div>
+          <Link to={`/${role}/notifications`}>
+            <Button variant="ghost" size="icon"><Settings className="h-4 w-4" /></Button>
+          </Link>
         </div>
+
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className={`pointer-events-none absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${isRTL ? 'right-3' : 'left-3'}`} />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('ابحث في المنشورات...', 'Search posts...')}
+            className={isRTL ? 'pr-9' : 'pl-9'}
+          />
+        </div>
+
+        {/* Trending tags */}
+        {trendingTags.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5">
+            <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+            {activeTag && (
+              <Badge variant="default" className="cursor-pointer" onClick={() => setActiveTag(null)}>
+                #{activeTag} <X className="ms-1 h-3 w-3" />
+              </Badge>
+            )}
+            {trendingTags.filter((tt) => tt.tag !== activeTag).map((tt) => (
+              <Badge key={tt.tag} variant="outline" className="cursor-pointer hover:bg-muted"
+                onClick={() => setActiveTag(tt.tag)}>
+                #{tt.tag} <span className="ms-1 text-[10px] text-muted-foreground">{tt.count}</span>
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Composer */}
         <form onSubmit={createPost} className="mb-4 rounded-2xl border bg-card p-3 shadow-sm">
@@ -360,7 +476,9 @@ export default function Community({ role }: { role: Role }) {
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : posts.length === 0 ? (
           <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
-            {t('لا توجد منشورات بعد. كن أول من يشارك!', 'No posts yet. Be the first to share!')}
+            {query || activeTag
+              ? t('لا توجد نتائج مطابقة', 'No matching results')
+              : t('لا توجد منشورات بعد. كن أول من يشارك!', 'No posts yet. Be the first to share!')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -392,23 +510,28 @@ export default function Community({ role }: { role: Role }) {
                         </div>
                       </div>
                     </div>
-                    {(p.author_id === user?.id || isAdmin) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
-                          {isAdmin && (
-                            <DropdownMenuItem onClick={() => pinPost(p)}>
-                              <Pin className="h-4 w-4 me-2" /> {p.is_pinned ? t('إلغاء التثبيت', 'Unpin') : t('تثبيت', 'Pin')}
-                            </DropdownMenuItem>
-                          )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
+                        {isAdmin && (
+                          <DropdownMenuItem onClick={() => pinPost(p)}>
+                            <Pin className="h-4 w-4 me-2" /> {p.is_pinned ? t('إلغاء التثبيت', 'Unpin') : t('تثبيت', 'Pin')}
+                          </DropdownMenuItem>
+                        )}
+                        {p.author_id !== user?.id && (
+                          <DropdownMenuItem onClick={() => { setReportTarget({ kind: 'post', id: p.id }); setReportReason(''); setReportDetails(''); }}>
+                            <Flag className="h-4 w-4 me-2" /> {t('إبلاغ', 'Report')}
+                          </DropdownMenuItem>
+                        )}
+                        {(p.author_id === user?.id || isAdmin) && (
                           <DropdownMenuItem className="text-destructive" onClick={() => deletePost(p)}>
                             <Trash2 className="h-4 w-4 me-2" /> {t('حذف', 'Delete')}
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </header>
 
                   <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
@@ -419,7 +542,10 @@ export default function Community({ role }: { role: Role }) {
                   )}
                   {p.tags && p.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {p.tags.map((tg) => <Badge key={tg} variant="outline" className="text-xs">#{tg}</Badge>)}
+                      {p.tags.map((tg) => (
+                        <Badge key={tg} variant="outline" className="cursor-pointer text-xs hover:bg-muted"
+                          onClick={() => setActiveTag(tg)}>#{tg}</Badge>
+                      ))}
                     </div>
                   )}
 
@@ -471,6 +597,40 @@ export default function Community({ role }: { role: Role }) {
           </div>
         )}
       </div>
+
+      {/* Report dialog */}
+      <Dialog open={!!reportTarget} onOpenChange={(o) => !o && setReportTarget(null)}>
+        <DialogContent dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle>{t('إبلاغ عن محتوى', 'Report content')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>{t('السبب', 'Reason')}</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {reasons.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setReportReason(r)}
+                    className={`rounded-full border px-3 py-1 text-sm ${reportReason === r ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                  >{r}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>{t('تفاصيل إضافية (اختياري)', 'Additional details (optional)')}</Label>
+              <Textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} maxLength={500} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setReportTarget(null)}>{t('إلغاء', 'Cancel')}</Button>
+            <Button onClick={submitReport} disabled={!reportReason}>
+              <Flag className="h-4 w-4 me-1" /> {t('إرسال الإبلاغ', 'Submit report')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileLayout>
   );
 }
