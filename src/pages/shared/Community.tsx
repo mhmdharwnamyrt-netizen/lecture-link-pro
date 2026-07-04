@@ -277,7 +277,7 @@ export default function Community({ role }: { role: Role }) {
     setLeaderboard((data as LeaderRow[]) || []);
   };
 
-  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, categoryFilter, user?.id]);
+  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, categoryFilter, user?.id, followingIds.length]);
   useEffect(() => { loadLeaderboard(); }, []);
 
   // debounced search
