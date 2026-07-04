@@ -526,14 +526,16 @@ export default function Community({ role }: { role: Role }) {
     return (
       <div key={c.id} className={`${depth > 0 ? 'ms-6 border-s-2 border-border ps-3' : ''} mt-3`}>
         <div className="flex gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={c.author?.avatar_url || undefined} />
-            <AvatarFallback>{(c.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
-          </Avatar>
+          <Link to={`/u/${c.author_id}`} className="shrink-0">
+            <Avatar className="h-8 w-8 transition hover:ring-2 hover:ring-primary/40">
+              <AvatarImage src={c.author?.avatar_url || undefined} />
+              <AvatarFallback>{(c.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
+            </Avatar>
+          </Link>
           <div className="flex-1">
             <div className="rounded-2xl bg-muted/60 px-3 py-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">{c.author?.full_name || '—'}</span>
+                <Link to={`/u/${c.author_id}`} className="text-sm font-semibold hover:underline">{c.author?.full_name || '—'}</Link>
                 {c.author?.role === 'doctor' && <Badge variant="secondary" className="h-4 px-1 text-[10px]">Dr.</Badge>}
                 {c.edited_at && <span className="text-[10px] text-muted-foreground">({t('معدّل', 'edited')})</span>}
               </div>
