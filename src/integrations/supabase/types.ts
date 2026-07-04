@@ -221,6 +221,48 @@ export type Database = {
           },
         ]
       }
+      community_mentions: {
+        Row: {
+          actor_id: string
+          comment_id: string | null
+          created_at: string
+          id: string
+          mentioned_user_id: string
+          post_id: string | null
+        }
+        Insert: {
+          actor_id: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+          post_id?: string | null
+        }
+        Update: {
+          actor_id?: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_post_media: {
         Row: {
           created_at: string
@@ -271,6 +313,7 @@ export type Database = {
       community_posts: {
         Row: {
           author_id: string
+          category: string
           comments_count: number
           content: string
           created_at: string
@@ -278,6 +321,7 @@ export type Database = {
           edited_at: string | null
           id: string
           image_url: string | null
+          is_answered: boolean
           is_hidden: boolean
           is_pinned: boolean
           likes_count: number
@@ -286,12 +330,15 @@ export type Database = {
           media_type: string | null
           pinned_at: string | null
           pinned_by: string | null
+          saves_count: number
+          score: number
           shares_count: number
           tags: string[] | null
           updated_at: string
         }
         Insert: {
           author_id: string
+          category?: string
           comments_count?: number
           content?: string
           created_at?: string
@@ -299,6 +346,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           image_url?: string | null
+          is_answered?: boolean
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number
@@ -307,12 +355,15 @@ export type Database = {
           media_type?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          saves_count?: number
+          score?: number
           shares_count?: number
           tags?: string[] | null
           updated_at?: string
         }
         Update: {
           author_id?: string
+          category?: string
           comments_count?: number
           content?: string
           created_at?: string
@@ -320,6 +371,7 @@ export type Database = {
           edited_at?: string | null
           id?: string
           image_url?: string | null
+          is_answered?: boolean
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number
@@ -328,6 +380,8 @@ export type Database = {
           media_type?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
+          saves_count?: number
+          score?: number
           shares_count?: number
           tags?: string[] | null
           updated_at?: string
@@ -434,6 +488,35 @@ export type Database = {
           },
           {
             foreignKeyName: "community_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_saved_posts: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_saved_posts_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "community_posts"
@@ -1408,6 +1491,19 @@ export type Database = {
       }
     }
     Functions: {
+      community_leaderboard: {
+        Args: { days?: number; lim?: number }
+        Returns: {
+          avatar_url: string
+          comments_count: number
+          full_name: string
+          likes_received: number
+          posts_count: number
+          role: string
+          score: number
+          user_id: string
+        }[]
+      }
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
       rebuild_statistics: { Args: never; Returns: string }

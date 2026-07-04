@@ -4,6 +4,8 @@ import {
   Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X,
   Pin, Trash2, CornerDownRight, Loader2, Users, Search, Flag, Hash, Pencil,
   ChevronDown, ChevronRight, Settings, Video, Mic, Paperclip, StopCircle,
+  Bookmark, BookmarkCheck, Trophy, CheckCircle2, MessageSquare, HelpCircle,
+  BookOpen, Megaphone, AtSign, Sparkles, Crown, Medal,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,7 +36,8 @@ interface Post {
   id: string; author_id: string; content: string; image_url: string | null;
   media_type?: MediaType | null; media_mime?: string | null; media_name?: string | null;
   tags: string[] | null; likes_count: number; comments_count: number; shares_count: number;
-  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; media?: PostMedia[];
+  saves_count?: number; score?: number; category?: PostCategory; is_answered?: boolean;
+  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; saved?: boolean; media?: PostMedia[];
 }
 interface Comment {
   id: string; post_id: string; parent_id: string | null; author_id: string;
@@ -44,6 +47,11 @@ interface Comment {
 
 type Role = 'doctor' | 'student';
 type MediaType = 'image' | 'video' | 'audio';
+type PostCategory = 'discussion' | 'question' | 'resource' | 'announcement';
+interface LeaderRow {
+  user_id: string; full_name: string | null; avatar_url: string | null; role: string | null;
+  posts_count: number; comments_count: number; likes_received: number; score: number;
+}
 
 interface PostMedia {
   id: string; post_id: string; uploader_id?: string; storage_path: string;
@@ -60,6 +68,14 @@ const REPORT_REASONS_EN = ['Offensive content', 'Misinformation', 'Harassment', 
 const MAX_MEDIA_FILES = 4;
 const MEDIA_BUCKET = 'message-attachments';
 
+const CATEGORY_META: Record<PostCategory, { icon: any; ar: string; en: string; color: string }> = {
+  discussion: { icon: MessageSquare, ar: 'نقاش', en: 'Discussion', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+  question: { icon: HelpCircle, ar: 'سؤال', en: 'Question', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+  resource: { icon: BookOpen, ar: 'مورد', en: 'Resource', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+  announcement: { icon: Megaphone, ar: 'إعلان', en: 'Announcement', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
+};
+const CATEGORIES: PostCategory[] = ['discussion', 'question', 'resource', 'announcement'];
+
 export default function Community({ role }: { role: Role }) {
   const { user, profile, isAdmin } = useAuth();
   const { language, isRTL } = useLanguage();
@@ -68,7 +84,13 @@ export default function Community({ role }: { role: Role }) {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'all' | 'mine' | 'trending'>('all');
+  const [tab, setTab] = useState<'all' | 'mine' | 'trending' | 'saved'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<PostCategory | null>(null);
+  const [composerCategory, setComposerCategory] = useState<PostCategory>('discussion');
+  const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
+  const [leaderOpen, setLeaderOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<Profile[]>([]);
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
@@ -105,29 +127,42 @@ export default function Community({ role }: { role: Role }) {
   const mediaLimit = (type: MediaType) => (type === 'image' ? 8 : type === 'video' ? 80 : 30) * 1024 * 1024;
   const mediaLabel = (type: MediaType) => type === 'image' ? t('صورة', 'Photo') : type === 'video' ? t('فيديو', 'Video') : t('صوت', 'Audio');
 
-  // -------- Load posts (with search/tag filters) --------
+  // -------- Load posts (with search/tag/category filters + saved tab) --------
   const loadPosts = async () => {
     setLoading(true);
+    let savedIds: string[] = [];
+    if (tab === 'saved') {
+      if (!user) { setPosts([]); setLoading(false); return; }
+      const { data: saves } = await supabase.from('community_saved_posts').select('post_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(200);
+      savedIds = (saves || []).map((s: any) => s.post_id);
+      if (!savedIds.length) { setPosts([]); setLoading(false); return; }
+    }
     let q = supabase.from('community_posts').select('*').eq('is_hidden', false);
     if (tab === 'mine' && user) q = q.eq('author_id', user.id);
+    if (tab === 'saved') q = q.in('id', savedIds);
+    if (categoryFilter) q = q.eq('category', categoryFilter);
     if (activeTag) q = q.contains('tags', [activeTag]);
     if (query.trim()) q = q.ilike('content', `%${query.trim()}%`);
-    if (tab === 'trending') q = q.order('likes_count', { ascending: false });
+    if (tab === 'trending') q = q.order('score', { ascending: false });
     else q = q.order('is_pinned', { ascending: false }).order('created_at', { ascending: false });
 
     const { data: rows, error } = await q.limit(80);
     if (error) { toast.error(error.message); setLoading(false); return; }
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
-    const [{ data: authors }, { data: myLikes }, { data: mediaRows }] = await Promise.all([
+    const postIds = (rows || []).map((r: any) => r.id);
+    const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('post_id').eq('user_id', user.id).not('post_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
-      rows?.length
-        ? (supabase as any).from('community_post_media').select('*').in('post_id', (rows || []).map((r: any) => r.id)).order('created_at', { ascending: true })
+      user && postIds.length
+        ? supabase.from('community_saved_posts').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+        : Promise.resolve({ data: [] as any[] }),
+      postIds.length
+        ? (supabase as any).from('community_post_media').select('*').in('post_id', postIds).order('created_at', { ascending: true })
         : Promise.resolve({ data: [] as any[] }),
     ]);
     const mediaWithUrls = await Promise.all(((mediaRows as PostMedia[]) || []).map(async (m) => {
@@ -140,10 +175,12 @@ export default function Community({ role }: { role: Role }) {
     }, {});
     const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
     const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
+    const saved = new Set(((mySaves as any[]) || []).map((r: any) => r.post_id));
     setPosts((rows || []).map((p: any) => ({
       ...p,
       author: map.get(p.author_id) || (p.author_id === user?.id ? profile : undefined),
       liked: liked.has(p.id),
+      saved: saved.has(p.id),
       media: mediaByPost[p.id] || [],
     })));
     setLoading(false);
@@ -154,7 +191,13 @@ export default function Community({ role }: { role: Role }) {
     setTrendingTags(Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([tag, count]) => ({ tag, count })));
   };
 
-  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, user?.id]);
+  const loadLeaderboard = async () => {
+    const { data } = await (supabase as any).rpc('community_leaderboard', { days: 30, lim: 10 });
+    setLeaderboard((data as LeaderRow[]) || []);
+  };
+
+  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, categoryFilter, user?.id]);
+  useEffect(() => { loadLeaderboard(); }, []);
 
   // debounced search
   useEffect(() => {
@@ -265,6 +308,28 @@ export default function Community({ role }: { role: Role }) {
     setRecording(false);
   };
 
+  // Resolve @mentions: match @name tokens against profiles.full_name (case-insensitive prefix)
+  const resolveMentions = async (body: string): Promise<string[]> => {
+    const raw = Array.from(body.matchAll(/@([\p{L}\p{N}_ ]{2,40})/gu)).map((m) => m[1].trim());
+    if (!raw.length) return [];
+    const uniqueNames = [...new Set(raw)];
+    const found: string[] = [];
+    for (const name of uniqueNames.slice(0, 10)) {
+      const { data } = await supabase.from('profiles')
+        .select('user_id').ilike('full_name', `%${name}%`).limit(1);
+      if (data?.[0]?.user_id && !found.includes(data[0].user_id)) found.push(data[0].user_id);
+    }
+    return found;
+  };
+
+  const insertMentions = async (userIds: string[], postId?: string, commentId?: string) => {
+    if (!user || userIds.length === 0) return;
+    const rows = userIds.filter((uid) => uid !== user.id).map((uid) => ({
+      mentioned_user_id: uid, actor_id: user.id, post_id: postId ?? null, comment_id: commentId ?? null,
+    }));
+    if (rows.length) await (supabase as any).from('community_mentions').insert(rows);
+  };
+
   const createPost = async (e: FormEvent) => {
     e.preventDefault();
     if (!user || (!text.trim() && selectedMedia.length === 0)) return;
@@ -275,9 +340,10 @@ export default function Community({ role }: { role: Role }) {
       const postId = crypto.randomUUID();
       const uploaded = await uploadMediaFiles(postId);
       const firstUploaded = uploaded.find((m) => m.media_type === 'image') || uploaded[0];
-      const { data: postRow, error } = await supabase.from('community_posts').insert({
+      const { error } = await supabase.from('community_posts').insert({
         id: postId, author_id: user.id, content: text.trim(), image_url: firstUploaded?.storage_path ?? null,
         department_id: (profile as any)?.department_id ?? null, tags,
+        category: composerCategory,
         media_type: firstMedia?.type ?? null, media_mime: firstMedia?.file.type ?? null, media_name: firstMedia?.file.name ?? null,
       } as any).select('id').single();
       if (error) throw error;
@@ -286,7 +352,9 @@ export default function Community({ role }: { role: Role }) {
         const { error: mediaError } = await (supabase as any).from('community_post_media').insert(rows);
         if (mediaError) throw mediaError;
       }
-      setText(''); clearMedia();
+      const mentionedIds = await resolveMentions(text);
+      await insertMentions(mentionedIds, postId);
+      setText(''); clearMedia(); setComposerCategory('discussion');
       toast.success(t('تم النشر', 'Posted'));
       loadPosts();
     } catch (e: any) {
@@ -294,6 +362,25 @@ export default function Community({ role }: { role: Role }) {
     } finally {
       setPosting(false);
     }
+  };
+
+  const toggleSave = async (post: Post) => {
+    if (!user) return;
+    setPosts((prev) => prev.map((p) => p.id === post.id
+      ? { ...p, saved: !p.saved, saves_count: (p.saves_count || 0) + (p.saved ? -1 : 1) } : p));
+    if (post.saved) {
+      await supabase.from('community_saved_posts').delete().eq('user_id', user.id).eq('post_id', post.id);
+    } else {
+      await supabase.from('community_saved_posts').insert({ user_id: user.id, post_id: post.id });
+      toast.success(t('تم الحفظ', 'Saved'));
+    }
+  };
+
+  const markAnswered = async (post: Post) => {
+    const { error } = await supabase.from('community_posts')
+      .update({ is_answered: !post.is_answered } as any).eq('id', post.id);
+    if (error) return toast.error(error.message);
+    setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, is_answered: !post.is_answered } : p));
   };
 
   const toggleLike = async (post: Post) => {
@@ -364,11 +451,13 @@ export default function Community({ role }: { role: Role }) {
     if (!user) return;
     const content = (commentDrafts[postId] || '').trim();
     if (!content) return;
-    const { error } = await supabase.from('community_comments').insert({
+    const { data: inserted, error } = await supabase.from('community_comments').insert({
       post_id: postId, parent_id: replyTo[postId] || null,
       author_id: user.id, content,
-    });
+    }).select('id').single();
     if (error) return toast.error(error.message);
+    const mentioned = await resolveMentions(content);
+    await insertMentions(mentioned, postId, inserted?.id);
     setCommentDrafts((d) => ({ ...d, [postId]: '' }));
     setReplyTo((r) => ({ ...r, [postId]: null }));
     loadComments(postId);
@@ -530,6 +619,7 @@ export default function Community({ role }: { role: Role }) {
   const tabs = useMemo(() => ([
     { k: 'all', label: t('الكل', 'All') },
     { k: 'trending', label: t('الأكثر تفاعلاً', 'Trending') },
+    { k: 'saved', label: t('المحفوظة', 'Saved') },
     { k: 'mine', label: t('منشوراتي', 'Mine') },
   ] as const), [language]);
 
@@ -559,6 +649,24 @@ export default function Community({ role }: { role: Role }) {
           />
         </div>
 
+        {/* Category filter chips */}
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setCategoryFilter(null)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${!categoryFilter ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-muted'}`}
+          >{t('كل التصنيفات', 'All categories')}</button>
+          {CATEGORIES.map((c) => {
+            const meta = CATEGORY_META[c]; const Icon = meta.icon;
+            const active = categoryFilter === c;
+            return (
+              <button key={c} onClick={() => setCategoryFilter(active ? null : c)}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${active ? 'bg-primary text-primary-foreground border-primary' : meta.color + ' hover:opacity-80'}`}>
+                <Icon className="h-3 w-3" /> {t(meta.ar, meta.en)}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Trending tags */}
         {trendingTags.length > 0 && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5">
@@ -577,8 +685,64 @@ export default function Community({ role }: { role: Role }) {
           </div>
         )}
 
+        {/* Leaderboard */}
+        <div className="mb-4 overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-500/10 via-card to-primary/5 shadow-sm">
+          <button onClick={() => setLeaderOpen((o) => !o)} className="flex w-full items-center justify-between px-4 py-3 text-left">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              <span className="font-semibold">{t('الأكثر تفاعلاً هذا الشهر', 'Top contributors this month')}</span>
+            </div>
+            {leaderOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          {leaderOpen && (
+            <div className="border-t px-2 py-2">
+              {leaderboard.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">{t('لا توجد بيانات بعد', 'No data yet')}</div>
+              ) : (
+                <ol className="space-y-1">
+                  {leaderboard.map((row, idx) => (
+                    <li key={row.user_id} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-muted/50">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold">
+                        {idx === 0 ? <Crown className="h-4 w-4 text-amber-500" /> : idx === 1 ? <Medal className="h-4 w-4 text-slate-400" /> : idx === 2 ? <Medal className="h-4 w-4 text-orange-500" /> : idx + 1}
+                      </div>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={row.avatar_url || undefined} />
+                        <AvatarFallback>{avatarLetter(row.full_name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1 truncate text-sm font-medium">
+                          {row.full_name || t('مستخدم', 'User')}
+                          {row.role === 'doctor' && <Badge variant="secondary" className="h-4 px-1 text-[10px]">Dr.</Badge>}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {row.posts_count} {t('منشور', 'posts')} · {row.comments_count} {t('تعليق', 'comments')} · {row.likes_received} {t('إعجاب', 'likes')}
+                        </div>
+                      </div>
+                      <div className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-600">
+                        <Sparkles className="h-3 w-3" /> {row.score}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Composer */}
         <form onSubmit={createPost} className="mb-4 rounded-2xl border bg-card p-3 shadow-sm">
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {CATEGORIES.map((c) => {
+              const meta = CATEGORY_META[c]; const Icon = meta.icon;
+              const active = composerCategory === c;
+              return (
+                <button key={c} type="button" onClick={() => setComposerCategory(c)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition ${active ? 'bg-primary text-primary-foreground border-primary' : meta.color}`}>
+                  <Icon className="h-3 w-3" /> {t(meta.ar, meta.en)}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex gap-2">
             <Avatar className="h-9 w-9">
               <AvatarImage src={profile?.avatar_url || undefined} />
@@ -587,7 +751,7 @@ export default function Community({ role }: { role: Role }) {
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={t('شارك فكرة، سؤالاً، أو إعلاناً...', 'Share a thought, question, or announcement...')}
+              placeholder={t('شارك فكرة، سؤالاً، أو إعلاناً... استخدم @اسم للإشارة و #وسم', 'Share... use @name to mention and #tag')}
               className="min-h-[60px] resize-none border-0 focus-visible:ring-0"
               maxLength={5000}
             />
@@ -677,10 +841,23 @@ export default function Community({ role }: { role: Role }) {
                         <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold">{displayName(p.author, p.author_id === user?.id ? user : undefined)}</span>
                           {p.author?.role === 'doctor' && <Badge variant="secondary" className="h-5 px-1.5 text-xs">Dr.</Badge>}
                           {p.is_pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
+                          {p.category && (() => {
+                            const meta = CATEGORY_META[p.category]; const Icon = meta.icon;
+                            return (
+                              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${meta.color}`}>
+                                <Icon className="h-3 w-3" /> {t(meta.ar, meta.en)}
+                              </span>
+                            );
+                          })()}
+                          {p.category === 'question' && p.is_answered && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                              <CheckCircle2 className="h-3 w-3" /> {t('تمت الإجابة', 'Answered')}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(p.created_at), { addSuffix: true, locale })}
@@ -695,6 +872,17 @@ export default function Community({ role }: { role: Role }) {
                         {isAdmin && (
                           <DropdownMenuItem onClick={() => pinPost(p)}>
                             <Pin className="h-4 w-4 me-2" /> {p.is_pinned ? t('إلغاء التثبيت', 'Unpin') : t('تثبيت', 'Pin')}
+                          </DropdownMenuItem>
+                        )}
+                        {p.category === 'question' && (p.author_id === user?.id || isAdmin) && (
+                          <DropdownMenuItem onClick={() => markAnswered(p)}>
+                            <CheckCircle2 className="h-4 w-4 me-2" /> {p.is_answered ? t('إلغاء الإجابة', 'Unmark answered') : t('تعليم كإجابة', 'Mark answered')}
+                          </DropdownMenuItem>
+                        )}
+                        {user && (
+                          <DropdownMenuItem onClick={() => toggleSave(p)}>
+                            {p.saved ? <BookmarkCheck className="h-4 w-4 me-2 text-primary" /> : <Bookmark className="h-4 w-4 me-2" />}
+                            {p.saved ? t('إلغاء الحفظ', 'Unsave') : t('حفظ', 'Save')}
                           </DropdownMenuItem>
                         )}
                         {p.author_id !== user?.id && (
@@ -737,6 +925,10 @@ export default function Community({ role }: { role: Role }) {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => sharePost(p)}>
                       <Share2 className="h-4 w-4 me-1" /> {p.shares_count}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleSave(p)} className={p.saved ? 'text-primary' : ''}>
+                      {p.saved ? <BookmarkCheck className="h-4 w-4 me-1 fill-primary" /> : <Bookmark className="h-4 w-4 me-1" />}
+                      {p.saves_count || 0}
                     </Button>
                   </div>
 
