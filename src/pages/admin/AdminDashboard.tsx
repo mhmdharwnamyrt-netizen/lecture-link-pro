@@ -574,6 +574,15 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+              title={language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
+            >
+              <Languages className="me-2 h-4 w-4" />
+              {language === 'ar' ? 'EN' : 'ع'}
+            </Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> {t('admin.reports')}</Link></Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> {t('admin.logs')}</Link></Button>
             <Button variant="outline" size="sm" onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')}>
