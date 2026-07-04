@@ -491,6 +491,68 @@ export default function StudentDashboard() {
           </div>
         )}
 
+        {/* Trainings preview */}
+        {trainings.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-primary" />
+                {language === 'ar' ? 'تدريبات وفرص' : 'Trainings & opportunities'}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/student/trainings')}>
+                {language === 'ar' ? 'الكل' : 'See all'} <ArrowRight className={`h-4 w-4 ms-1 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {trainings.map((tr) => (
+                <a key={tr.id} href={tr.apply_url} target="_blank" rel="noopener noreferrer"
+                  className="block rounded-2xl bg-card p-3 shadow-card hover:shadow-elevated transition">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+                        {tr.type === 'university'
+                          ? <><GraduationCap className="h-3 w-3" /> {language === 'ar' ? 'جامعي' : 'University'}</>
+                          : <><Building2 className="h-3 w-3" /> {tr.company_name || (language === 'ar' ? 'شركة' : 'Company')}</>}
+                      </div>
+                      <p className="font-medium text-sm truncate">{tr.title}</p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Community highlights (during quiet weeks / always) */}
+        {activeLectures.length === 0 && feedPosts.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                {language === 'ar' ? 'من الملتقى' : 'From the community'}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/student/community')}>
+                {language === 'ar' ? 'الكل' : 'See all'} <ArrowRight className={`h-4 w-4 ms-1 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {feedPosts.slice(0, 3).map((p: any) => (
+                <div key={p.id} onClick={() => navigate('/student/community')}
+                  className="cursor-pointer rounded-2xl bg-card p-3 shadow-card">
+                  <p className="text-xs text-muted-foreground mb-1">{p.profiles?.full_name || (language === 'ar' ? 'مستخدم' : 'User')}</p>
+                  <p className="text-sm line-clamp-2">{p.content}</p>
+                  <div className="mt-1.5 flex gap-3 text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {p.likes_count || 0}</span>
+                    <span className="inline-flex items-center gap-1"><MessageCircle className="h-3 w-3" /> {p.comments_count || 0}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+
         {/* Recent Attendance */}
         {recentAttendance.length > 0 && (
           <div className="mb-6">
