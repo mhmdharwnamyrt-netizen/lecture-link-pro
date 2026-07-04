@@ -21,6 +21,8 @@ interface ProfileRow {
   role: string; academic_title: string | null; student_id: string | null;
   department_id: string | null; level: number | null; points: number;
   bio: string | null; skills: string[] | null; interests: string[] | null;
+  hobbies: string[] | null; favorites: string[] | null;
+  followers_count: number; following_count: number;
 }
 
 export default function PublicProfilePage() {
