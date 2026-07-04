@@ -521,16 +521,19 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isAdmin) return;
+    // Load recent persisted events
+    (async () => {
+      const { data } = await supabase
+        .from('activity_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      setLiveEvents(data || []);
+    })();
     const channel = supabase
-      .channel('admin-live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance' },
-        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'attendance', text: `Attendance ${p.new.status}`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
-        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'message', text: `New message`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'excuses' },
-        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'excuse', text: `Excuse submitted`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'office_hour_bookings' },
-        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'booking', text: `Office-hours booking`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .channel('admin-activity-feed')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_events' },
+        (p: any) => setLiveEvents(evs => [p.new, ...evs].slice(0, 200)))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [isAdmin]);
