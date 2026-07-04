@@ -45,6 +45,7 @@ function StatCard({ icon: Icon, label, value, hint, tone = 'primary' }: any) {
 
 export default function AdminDashboard() {
   const { user, profile, loading } = useAuth();
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
