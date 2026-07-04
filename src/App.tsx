@@ -35,6 +35,7 @@ const NotificationsPage = lazy(() => import("./pages/shared/Notifications"));
 const ProfilePage = lazy(() => import("./pages/shared/Profile"));
 const MessagesPage = lazy(() => import("./pages/shared/Messages"));
 const OfficeHoursPage = lazy(() => import("./pages/shared/OfficeHours"));
+const CommunityPage = lazy(() => import("./pages/shared/Community"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
