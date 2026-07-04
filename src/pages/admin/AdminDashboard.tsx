@@ -1221,6 +1221,44 @@ export default function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Department dialog */}
+      <Dialog open={deptDialog.open} onOpenChange={(v) => !v && setDeptDialog({ open: false })}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{deptDialog.edit ? 'Edit department' : 'New department'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Name (English)" value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} />
+            <Input placeholder="الاسم بالعربية" value={deptForm.name_ar} onChange={e => setDeptForm({ ...deptForm, name_ar: e.target.value })} />
+            <Input placeholder="Code (optional)" value={deptForm.code} onChange={e => setDeptForm({ ...deptForm, code: e.target.value })} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeptDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveDept}>{deptDialog.edit ? 'Save' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subject dialog */}
+      <Dialog open={subjDialog.open} onOpenChange={(v) => !v && setSubjDialog({ open: false })}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{subjDialog.edit ? 'Edit subject' : 'New subject'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Subject name" value={subjForm.name} onChange={e => setSubjForm({ ...subjForm, name: e.target.value })} />
+            <Input placeholder="Code (optional)" value={subjForm.code} onChange={e => setSubjForm({ ...subjForm, code: e.target.value })} />
+            <Select value={subjForm.department_id} onValueChange={(v) => setSubjForm({ ...subjForm, department_id: v })}>
+              <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
+              <SelectContent>
+                {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveSubj}>{subjDialog.edit ? 'Save' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
