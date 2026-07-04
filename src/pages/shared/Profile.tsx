@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import IdentityVerification from '@/components/student/IdentityVerification';
 import InstallApp from '@/components/InstallApp';
 import AvatarUploader from '@/components/AvatarUploader';
+import CoverUploader from '@/components/CoverUploader';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor, Pencil, Sparkles, X, ExternalLink } from 'lucide-react';
 
