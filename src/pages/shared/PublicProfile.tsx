@@ -164,13 +164,40 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
+          {/* Follower stats */}
+          <div className="mt-4 flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold tabular-nums">{profile?.followers_count ?? 0}</span>
+              <span className="text-muted-foreground">{t('متابع', 'followers')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold tabular-nums">{profile?.following_count ?? 0}</span>
+              <span className="text-muted-foreground">{t('يتابع', 'following')}</span>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="mt-4 flex gap-2">
             {!isMe ? (
-              <Button onClick={startMessage} className="flex-1 h-11 rounded-xl">
-                <MessageSquare className="h-4 w-4 me-2" />
-                {t('مراسلة', 'Message')}
-              </Button>
+              <>
+                <Button
+                  onClick={toggleFollow}
+                  disabled={followBusy}
+                  variant={isFollowing ? 'outline' : 'default'}
+                  className="flex-1 h-11 rounded-xl"
+                >
+                  {isFollowing ? (
+                    <><UserCheck className="h-4 w-4 me-2" /> {t('تتم متابعته', 'Following')}</>
+                  ) : (
+                    <><UserPlus className="h-4 w-4 me-2" /> {t('متابعة', 'Follow')}</>
+                  )}
+                </Button>
+                <Button onClick={startMessage} variant="outline" className="flex-1 h-11 rounded-xl">
+                  <MessageSquare className="h-4 w-4 me-2" />
+                  {t('مراسلة', 'Message')}
+                </Button>
+              </>
             ) : (
               <Button asChild variant="outline" className="flex-1 h-11 rounded-xl">
                 <Link to={`/${myRole}/profile`}>{t('تعديل الملف الشخصي', 'Edit profile')}</Link>
@@ -189,29 +216,21 @@ export default function PublicProfilePage() {
             </div>
           )}
 
-          {/* Skills */}
-          {profile?.skills && profile.skills.length > 0 && (
-            <div className="mt-3 rounded-2xl border bg-card p-4">
-              <div className="text-sm font-semibold mb-2">{t('المهارات', 'Skills')}</div>
+          {[
+            { key: 'skills', title: t('المهارات', 'Skills'), variant: 'secondary' as const, items: profile?.skills },
+            { key: 'interests', title: t('الاهتمامات', 'Interests'), variant: 'outline' as const, items: profile?.interests },
+            { key: 'hobbies', title: t('الهوايات', 'Hobbies'), variant: 'secondary' as const, items: profile?.hobbies },
+            { key: 'favorites', title: t('المفضلات', 'Favorites'), variant: 'outline' as const, items: profile?.favorites },
+          ].map((sec) => (sec.items && sec.items.length > 0) ? (
+            <div key={sec.key} className="mt-3 rounded-2xl border bg-card p-4">
+              <div className="text-sm font-semibold mb-2">{sec.title}</div>
               <div className="flex flex-wrap gap-2">
-                {profile.skills.map((s, i) => (
-                  <Badge key={i} variant="secondary" className="rounded-full">{s}</Badge>
+                {sec.items.map((s, i) => (
+                  <Badge key={i} variant={sec.variant} className="rounded-full">{s}</Badge>
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Interests */}
-          {profile?.interests && profile.interests.length > 0 && (
-            <div className="mt-3 rounded-2xl border bg-card p-4">
-              <div className="text-sm font-semibold mb-2">{t('الاهتمامات', 'Interests')}</div>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.map((s, i) => (
-                  <Badge key={i} variant="outline" className="rounded-full">{s}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
+          ) : null)}
 
           {/* Stats */}
           {profile?.role === 'student' && (
