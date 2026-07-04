@@ -38,6 +38,8 @@ export default function PublicProfilePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [coverSrc, setCoverSrc] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -45,7 +47,7 @@ export default function PublicProfilePage() {
       setLoading(true);
       const { data: prof } = await supabase
         .from('profiles')
-        .select('id,user_id,full_name,avatar_url,cover_url,role,academic_title,student_id,department_id,level,points,bio,skills,interests')
+        .select('id,user_id,full_name,avatar_url,cover_url,role,academic_title,student_id,department_id,level,points,bio,skills,interests,hobbies,favorites,followers_count,following_count')
         .eq('user_id', userId)
         .maybeSingle();
       setProfile(prof as any);
@@ -60,9 +62,44 @@ export default function PublicProfilePage() {
         .order('created_at', { ascending: false })
         .limit(30);
       setPosts(pRows || []);
+      // Am I following this user?
+      if (me?.user_id && me.user_id !== userId) {
+        const { data: f } = await supabase
+          .from('community_follows')
+          .select('id')
+          .eq('follower_id', me.user_id)
+          .eq('following_id', userId)
+          .maybeSingle();
+        setIsFollowing(!!f);
+      }
       setLoading(false);
     })();
-  }, [userId]);
+  }, [userId, me?.user_id]);
+
+  const toggleFollow = async () => {
+    if (!me?.user_id || !userId || followBusy) return;
+    setFollowBusy(true);
+    if (isFollowing) {
+      const { error } = await supabase
+        .from('community_follows')
+        .delete()
+        .eq('follower_id', me.user_id)
+        .eq('following_id', userId);
+      if (!error) {
+        setIsFollowing(false);
+        setProfile((p) => p ? { ...p, followers_count: Math.max(0, p.followers_count - 1) } : p);
+      } else toast.error(error.message);
+    } else {
+      const { error } = await supabase
+        .from('community_follows')
+        .insert({ follower_id: me.user_id, following_id: userId });
+      if (!error) {
+        setIsFollowing(true);
+        setProfile((p) => p ? { ...p, followers_count: p.followers_count + 1 } : p);
+      } else toast.error(error.message);
+    }
+    setFollowBusy(false);
+  };
 
   const myRole = (me?.role as 'doctor' | 'student') || 'student';
   const isMe = me?.user_id === userId;
