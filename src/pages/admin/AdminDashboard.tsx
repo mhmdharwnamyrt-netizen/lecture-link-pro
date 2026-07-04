@@ -426,6 +426,33 @@ export default function AdminDashboard() {
         if (error) throw error;
         await logAdminAction({ action: 'maintenance.purge_notifications' });
         toast({ title: 'Old read notifications purged' });
+      } else if (kind === 'run-ai') {
+        const { data, error } = await supabase.functions.invoke('scheduled-attendance-analysis', { body: {} });
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.run_ai_analysis', details: data });
+        toast({ title: 'AI analysis complete', description: `${data?.totalAlerts ?? 0} new alerts` });
+      } else if (kind === 'rebuild-stats') {
+        const { data, error } = await supabase.rpc('rebuild_statistics');
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.rebuild_stats', details: { result: data } });
+        toast({ title: 'Statistics rebuilt', description: String(data) });
+      } else if (kind === 'integrity-check') {
+        const { data, error } = await supabase.rpc('db_integrity_check');
+        if (error) throw error;
+        setIntegrity(data);
+        await logAdminAction({ action: 'maintenance.integrity_check', details: data });
+        toast({ title: 'Integrity check complete' });
+      } else if (kind === 'health-check') {
+        const { data, error } = await supabase.rpc('db_health_snapshot');
+        if (error) throw error;
+        setDbHealth(data);
+        toast({ title: 'DB health snapshot updated' });
+      } else if (kind === 'purge-events') {
+        const cutoff = new Date(Date.now() - 90 * 86400_000).toISOString();
+        const { error } = await supabase.from('activity_events').delete().lt('created_at', cutoff);
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.purge_events' });
+        toast({ title: 'Old activity events purged' });
       }
       loadAll();
     } catch (e: any) {
