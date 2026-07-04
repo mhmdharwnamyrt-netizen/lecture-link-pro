@@ -836,13 +836,17 @@ export default function Community({ role }: { role: Role }) {
                 >
                   <header className="flex items-start justify-between">
                     <div className="flex gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={p.author?.avatar_url || undefined} />
-                        <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
-                      </Avatar>
+                      <Link to={`/u/${p.author_id}`} className="shrink-0">
+                        <Avatar className="h-10 w-10 transition hover:ring-2 hover:ring-primary/40">
+                          <AvatarImage src={p.author?.avatar_url || undefined} />
+                          <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
+                        </Avatar>
+                      </Link>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold">{displayName(p.author, p.author_id === user?.id ? user : undefined)}</span>
+                          <Link to={`/u/${p.author_id}`} className="font-semibold hover:underline">
+                            {displayName(p.author, p.author_id === user?.id ? user : undefined)}
+                          </Link>
                           {p.author?.role === 'doctor' && <Badge variant="secondary" className="h-5 px-1.5 text-xs">Dr.</Badge>}
                           {p.is_pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
                           {p.category && (() => {
