@@ -1374,38 +1374,136 @@ export default function AdminDashboard() {
                 </div>
                 <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Sparkles className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">{language === 'ar' ? 'تشغيل تحليل الذكاء الاصطناعي الآن' : 'Run AI Analysis Now'}</p><p className="text-xs text-muted-foreground">{language === 'ar' ? 'يمر على كل الطلاب ويصدر تنبيهات المخاطر تلقائيًا (يعمل أيضًا كل 6 ساعات).' : 'Scans all students and produces risk alerts (also runs every 6h).'}</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('run-ai')} disabled={maintBusy === 'run-ai'}>{maintBusy === 'run-ai' ? t('admin.action.working') : t('admin.action.run')}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success"><BarChart3 className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">{language === 'ar' ? 'إعادة بناء الإحصائيات' : 'Rebuild Statistics'}</p><p className="text-xs text-muted-foreground">{language === 'ar' ? 'يشغل ANALYZE على كل الجداول لتسريع الاستعلامات.' : 'Runs ANALYZE on all tables to speed up queries.'}</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('rebuild-stats')} disabled={maintBusy === 'rebuild-stats'}>{maintBusy === 'rebuild-stats' ? t('admin.action.working') : t('admin.action.run')}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><ShieldCheck className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">{language === 'ar' ? 'فحص سلامة قاعدة البيانات' : 'Integrity Check'}</p><p className="text-xs text-muted-foreground">{language === 'ar' ? 'يبحث عن سجلات يتيمة ومؤشرات كتابة قديمة وتحذيرات مفتوحة.' : 'Detects orphan rows, stale typing, unresolved warnings.'}</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('integrity-check')} disabled={maintBusy === 'integrity-check'}>{maintBusy === 'integrity-check' ? t('admin.action.working') : t('admin.action.run')}</Button>
+                {integrity && (
+                  <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-muted p-2 text-[10px]">{JSON.stringify(integrity, null, 2)}</pre>
+                )}
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><HeartPulse className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">{language === 'ar' ? 'صحة قاعدة البيانات' : 'DB Health Snapshot'}</p><p className="text-xs text-muted-foreground">{language === 'ar' ? 'الحجم، عدد الصفوف لكل جدول، الاتصالات النشطة.' : 'Size, per-table rows, active connections.'}</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('health-check')} disabled={maintBusy === 'health-check'}>{maintBusy === 'health-check' ? t('admin.action.working') : t('admin.action.run')}</Button>
+                {dbHealth && (
+                  <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-muted p-2 text-[10px]">{JSON.stringify(dbHealth, null, 2)}</pre>
+                )}
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive"><Trash2 className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">{language === 'ar' ? 'تنظيف سجل الأحداث' : 'Purge Old Events'}</p><p className="text-xs text-muted-foreground">{language === 'ar' ? 'يحذف أحداث النشاط الأقدم من 90 يومًا.' : 'Deletes activity events older than 90 days.'}</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('purge-events')} disabled={maintBusy === 'purge-events'}>{maintBusy === 'purge-events' ? t('admin.action.working') : t('admin.action.run')}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card md:col-span-2">
+                <p className="text-xs text-muted-foreground">{language === 'ar' ? '⏰ المهام المجدولة: تحليل الذكاء الاصطناعي كل 6 ساعات • صيانة ليلية 3:00 UTC (إحصائيات + تنظيف).' : '⏰ Scheduled jobs: AI analysis every 6 hours • Nightly maintenance at 03:00 UTC (stats + cleanup).'}</p>
+              </div>
             </div>
           </TabsContent>
 
           {/* Live Feed */}
           <TabsContent value="live" className="space-y-3">
             <div className="rounded-2xl bg-card p-5 shadow-card">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex flex-wrap items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success"><Radio className="h-5 w-5 animate-pulse" /></div>
                 <div>
                   <p className="font-bold">{t('admin.live.title')}</p>
-                  <p className="text-xs text-muted-foreground">{t('admin.live.subtitle')}</p>
+                  <p className="text-xs text-muted-foreground">{language === 'ar' ? 'أحداث النظام الحية محفوظة في قاعدة البيانات' : 'Live system events persisted in the database'}</p>
                 </div>
-                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>{t('admin.action.clear')}</Button>
+                <div className="ms-auto flex flex-wrap items-center gap-2">
+                  <Select value={liveFilterKind} onValueChange={setLiveFilterKind}>
+                    <SelectTrigger className="h-8 w-40"><SelectValue placeholder="Kind" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === 'ar' ? 'كل الأنواع' : 'All kinds'}</SelectItem>
+                      {Array.from(new Set(liveEvents.map(e => e.kind))).map(k => (
+                        <SelectItem key={k} value={k}>{k}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={liveFilterSeverity} onValueChange={setLiveFilterSeverity}>
+                    <SelectTrigger className="h-8 w-36"><SelectValue placeholder="Severity" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === 'ar' ? 'كل الأهمية' : 'All severities'}</SelectItem>
+                      <SelectItem value="info">info</SelectItem>
+                      <SelectItem value="success">success</SelectItem>
+                      <SelectItem value="warning">warning</SelectItem>
+                      <SelectItem value="critical">critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={liveFilterDept} onValueChange={setLiveFilterDept}>
+                    <SelectTrigger className="h-8 w-40"><SelectValue placeholder="Dept" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === 'ar' ? 'كل الأقسام' : 'All departments'}</SelectItem>
+                      {departments.map(d => (
+                        <SelectItem key={d.id} value={d.id}>{language === 'ar' ? (d.name_ar || d.name) : d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const rows = liveEvents.filter(e =>
+                      (liveFilterKind === 'all' || e.kind === liveFilterKind) &&
+                      (liveFilterSeverity === 'all' || e.severity === liveFilterSeverity) &&
+                      (liveFilterDept === 'all' || e.department_id === liveFilterDept)
+                    );
+                    const csv = ['created_at,kind,severity,actor,title', ...rows.map(r =>
+                      [r.created_at, r.kind, r.severity, (r.actor_name || '').replace(/,/g, ' '), (r.title || '').replace(/,/g, ' ')].join(',')
+                    )].join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `activity-${Date.now()}.csv`; a.click();
+                    URL.revokeObjectURL(url);
+                  }}>
+                    <FileSpreadsheet className="me-1 h-3.5 w-3.5" /> CSV
+                  </Button>
+                </div>
               </div>
-              {liveEvents.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">{t('admin.empty.live')}</p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {liveEvents.map(e => (
-                    <li key={e.id + e.at} className="flex items-center gap-3 py-2 text-sm">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] ${
-                        e.kind === 'attendance' ? 'bg-success/10 text-success' :
-                        e.kind === 'message' ? 'bg-primary/10 text-primary' :
-                        e.kind === 'excuse' ? 'bg-warning/10 text-warning' :
-                        'bg-muted'
-                      }`}>{e.kind}</span>
-                      <span className="flex-1">{e.text}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{new Date(e.at).toLocaleTimeString()}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {(() => {
+                const filtered = liveEvents.filter(e =>
+                  (liveFilterKind === 'all' || e.kind === liveFilterKind) &&
+                  (liveFilterSeverity === 'all' || e.severity === liveFilterSeverity) &&
+                  (liveFilterDept === 'all' || e.department_id === liveFilterDept)
+                );
+                if (!filtered.length) return <p className="py-8 text-center text-sm text-muted-foreground">{t('admin.empty.live')}</p>;
+                return (
+                  <ul className="divide-y divide-border max-h-[600px] overflow-auto">
+                    {filtered.map(e => (
+                      <li key={e.id} className="flex items-center gap-3 py-2 text-sm">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          e.severity === 'critical' ? 'bg-destructive/15 text-destructive' :
+                          e.severity === 'warning' ? 'bg-warning/15 text-warning' :
+                          e.severity === 'success' ? 'bg-success/15 text-success' :
+                          'bg-primary/10 text-primary'
+                        }`}>{e.severity}</span>
+                        <span className="rounded bg-muted px-2 py-0.5 text-[10px] tabular-nums">{e.kind}</span>
+                        <span className="flex-1 truncate">{e.title}</span>
+                        {e.actor_name && <span className="text-xs text-muted-foreground">{e.actor_name}</span>}
+                        <span className="text-xs text-muted-foreground tabular-nums">{new Date(e.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              })()}
             </div>
           </TabsContent>
         </Tabs>
