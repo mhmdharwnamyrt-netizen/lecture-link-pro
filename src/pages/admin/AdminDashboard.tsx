@@ -1067,8 +1067,138 @@ export default function AdminDashboard() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Subjects CRUD */}
+          <TabsContent value="subjects" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{subjects.length} subjects</p>
+              <Button size="sm" onClick={() => openSubjDialog()}><Plus className="me-1.5 h-4 w-4" /> New subject</Button>
+            </div>
+            <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50"><tr className="text-left">
+                  <th className="px-4 py-3">Name</th><th className="px-4 py-3">Code</th><th className="px-4 py-3">Department</th><th className="px-4 py-3">Lectures</th><th className="px-4 py-3 text-right">Actions</th>
+                </tr></thead>
+                <tbody>
+                  {subjects.map(s => (
+                    <tr key={s.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-3 font-medium">{s.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.code || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.departments?.name || '—'}</td>
+                      <td className="px-4 py-3 tabular-nums">{lectures.filter(l => l.subject_id === s.id).length}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => openSubjDialog(s)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteSubj(s)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div></td>
+                    </tr>
+                  ))}
+                  {subjects.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No subjects — create one to link with lectures.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* All Notifications */}
+          <TabsContent value="notif" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{allNotifications.length} notifications (most recent 300)</p>
+              <Button size="sm" variant="outline" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>
+                <Trash2 className="me-1.5 h-4 w-4" /> Purge read (>7d)
+              </Button>
+            </div>
+            <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50"><tr className="text-left">
+                  <th className="px-4 py-3">Recipient</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Read</th><th className="px-4 py-3">When</th><th className="px-4 py-3"></th>
+                </tr></thead>
+                <tbody>
+                  {allNotifications.map(n => {
+                    const target = users.find(u => u.user_id === n.user_id);
+                    return (
+                      <tr key={n.id} className="border-t border-border hover:bg-muted/30">
+                        <td className="px-4 py-3 font-medium">{target?.full_name || <span className="text-xs text-muted-foreground">{String(n.user_id).slice(0,8)}</span>}</td>
+                        <td className="px-4 py-3 text-muted-foreground max-w-md truncate" title={n.message}>{n.title}</td>
+                        <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{n.type || '—'}</span></td>
+                        <td className="px-4 py-3">{n.read ? '✓' : '—'}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right"><Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('notifications', n.id, 'notification')}><Trash2 className="h-3.5 w-3.5" /></Button></td>
+                      </tr>
+                    );
+                  })}
+                  {allNotifications.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No notifications</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* Maintenance */}
+          <TabsContent value="maintenance" className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><RotateCcw className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Recompute student points</p><p className="text-xs text-muted-foreground">Recalculates points and level from attendance + approved excuses (3 pts each).</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('recompute-points')} disabled={maintBusy === 'recompute-points'}>{maintBusy === 'recompute-points' ? 'Recomputing…' : 'Run'}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><CheckCircle2 className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Mark all attendance synced</p><p className="text-xs text-muted-foreground">Flags any leftover offline-queued rows as synced.</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('mark-synced')} disabled={maintBusy === 'mark-synced'}>{maintBusy === 'mark-synced' ? 'Working…' : 'Run'}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><MessageSquare className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Purge stale typing indicators</p><p className="text-xs text-muted-foreground">Removes typing rows older than 60 seconds.</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('purge-typing')} disabled={maintBusy === 'purge-typing'}>{maintBusy === 'purge-typing' ? 'Working…' : 'Run'}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive"><Trash2 className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Purge old read notifications</p><p className="text-xs text-muted-foreground">Deletes read notifications older than 7 days.</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? 'Working…' : 'Run'}</Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Live Feed */}
+          <TabsContent value="live" className="space-y-3">
+            <div className="rounded-2xl bg-card p-5 shadow-card">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success"><Radio className="h-5 w-5 animate-pulse" /></div>
+                <div>
+                  <p className="font-bold">Realtime activity</p>
+                  <p className="text-xs text-muted-foreground">Streams inserts on attendance, messages, excuses, and bookings.</p>
+                </div>
+                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>Clear</Button>
+              </div>
+              {liveEvents.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Listening… events will appear here as they happen.</p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {liveEvents.map(e => (
+                    <li key={e.id + e.at} className="flex items-center gap-3 py-2 text-sm">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+                        e.kind === 'attendance' ? 'bg-success/10 text-success' :
+                        e.kind === 'message' ? 'bg-primary/10 text-primary' :
+                        e.kind === 'excuse' ? 'bg-warning/10 text-warning' :
+                        'bg-muted'
+                      }`}>{e.kind}</span>
+                      <span className="flex-1">{e.text}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{new Date(e.at).toLocaleTimeString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
+
 
       {/* Disable dialog */}
       <Dialog open={!!disableTarget} onOpenChange={(v) => !v && setDisableTarget(null)}>
