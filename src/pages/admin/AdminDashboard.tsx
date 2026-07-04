@@ -865,7 +865,11 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Departments */}
-          <TabsContent value="departments">
+          <TabsContent value="departments" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{departments.length} departments</p>
+              <Button size="sm" onClick={() => openDeptDialog()}><Plus className="me-1.5 h-4 w-4" /> New department</Button>
+            </div>
             <div className="grid gap-3 md:grid-cols-3">
               {departments.map(d => {
                 const deptUsers = users.filter(u => u.department_id === d.id);
@@ -878,10 +882,11 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="font-bold">{d.name}</p>
-                        <p className="text-sm text-muted-foreground">{d.name_ar}</p>
+                        <p className="text-sm text-muted-foreground">{d.name_ar} {d.code && <span className="ms-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">{d.code}</span>}</p>
                       </div>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                        <Building2 className="h-5 w-5 text-primary" />
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openDeptDialog(d)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteDept(d)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -895,6 +900,7 @@ export default function AdminDashboard() {
               })}
             </div>
           </TabsContent>
+
 
           {/* Broadcast */}
           <TabsContent value="broadcast">
