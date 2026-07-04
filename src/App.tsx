@@ -42,6 +42,8 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
+const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
+const TrainingsPage = lazy(() => import("./pages/shared/Trainings"));
 
 const queryClient = new QueryClient();
 
@@ -84,6 +86,7 @@ const App = () => (
                   <Route path="/doctor/messages" element={<Guarded><MessagesPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/office-hours" element={<Guarded><OfficeHoursPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/community" element={<Guarded><CommunityPage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings" element={<Guarded><TrainingsPage role="doctor" /></Guarded>} />
 
                   {/* Student Routes */}
                   <Route path="/student" element={<Guarded><StudentDashboard /></Guarded>} />
@@ -97,11 +100,13 @@ const App = () => (
                   <Route path="/student/messages" element={<Guarded><MessagesPage role="student" /></Guarded>} />
                   <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
                   <Route path="/student/community" element={<Guarded><CommunityPage role="student" /></Guarded>} />
+                  <Route path="/student/trainings" element={<Guarded><TrainingsPage role="student" /></Guarded>} />
 
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />
                   <Route path="/admin/reports" element={<Guarded><AdminReports /></Guarded>} />
                   <Route path="/admin/moderation" element={<Guarded><AdminModeration /></Guarded>} />
+                  <Route path="/admin/trainings" element={<Guarded><AdminTrainings /></Guarded>} />
 
                   {/* Public user profile (shared) */}
                   <Route path="/u/:userId" element={<Guarded><PublicProfilePage /></Guarded>} />

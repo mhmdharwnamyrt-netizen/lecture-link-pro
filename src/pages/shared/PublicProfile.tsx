@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { createSignedUrl } from '@/lib/storage';
+import { parseCoverValue } from '@/lib/coverPresets';
 
 interface ProfileRow {
   id: string; user_id: string; full_name: string;
@@ -51,8 +52,11 @@ export default function PublicProfilePage() {
         .eq('user_id', userId)
         .maybeSingle();
       setProfile(prof as any);
-      if (prof?.cover_url) {
-        createSignedUrl('face-photos', prof.cover_url, 3600).then(setCoverSrc);
+      const cover = parseCoverValue(prof?.cover_url);
+      if (cover?.kind === 'path') {
+        createSignedUrl('face-photos', cover.path, 3600).then(setCoverSrc);
+      } else {
+        setCoverSrc(null);
       }
       const { data: pRows } = await supabase
         .from('community_posts')
@@ -116,11 +120,16 @@ export default function PublicProfilePage() {
       <div className="pb-8">
         {/* Cover */}
         <div className="relative -mx-4 md:-mx-8 h-44 md:h-56 overflow-hidden md:rounded-b-3xl">
-          {coverSrc ? (
-            <img src={coverSrc} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />
-          )}
+          {(() => {
+            const cover = parseCoverValue(profile?.cover_url);
+            if (cover?.kind === 'preset') {
+              return <div className="absolute inset-0" style={{ background: cover.preset.gradient }} />;
+            }
+            if (coverSrc) {
+              return <img src={coverSrc} alt="" className="h-full w-full object-cover" />;
+            }
+            return <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />;
+          })()}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
           <button
             onClick={() => navigate(-1)}

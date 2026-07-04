@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentPosition, checkWithinUniversity } from '@/lib/constants';
 import { isLectureCurrentlyActive, isLectureToday } from '@/lib/lectureUtils';
-import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell } from 'lucide-react';
+import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell, Briefcase, ExternalLink, Building2, GraduationCap, MessageCircle, Heart, ArrowRight, Sparkles } from 'lucide-react';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
 import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
@@ -35,6 +35,8 @@ export default function StudentDashboard() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [hasFaceTemplate, setHasFaceTemplate] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+  const [trainings, setTrainings] = useState<any[]>([]);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
 
   // Face verification state
   const [showFaceVerify, setShowFaceVerify] = useState(false);
@@ -184,6 +186,19 @@ export default function StudentDashboard() {
         totalLectures: allAttendance.length,
       });
     }
+
+    // Trainings preview
+    const { data: trs } = await supabase
+      .from('trainings').select('id,title,type,company_name,apply_url,deadline,tags')
+      .eq('is_active', true).order('created_at', { ascending: false }).limit(3);
+    setTrainings(trs || []);
+
+    // Community feed preview (shown always but especially useful during quiet weeks)
+    const { data: fp } = await supabase
+      .from('community_posts')
+      .select('id,content,author_id,likes_count,comments_count,category,created_at,profiles!community_posts_author_id_fkey(full_name,avatar_url,user_id)')
+      .eq('is_hidden', false).order('created_at', { ascending: false }).limit(5);
+    setFeedPosts(fp || []);
   };
 
   const handleCheckIn = async (lectureId: string) => {
@@ -373,9 +388,20 @@ export default function StudentDashboard() {
         {/* Active Lectures */}
         <h2 className="mb-3 text-lg font-semibold">{t('student.activeLectures')}</h2>
         {activeLectures.length === 0 ? (
-          <div className="mb-6 rounded-2xl bg-card p-8 text-center shadow-card">
-            <BookOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-            <p className="text-muted-foreground">{t('student.noActiveLectures')}</p>
+          <div className="mb-6 rounded-2xl bg-gradient-to-br from-primary/10 via-accent/5 to-warning/10 p-6 text-center shadow-card">
+            <Sparkles className="mx-auto mb-2 h-8 w-8 text-primary" />
+            <p className="font-semibold">{language === 'ar' ? 'وضع الإجازة — لا محاضرات اليوم' : 'Break mode — no lectures today'}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {language === 'ar' ? 'استكشف التدريبات وشارك في الملتقى الطلابي.' : 'Explore trainings and join the student community.'}
+            </p>
+            <div className="mt-3 flex justify-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => navigate('/student/trainings')}>
+                <Briefcase className="h-4 w-4 me-1.5" /> {language === 'ar' ? 'التدريبات' : 'Trainings'}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/student/community')}>
+                <MessageCircle className="h-4 w-4 me-1.5" /> {language === 'ar' ? 'الملتقى' : 'Community'}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="mb-6 space-y-3">
@@ -464,6 +490,68 @@ export default function StudentDashboard() {
             ))}
           </div>
         )}
+
+        {/* Trainings preview */}
+        {trainings.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-primary" />
+                {language === 'ar' ? 'تدريبات وفرص' : 'Trainings & opportunities'}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/student/trainings')}>
+                {language === 'ar' ? 'الكل' : 'See all'} <ArrowRight className={`h-4 w-4 ms-1 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {trainings.map((tr) => (
+                <a key={tr.id} href={tr.apply_url} target="_blank" rel="noopener noreferrer"
+                  className="block rounded-2xl bg-card p-3 shadow-card hover:shadow-elevated transition">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+                        {tr.type === 'university'
+                          ? <><GraduationCap className="h-3 w-3" /> {language === 'ar' ? 'جامعي' : 'University'}</>
+                          : <><Building2 className="h-3 w-3" /> {tr.company_name || (language === 'ar' ? 'شركة' : 'Company')}</>}
+                      </div>
+                      <p className="font-medium text-sm truncate">{tr.title}</p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Community highlights (during quiet weeks / always) */}
+        {activeLectures.length === 0 && feedPosts.length > 0 && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                {language === 'ar' ? 'من الملتقى' : 'From the community'}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/student/community')}>
+                {language === 'ar' ? 'الكل' : 'See all'} <ArrowRight className={`h-4 w-4 ms-1 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {feedPosts.slice(0, 3).map((p: any) => (
+                <div key={p.id} onClick={() => navigate('/student/community')}
+                  className="cursor-pointer rounded-2xl bg-card p-3 shadow-card">
+                  <p className="text-xs text-muted-foreground mb-1">{p.profiles?.full_name || (language === 'ar' ? 'مستخدم' : 'User')}</p>
+                  <p className="text-sm line-clamp-2">{p.content}</p>
+                  <div className="mt-1.5 flex gap-3 text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {p.likes_count || 0}</span>
+                    <span className="inline-flex items-center gap-1"><MessageCircle className="h-3 w-3" /> {p.comments_count || 0}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
 
         {/* Recent Attendance */}
         {recentAttendance.length > 0 && (
