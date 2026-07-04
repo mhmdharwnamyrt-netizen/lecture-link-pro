@@ -841,10 +841,23 @@ export default function Community({ role }: { role: Role }) {
                         <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-semibold">{displayName(p.author, p.author_id === user?.id ? user : undefined)}</span>
                           {p.author?.role === 'doctor' && <Badge variant="secondary" className="h-5 px-1.5 text-xs">Dr.</Badge>}
                           {p.is_pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
+                          {p.category && (() => {
+                            const meta = CATEGORY_META[p.category]; const Icon = meta.icon;
+                            return (
+                              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${meta.color}`}>
+                                <Icon className="h-3 w-3" /> {t(meta.ar, meta.en)}
+                              </span>
+                            );
+                          })()}
+                          {p.category === 'question' && p.is_answered && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                              <CheckCircle2 className="h-3 w-3" /> {t('تمت الإجابة', 'Answered')}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(p.created_at), { addSuffix: true, locale })}
