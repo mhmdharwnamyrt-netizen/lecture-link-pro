@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X,
   Pin, Trash2, CornerDownRight, Loader2, Users, Search, Flag, Hash, Pencil,
-  ChevronDown, ChevronRight, Settings,
+  ChevronDown, ChevronRight, Settings, Video, Mic, Paperclip, StopCircle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,8 +32,9 @@ interface Profile {
 }
 interface Post {
   id: string; author_id: string; content: string; image_url: string | null;
+  media_type?: MediaType | null; media_mime?: string | null; media_name?: string | null;
   tags: string[] | null; likes_count: number; comments_count: number; shares_count: number;
-  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean;
+  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; media?: PostMedia[];
 }
 interface Comment {
   id: string; post_id: string; parent_id: string | null; author_id: string;
@@ -42,9 +43,22 @@ interface Comment {
 }
 
 type Role = 'doctor' | 'student';
+type MediaType = 'image' | 'video' | 'audio';
+
+interface PostMedia {
+  id: string; post_id: string; uploader_id?: string; storage_path: string;
+  media_type: MediaType; mime_type?: string | null; file_name?: string | null;
+  file_size?: number | null; duration_seconds?: number | null; display_url?: string;
+}
+
+interface SelectedMedia {
+  id: string; file: File; type: MediaType; previewUrl: string; duration?: number;
+}
 
 const REPORT_REASONS_AR = ['محتوى مسيء', 'محتوى مضلل', 'مضايقة', 'محتوى غير لائق', 'رسائل مزعجة', 'أخرى'];
 const REPORT_REASONS_EN = ['Offensive content', 'Misinformation', 'Harassment', 'Inappropriate', 'Spam', 'Other'];
+const MAX_MEDIA_FILES = 4;
+const MEDIA_BUCKET = 'message-attachments';
 
 export default function Community({ role }: { role: Role }) {
   const { user, profile, isAdmin } = useAuth();
