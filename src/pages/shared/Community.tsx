@@ -68,6 +68,14 @@ const REPORT_REASONS_EN = ['Offensive content', 'Misinformation', 'Harassment', 
 const MAX_MEDIA_FILES = 4;
 const MEDIA_BUCKET = 'message-attachments';
 
+const CATEGORY_META: Record<PostCategory, { icon: any; ar: string; en: string; color: string }> = {
+  discussion: { icon: MessageSquare, ar: 'نقاش', en: 'Discussion', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+  question: { icon: HelpCircle, ar: 'سؤال', en: 'Question', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+  resource: { icon: BookOpen, ar: 'مورد', en: 'Resource', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+  announcement: { icon: Megaphone, ar: 'إعلان', en: 'Announcement', color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
+};
+const CATEGORIES: PostCategory[] = ['discussion', 'question', 'resource', 'announcement'];
+
 export default function Community({ role }: { role: Role }) {
   const { user, profile, isAdmin } = useAuth();
   const { language, isRTL } = useLanguage();
@@ -76,7 +84,13 @@ export default function Community({ role }: { role: Role }) {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'all' | 'mine' | 'trending'>('all');
+  const [tab, setTab] = useState<'all' | 'mine' | 'trending' | 'saved'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<PostCategory | null>(null);
+  const [composerCategory, setComposerCategory] = useState<PostCategory>('discussion');
+  const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
+  const [leaderOpen, setLeaderOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<Profile[]>([]);
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
