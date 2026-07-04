@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          created_at: string
+          department_id: string | null
+          details: Json
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          kind: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          department_id?: string | null
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind: string
+          severity?: string
+          title: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          created_at?: string
+          department_id?: string | null
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_events_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_logs: {
         Row: {
           action: string
@@ -1016,7 +1066,9 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      db_health_snapshot: { Args: never; Returns: Json }
+      db_integrity_check: { Args: never; Returns: Json }
+      rebuild_statistics: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "doctor" | "student"
