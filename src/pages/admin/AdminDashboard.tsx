@@ -430,7 +430,90 @@ export default function AdminDashboard() {
     }
   };
 
-  // ---- Live feed (realtime) ----
+  // ---- Excuse approval workflow ----
+  const reviewExcuse = async (e: any, decision: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('excuses')
+      .update({ status: decision, reviewed_by: user?.id, updated_at: new Date().toISOString() })
+      .eq('id', e.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (decision === 'approved' && e.student_id) {
+      // Award 3 points + push a notification
+      const target = users.find(u => u.user_id === e.student_id);
+      if (target) {
+        await supabase.from('profiles').update({
+          points: (target.points || 0) + 3,
+          level: Math.max(1, Math.floor(((target.points || 0) + 3) / 30) + 1),
+        }).eq('id', target.id);
+      }
+      await supabase.from('notifications').insert({
+        user_id: e.student_id,
+        title: 'تم قبول عذرك / Excuse approved',
+        message: e.reason || 'Your excuse has been approved.',
+        type: 'excuse',
+      });
+    } else if (decision === 'rejected' && e.student_id) {
+      await supabase.from('notifications').insert({
+        user_id: e.student_id,
+        title: 'تم رفض عذرك / Excuse rejected',
+        message: e.reason || 'Your excuse has been rejected.',
+        type: 'excuse',
+      });
+    }
+    await logAdminAction({ action: `excuse.${decision}`, entity_type: 'excuse', entity_id: e.id });
+    toast({ title: decision === 'approved' ? 'Excuse approved' : 'Excuse rejected' });
+    loadAll();
+  };
+
+  // ---- Warning resolve ----
+  const resolveWarning = async (w: any) => {
+    const { error } = await supabase.from('warning_alerts').update({ is_resolved: true }).eq('id', w.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'warning.resolve', entity_type: 'warning', entity_id: w.id });
+    toast({ title: 'Warning resolved' });
+    loadAll();
+  };
+
+  // ---- Cancel office-hours booking ----
+  const cancelBooking = async (b: any) => {
+    if (!confirm('Cancel this booking?')) return;
+    const { error } = await supabase.from('office_hour_bookings').update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: user?.id,
+      reason: 'Cancelled by admin',
+    }).eq('id', b.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (b.student_id) {
+      await supabase.from('notifications').insert({
+        user_id: b.student_id,
+        title: 'تم إلغاء الحجز / Booking cancelled',
+        message: 'Your office-hours booking was cancelled by an administrator.',
+        type: 'office_hours',
+      });
+    }
+    await logAdminAction({ action: 'booking.cancel', entity_type: 'booking', entity_id: b.id });
+    toast({ title: 'Booking cancelled' });
+    loadAll();
+  };
+
+  // ---- Lecture toggle / delete ----
+  const toggleLecture = async (l: any) => {
+    const { error } = await supabase.from('lectures').update({ is_active: !l.is_active }).eq('id', l.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'lecture.toggle', entity_type: 'lecture', entity_id: l.id, details: { active: !l.is_active } });
+    loadAll();
+  };
+  const deleteLecture = async (l: any) => {
+    if (!confirm(`Delete lecture "${l.title}"? Attendance rows will also be removed.`)) return;
+    const { error } = await supabase.from('lectures').delete().eq('id', l.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'lecture.delete', entity_type: 'lecture', entity_id: l.id, details: { title: l.title } });
+    toast({ title: 'Lecture deleted' });
+    loadAll();
+  };
+
+
   useEffect(() => {
     if (!isAdmin) return;
     const channel = supabase
