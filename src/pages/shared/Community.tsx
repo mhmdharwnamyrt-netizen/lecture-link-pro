@@ -36,7 +36,8 @@ interface Post {
   id: string; author_id: string; content: string; image_url: string | null;
   media_type?: MediaType | null; media_mime?: string | null; media_name?: string | null;
   tags: string[] | null; likes_count: number; comments_count: number; shares_count: number;
-  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; media?: PostMedia[];
+  saves_count?: number; score?: number; category?: PostCategory; is_answered?: boolean;
+  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; saved?: boolean; media?: PostMedia[];
 }
 interface Comment {
   id: string; post_id: string; parent_id: string | null; author_id: string;
@@ -46,6 +47,11 @@ interface Comment {
 
 type Role = 'doctor' | 'student';
 type MediaType = 'image' | 'video' | 'audio';
+type PostCategory = 'discussion' | 'question' | 'resource' | 'announcement';
+interface LeaderRow {
+  user_id: string; full_name: string | null; avatar_url: string | null; role: string | null;
+  posts_count: number; comments_count: number; likes_received: number; score: number;
+}
 
 interface PostMedia {
   id: string; post_id: string; uploader_id?: string; storage_path: string;
