@@ -107,19 +107,9 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   return (
     <MobileLayout role={role}>
       <div className="px-4 pt-4 md:px-8">
-        {/* Hero Cover with animated gradient */}
+        {/* Hero Cover — themable, with picker */}
         <div className="relative -mx-4 md:-mx-8 mb-16 h-40 overflow-hidden md:rounded-3xl md:h-48">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />
-          <motion.div
-            className="absolute -top-10 -left-10 h-48 w-48 rounded-full bg-white/20 blur-3xl"
-            animate={{ x: [0, 40, 0], y: [0, 20, 0] }}
-            transition={{ duration: 9, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute -bottom-12 -right-12 h-56 w-56 rounded-full bg-warning/30 blur-3xl"
-            animate={{ x: [0, -30, 0], y: [0, -15, 0] }}
-            transition={{ duration: 11, repeat: Infinity }}
-          />
+          <CoverUploader />
 
           {/* Avatar with progress ring + upload */}
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
