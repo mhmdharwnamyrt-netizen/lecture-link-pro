@@ -13,7 +13,7 @@ import {
   Users, GraduationCap, BookOpen, ClipboardCheck, Search, ArrowLeft, Shield, Ban, CheckCircle2,
   AlertTriangle, MessageSquare, Calendar, FileText, FileSpreadsheet, ScrollText, BarChart3,
   Activity, UserCog, Trash2, Building2, ShieldCheck, Megaphone, Layers, HeartPulse, Sparkles, Send,
-  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw, XCircle, Languages
+  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw, XCircle, Languages, Flag
 } from 'lucide-react';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { logAdminAction } from '@/lib/adminLog';
@@ -619,6 +619,7 @@ export default function AdminDashboard() {
               {language === 'ar' ? 'EN' : 'ع'}
             </Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> {t('admin.reports')}</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/admin/moderation"><Flag className="me-2 h-4 w-4" /> {language === 'ar' ? 'الإشراف' : 'Moderation'}</Link></Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> {t('admin.logs')}</Link></Button>
             <Button variant="outline" size="sm" onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')}>
               <ArrowLeft className="me-2 h-4 w-4" /> {t('admin.backToApp')}

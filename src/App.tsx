@@ -40,6 +40,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
+const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,7 @@ const App = () => (
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />
                   <Route path="/admin/reports" element={<Guarded><AdminReports /></Guarded>} />
+                  <Route path="/admin/moderation" element={<Guarded><AdminModeration /></Guarded>} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
