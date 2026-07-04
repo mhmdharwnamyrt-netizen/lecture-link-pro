@@ -652,17 +652,17 @@ export default function AdminDashboard() {
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
-                  <tr className="text-left whitespace-nowrap">
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Student ID</th>
-                    <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">Level</th>
-                    <th className="px-4 py-3">Points</th>
-                    <th className="px-4 py-3">Phone</th>
-                    <th className="px-4 py-3">Joined</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                  <tr className="text-start whitespace-nowrap">
+                    <th className="px-4 py-3 text-start">{t('admin.col.name')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.role')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.studentId')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.department')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.level')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.points')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.phone')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.joined')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.status')}</th>
+                    <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
