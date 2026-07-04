@@ -120,6 +120,48 @@ export default function Community({ role }: { role: Role }) {
   const displayName = (p?: { full_name?: string | null } | null, fallbackUser?: typeof user) =>
     p?.full_name || fallbackUser?.user_metadata?.full_name || fallbackUser?.email?.split('@')[0] || t('مستخدم', 'User');
   const avatarLetter = (name?: string | null) => (name?.trim()?.slice(0, 1) || 'U').toUpperCase();
+
+  // Load who I follow (once per user)
+  useEffect(() => {
+    if (!user?.id) { setFollowingIds([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('community_follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+      setFollowingIds((data || []).map((r: any) => r.following_id));
+    })();
+  }, [user?.id]);
+
+  // Render post text with @mentions turned into profile links
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const renderRichContent = (content: string, mentions?: { name: string; user_id: string }[]) => {
+    if (!content) return null;
+    if (!mentions?.length) return content;
+    const sorted = [...mentions].sort((a, b) => b.name.length - a.name.length);
+    let parts: (string | JSX.Element)[] = [content];
+    sorted.forEach((m, idx) => {
+      const token = '@' + m.name;
+      const re = new RegExp(`(${escapeRegex(token)})`, 'gi');
+      const next: (string | JSX.Element)[] = [];
+      parts.forEach((part) => {
+        if (typeof part !== 'string') { next.push(part); return; }
+        part.split(re).forEach((piece, i) => {
+          if (piece && piece.toLowerCase() === token.toLowerCase()) {
+            next.push(
+              <Link key={`m-${idx}-${next.length}-${i}`} to={`/u/${m.user_id}`}
+                className="rounded px-1 font-medium text-primary hover:bg-primary/10">
+                {piece}
+              </Link>
+            );
+          } else if (piece) next.push(piece);
+        });
+      });
+      parts = next;
+    });
+    return parts;
+  };
+
   const detectMediaType = (file: File): MediaType | null => {
     if (file.type.startsWith('image/')) return 'image';
     if (file.type.startsWith('video/')) return 'video';
