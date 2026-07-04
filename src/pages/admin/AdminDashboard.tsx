@@ -1103,7 +1103,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{allNotifications.length} notifications (most recent 300)</p>
               <Button size="sm" variant="outline" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>
-                <Trash2 className="me-1.5 h-4 w-4" /> Purge read (>7d)
+                <Trash2 className="me-1.5 h-4 w-4" /> Purge read (&gt;7d)
               </Button>
             </div>
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
