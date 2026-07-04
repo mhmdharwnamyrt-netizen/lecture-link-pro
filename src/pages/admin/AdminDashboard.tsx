@@ -869,29 +869,39 @@ export default function AdminDashboard() {
           <TabsContent value="warnings">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Student</th><th className="px-4 py-3">Level</th>
-                  <th className="px-4 py-3">Reason</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.student')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.riskLevel')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.reason')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
                   {warnings.map(w => (
-                    <tr key={w.id} className="border-t border-border">
+                    <tr key={w.id} className={`border-t border-border ${w.is_resolved ? 'opacity-50' : ''}`}>
                       <td className="px-4 py-3 font-medium">{w.profiles?.full_name || '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${
-                          w.risk_level === 'high' ? 'bg-destructive/10 text-destructive' :
-                          w.risk_level === 'medium' ? 'bg-warning/10 text-warning' : 'bg-muted'
-                        }`}>{w.risk_level || '—'}</span>
-                      </td>
+                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${
+                        w.risk_level === 'high' ? 'bg-destructive/10 text-destructive' :
+                        w.risk_level === 'medium' ? 'bg-warning/10 text-warning' : 'bg-muted'
+                      }`}>{w.risk_level || '—'}</span></td>
                       <td className="px-4 py-3 text-muted-foreground">{w.message || w.alert_type}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        {!w.is_resolved && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-success" onClick={() => resolveWarning(w)}>
+                            <CheckCircle2 className="me-1 h-3.5 w-3.5" /> {t('admin.action.resolve')}
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('warning_alerts', w.id, 'warning')}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div></td>
                     </tr>
                   ))}
-                  {warnings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No warnings</td></tr>}
+                  {warnings.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.warnings')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Office Hours */}
           <TabsContent value="office">
