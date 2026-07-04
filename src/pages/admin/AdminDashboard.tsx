@@ -547,15 +547,13 @@ export default function AdminDashboard() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
+      <div dir={isRTL ? 'rtl' : 'ltr'} className="flex min-h-screen items-center justify-center p-6">
         <div className="max-w-md text-center rounded-2xl bg-card p-8 shadow-card">
           <Shield className="mx-auto mb-4 h-12 w-12 text-destructive" />
-          <h1 className="text-xl font-bold mb-2">Access Denied</h1>
-          <p className="text-sm text-muted-foreground mb-4">
-            You don't have administrator privileges.
-          </p>
+          <h1 className="text-xl font-bold mb-2">{t('admin.accessDenied')}</h1>
+          <p className="text-sm text-muted-foreground mb-4">{t('admin.noPrivileges')}</p>
           <Button onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')} variant="outline" className="w-full">
-            Back to App
+            {t('admin.backToApp')}
           </Button>
         </div>
       </div>
@@ -563,7 +561,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-background">
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -571,15 +569,15 @@ export default function AdminDashboard() {
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">Admin Control Center</h1>
-              <p className="text-xs text-muted-foreground">BSUT Attendance — full system oversight</p>
+              <h1 className="text-lg font-bold">{t('admin.title')}</h1>
+              <p className="text-xs text-muted-foreground">{t('admin.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> Reports</Link></Button>
-            <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> Logs</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> {t('admin.reports')}</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> {t('admin.logs')}</Link></Button>
             <Button variant="outline" size="sm" onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')}>
-              <ArrowLeft className="me-2 h-4 w-4" /> Back to App
+              <ArrowLeft className="me-2 h-4 w-4" /> {t('admin.backToApp')}
             </Button>
           </div>
         </div>
@@ -588,17 +586,18 @@ export default function AdminDashboard() {
       <main className="mx-auto max-w-7xl px-6 py-6 space-y-6">
         {/* Stats */}
         <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
-          <StatCard icon={Users} label="Students" value={stats.students} />
-          <StatCard icon={GraduationCap} label="Doctors" value={stats.doctors} />
-          <StatCard icon={BookOpen} label="Lectures" value={stats.lectures} />
-          <StatCard icon={ClipboardCheck} label="Attendance" value={stats.attendance} tone="success" />
-          <StatCard icon={Building2} label="Departments" value={stats.departments} />
-          <StatCard icon={Ban} label="Disabled" value={stats.disabled} tone="destructive" />
-          <StatCard icon={AlertTriangle} label="Excuses" value={stats.excuses} tone="warning" />
-          <StatCard icon={Activity} label="Warnings" value={stats.warnings} tone="warning" />
-          <StatCard icon={MessageSquare} label="Messages" value={stats.messages} />
-          <StatCard icon={BarChart3} label="Ratings" value={stats.ratings} />
+          <StatCard icon={Users} label={t('admin.stat.students')} value={stats.students} />
+          <StatCard icon={GraduationCap} label={t('admin.stat.doctors')} value={stats.doctors} />
+          <StatCard icon={BookOpen} label={t('admin.stat.lectures')} value={stats.lectures} />
+          <StatCard icon={ClipboardCheck} label={t('admin.stat.attendance')} value={stats.attendance} tone="success" />
+          <StatCard icon={Building2} label={t('admin.stat.departments')} value={stats.departments} />
+          <StatCard icon={Ban} label={t('admin.stat.disabled')} value={stats.disabled} tone="destructive" />
+          <StatCard icon={AlertTriangle} label={t('admin.stat.excuses')} value={stats.excuses} tone="warning" />
+          <StatCard icon={Activity} label={t('admin.stat.warnings')} value={stats.warnings} tone="warning" />
+          <StatCard icon={MessageSquare} label={t('admin.stat.messages')} value={stats.messages} />
+          <StatCard icon={BarChart3} label={t('admin.stat.ratings')} value={stats.ratings} />
         </div>
+
 
         <Tabs defaultValue="users">
           <TabsList className="flex-wrap h-auto">
