@@ -625,22 +625,22 @@ export default function AdminDashboard() {
             <div className="flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-[240px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by name, ID or phone..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+                <Input placeholder={t('admin.searchUsers')} className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <Select value={filterRole} onValueChange={setFilterRole}>
                 <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All roles</SelectItem>
-                  <SelectItem value="student">Students</SelectItem>
-                  <SelectItem value="doctor">Doctors</SelectItem>
-                  <SelectItem value="admin">Admins</SelectItem>
-                  <SelectItem value="disabled">Disabled only</SelectItem>
+                  <SelectItem value="all">{t('admin.filter.allRoles')}</SelectItem>
+                  <SelectItem value="student">{t('admin.filter.students')}</SelectItem>
+                  <SelectItem value="doctor">{t('admin.filter.doctors')}</SelectItem>
+                  <SelectItem value="admin">{t('admin.filter.admins')}</SelectItem>
+                  <SelectItem value="disabled">{t('admin.filter.disabledOnly')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterDept} onValueChange={setFilterDept}>
                 <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All departments</SelectItem>
+                  <SelectItem value="all">{t('admin.filter.allDepts')}</SelectItem>
                   {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                 </SelectContent>
               </Select>
