@@ -234,6 +234,8 @@ export type Database = {
           is_hidden: boolean
           is_pinned: boolean
           likes_count: number
+          pinned_at: string | null
+          pinned_by: string | null
           shares_count: number
           tags: string[] | null
           updated_at: string
@@ -250,6 +252,8 @@ export type Database = {
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number
+          pinned_at?: string | null
+          pinned_by?: string | null
           shares_count?: number
           tags?: string[] | null
           updated_at?: string
@@ -266,6 +270,8 @@ export type Database = {
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number
+          pinned_at?: string | null
+          pinned_by?: string | null
           shares_count?: number
           tags?: string[] | null
           updated_at?: string
@@ -315,6 +321,63 @@ export type Database = {
           },
           {
             foreignKeyName: "community_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_reports: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          details: string | null
+          id: string
+          post_id: string | null
+          reason: string
+          reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string | null
+          reason: string
+          reporter_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          post_id?: string | null
+          reason?: string
+          reporter_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_reports_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "community_posts"
@@ -810,6 +873,42 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          comments: boolean
+          community: boolean
+          likes: boolean
+          mentions: boolean
+          pins: boolean
+          replies: boolean
+          system: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments?: boolean
+          community?: boolean
+          likes?: boolean
+          mentions?: boolean
+          pins?: boolean
+          replies?: boolean
+          system?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments?: boolean
+          community?: boolean
+          likes?: boolean
+          mentions?: boolean
+          pins?: boolean
+          replies?: boolean
+          system?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1256,6 +1355,8 @@ export type Database = {
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
       rebuild_statistics: { Args: never; Returns: string }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "doctor" | "student"
