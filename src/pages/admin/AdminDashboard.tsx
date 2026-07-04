@@ -162,7 +162,7 @@ export default function AdminDashboard() {
 
     const [sj, nt] = await Promise.all([
       supabase.from('subjects').select('*, departments(name)').order('name'),
-      supabase.from('notifications').select('*, profiles!notifications_user_id_fkey(full_name)').order('created_at', { ascending: false }).limit(300),
+      supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(300),
     ]);
     setSubjects(sj.data || []);
     setAllNotifications(nt.data || []);
