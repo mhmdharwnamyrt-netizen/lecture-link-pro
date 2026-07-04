@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +13,7 @@ import {
   Users, GraduationCap, BookOpen, ClipboardCheck, Search, ArrowLeft, Shield, Ban, CheckCircle2,
   AlertTriangle, MessageSquare, Calendar, FileText, FileSpreadsheet, ScrollText, BarChart3,
   Activity, UserCog, Trash2, Building2, ShieldCheck, Megaphone, Layers, HeartPulse, Sparkles, Send,
-  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw
+  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw, XCircle
 } from 'lucide-react';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { logAdminAction } from '@/lib/adminLog';
@@ -44,6 +45,7 @@ function StatCard({ icon: Icon, label, value, hint, tone = 'primary' }: any) {
 
 export default function AdminDashboard() {
   const { user, profile, loading } = useAuth();
+  const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -428,7 +430,90 @@ export default function AdminDashboard() {
     }
   };
 
-  // ---- Live feed (realtime) ----
+  // ---- Excuse approval workflow ----
+  const reviewExcuse = async (e: any, decision: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('excuses')
+      .update({ status: decision, reviewed_by: user?.id, updated_at: new Date().toISOString() })
+      .eq('id', e.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (decision === 'approved' && e.student_id) {
+      // Award 3 points + push a notification
+      const target = users.find(u => u.user_id === e.student_id);
+      if (target) {
+        await supabase.from('profiles').update({
+          points: (target.points || 0) + 3,
+          level: Math.max(1, Math.floor(((target.points || 0) + 3) / 30) + 1),
+        }).eq('id', target.id);
+      }
+      await supabase.from('notifications').insert({
+        user_id: e.student_id,
+        title: 'تم قبول عذرك / Excuse approved',
+        message: e.reason || 'Your excuse has been approved.',
+        type: 'excuse',
+      });
+    } else if (decision === 'rejected' && e.student_id) {
+      await supabase.from('notifications').insert({
+        user_id: e.student_id,
+        title: 'تم رفض عذرك / Excuse rejected',
+        message: e.reason || 'Your excuse has been rejected.',
+        type: 'excuse',
+      });
+    }
+    await logAdminAction({ action: `excuse.${decision}`, entity_type: 'excuse', entity_id: e.id });
+    toast({ title: decision === 'approved' ? 'Excuse approved' : 'Excuse rejected' });
+    loadAll();
+  };
+
+  // ---- Warning resolve ----
+  const resolveWarning = async (w: any) => {
+    const { error } = await supabase.from('warning_alerts').update({ is_resolved: true }).eq('id', w.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'warning.resolve', entity_type: 'warning', entity_id: w.id });
+    toast({ title: 'Warning resolved' });
+    loadAll();
+  };
+
+  // ---- Cancel office-hours booking ----
+  const cancelBooking = async (b: any) => {
+    if (!confirm('Cancel this booking?')) return;
+    const { error } = await supabase.from('office_hour_bookings').update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: user?.id,
+      reason: 'Cancelled by admin',
+    }).eq('id', b.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    if (b.student_id) {
+      await supabase.from('notifications').insert({
+        user_id: b.student_id,
+        title: 'تم إلغاء الحجز / Booking cancelled',
+        message: 'Your office-hours booking was cancelled by an administrator.',
+        type: 'office_hours',
+      });
+    }
+    await logAdminAction({ action: 'booking.cancel', entity_type: 'booking', entity_id: b.id });
+    toast({ title: 'Booking cancelled' });
+    loadAll();
+  };
+
+  // ---- Lecture toggle / delete ----
+  const toggleLecture = async (l: any) => {
+    const { error } = await supabase.from('lectures').update({ is_active: !l.is_active }).eq('id', l.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'lecture.toggle', entity_type: 'lecture', entity_id: l.id, details: { active: !l.is_active } });
+    loadAll();
+  };
+  const deleteLecture = async (l: any) => {
+    if (!confirm(`Delete lecture "${l.title}"? Attendance rows will also be removed.`)) return;
+    const { error } = await supabase.from('lectures').delete().eq('id', l.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'lecture.delete', entity_type: 'lecture', entity_id: l.id, details: { title: l.title } });
+    toast({ title: 'Lecture deleted' });
+    loadAll();
+  };
+
+
   useEffect(() => {
     if (!isAdmin) return;
     const channel = supabase
@@ -462,15 +547,13 @@ export default function AdminDashboard() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
+      <div dir={isRTL ? 'rtl' : 'ltr'} className="flex min-h-screen items-center justify-center p-6">
         <div className="max-w-md text-center rounded-2xl bg-card p-8 shadow-card">
           <Shield className="mx-auto mb-4 h-12 w-12 text-destructive" />
-          <h1 className="text-xl font-bold mb-2">Access Denied</h1>
-          <p className="text-sm text-muted-foreground mb-4">
-            You don't have administrator privileges.
-          </p>
+          <h1 className="text-xl font-bold mb-2">{t('admin.accessDenied')}</h1>
+          <p className="text-sm text-muted-foreground mb-4">{t('admin.noPrivileges')}</p>
           <Button onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')} variant="outline" className="w-full">
-            Back to App
+            {t('admin.backToApp')}
           </Button>
         </div>
       </div>
@@ -478,7 +561,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-background">
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -486,15 +569,15 @@ export default function AdminDashboard() {
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">Admin Control Center</h1>
-              <p className="text-xs text-muted-foreground">BSUT Attendance — full system oversight</p>
+              <h1 className="text-lg font-bold">{t('admin.title')}</h1>
+              <p className="text-xs text-muted-foreground">{t('admin.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> Reports</Link></Button>
-            <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> Logs</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> {t('admin.reports')}</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> {t('admin.logs')}</Link></Button>
             <Button variant="outline" size="sm" onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')}>
-              <ArrowLeft className="me-2 h-4 w-4" /> Back to App
+              <ArrowLeft className="me-2 h-4 w-4" /> {t('admin.backToApp')}
             </Button>
           </div>
         </div>
@@ -503,37 +586,38 @@ export default function AdminDashboard() {
       <main className="mx-auto max-w-7xl px-6 py-6 space-y-6">
         {/* Stats */}
         <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
-          <StatCard icon={Users} label="Students" value={stats.students} />
-          <StatCard icon={GraduationCap} label="Doctors" value={stats.doctors} />
-          <StatCard icon={BookOpen} label="Lectures" value={stats.lectures} />
-          <StatCard icon={ClipboardCheck} label="Attendance" value={stats.attendance} tone="success" />
-          <StatCard icon={Building2} label="Departments" value={stats.departments} />
-          <StatCard icon={Ban} label="Disabled" value={stats.disabled} tone="destructive" />
-          <StatCard icon={AlertTriangle} label="Excuses" value={stats.excuses} tone="warning" />
-          <StatCard icon={Activity} label="Warnings" value={stats.warnings} tone="warning" />
-          <StatCard icon={MessageSquare} label="Messages" value={stats.messages} />
-          <StatCard icon={BarChart3} label="Ratings" value={stats.ratings} />
+          <StatCard icon={Users} label={t('admin.stat.students')} value={stats.students} />
+          <StatCard icon={GraduationCap} label={t('admin.stat.doctors')} value={stats.doctors} />
+          <StatCard icon={BookOpen} label={t('admin.stat.lectures')} value={stats.lectures} />
+          <StatCard icon={ClipboardCheck} label={t('admin.stat.attendance')} value={stats.attendance} tone="success" />
+          <StatCard icon={Building2} label={t('admin.stat.departments')} value={stats.departments} />
+          <StatCard icon={Ban} label={t('admin.stat.disabled')} value={stats.disabled} tone="destructive" />
+          <StatCard icon={AlertTriangle} label={t('admin.stat.excuses')} value={stats.excuses} tone="warning" />
+          <StatCard icon={Activity} label={t('admin.stat.warnings')} value={stats.warnings} tone="warning" />
+          <StatCard icon={MessageSquare} label={t('admin.stat.messages')} value={stats.messages} />
+          <StatCard icon={BarChart3} label={t('admin.stat.ratings')} value={stats.ratings} />
         </div>
+
 
         <Tabs defaultValue="users">
           <TabsList className="flex-wrap h-auto">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="lectures">Lectures</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="excuses">Excuses</TabsTrigger>
-            <TabsTrigger value="warnings">Warnings</TabsTrigger>
-            <TabsTrigger value="office">Office Hours</TabsTrigger>
-            <TabsTrigger value="ratings">Ratings</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-            <TabsTrigger value="departments">Departments</TabsTrigger>
-            <TabsTrigger value="broadcast"><Megaphone className="me-1 h-3.5 w-3.5" /> Broadcast</TabsTrigger>
-            <TabsTrigger value="bulk"><Layers className="me-1 h-3.5 w-3.5" /> Bulk Ops</TabsTrigger>
-            <TabsTrigger value="health"><HeartPulse className="me-1 h-3.5 w-3.5" /> Health</TabsTrigger>
-            <TabsTrigger value="subjects"><BookMarked className="me-1 h-3.5 w-3.5" /> Subjects</TabsTrigger>
-            <TabsTrigger value="notif"><Bell className="me-1 h-3.5 w-3.5" /> Notifications</TabsTrigger>
-            <TabsTrigger value="maintenance"><Wrench className="me-1 h-3.5 w-3.5" /> Maintenance</TabsTrigger>
-            <TabsTrigger value="live"><Radio className="me-1 h-3.5 w-3.5" /> Live Feed</TabsTrigger>
-            <TabsTrigger value="insights"><Sparkles className="me-1 h-3.5 w-3.5" /> AI Insights</TabsTrigger>
+            <TabsTrigger value="users">{t('admin.tab.users')}</TabsTrigger>
+            <TabsTrigger value="lectures">{t('admin.tab.lectures')}</TabsTrigger>
+            <TabsTrigger value="attendance">{t('admin.tab.attendance')}</TabsTrigger>
+            <TabsTrigger value="excuses">{t('admin.tab.excuses')}</TabsTrigger>
+            <TabsTrigger value="warnings">{t('admin.tab.warnings')}</TabsTrigger>
+            <TabsTrigger value="office">{t('admin.tab.office')}</TabsTrigger>
+            <TabsTrigger value="ratings">{t('admin.tab.ratings')}</TabsTrigger>
+            <TabsTrigger value="messages">{t('admin.tab.messages')}</TabsTrigger>
+            <TabsTrigger value="departments">{t('admin.tab.departments')}</TabsTrigger>
+            <TabsTrigger value="broadcast"><Megaphone className="me-1 h-3.5 w-3.5" /> {t('admin.tab.broadcast')}</TabsTrigger>
+            <TabsTrigger value="bulk"><Layers className="me-1 h-3.5 w-3.5" /> {t('admin.tab.bulk')}</TabsTrigger>
+            <TabsTrigger value="health"><HeartPulse className="me-1 h-3.5 w-3.5" /> {t('admin.tab.health')}</TabsTrigger>
+            <TabsTrigger value="subjects"><BookMarked className="me-1 h-3.5 w-3.5" /> {t('admin.tab.subjects')}</TabsTrigger>
+            <TabsTrigger value="notif"><Bell className="me-1 h-3.5 w-3.5" /> {t('admin.tab.notif')}</TabsTrigger>
+            <TabsTrigger value="maintenance"><Wrench className="me-1 h-3.5 w-3.5" /> {t('admin.tab.maintenance')}</TabsTrigger>
+            <TabsTrigger value="live"><Radio className="me-1 h-3.5 w-3.5" /> {t('admin.tab.live')}</TabsTrigger>
+            <TabsTrigger value="insights"><Sparkles className="me-1 h-3.5 w-3.5" /> {t('admin.tab.insights')}</TabsTrigger>
           </TabsList>
 
           {/* Users */}
@@ -541,22 +625,22 @@ export default function AdminDashboard() {
             <div className="flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-[240px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by name, ID or phone..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+                <Input placeholder={t('admin.searchUsers')} className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <Select value={filterRole} onValueChange={setFilterRole}>
                 <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All roles</SelectItem>
-                  <SelectItem value="student">Students</SelectItem>
-                  <SelectItem value="doctor">Doctors</SelectItem>
-                  <SelectItem value="admin">Admins</SelectItem>
-                  <SelectItem value="disabled">Disabled only</SelectItem>
+                  <SelectItem value="all">{t('admin.filter.allRoles')}</SelectItem>
+                  <SelectItem value="student">{t('admin.filter.students')}</SelectItem>
+                  <SelectItem value="doctor">{t('admin.filter.doctors')}</SelectItem>
+                  <SelectItem value="admin">{t('admin.filter.admins')}</SelectItem>
+                  <SelectItem value="disabled">{t('admin.filter.disabledOnly')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterDept} onValueChange={setFilterDept}>
                 <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All departments</SelectItem>
+                  <SelectItem value="all">{t('admin.filter.allDepts')}</SelectItem>
                   {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -568,17 +652,17 @@ export default function AdminDashboard() {
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
-                  <tr className="text-left whitespace-nowrap">
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Student ID</th>
-                    <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">Level</th>
-                    <th className="px-4 py-3">Points</th>
-                    <th className="px-4 py-3">Phone</th>
-                    <th className="px-4 py-3">Joined</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                  <tr className="text-start whitespace-nowrap">
+                    <th className="px-4 py-3 text-start">{t('admin.col.name')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.role')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.studentId')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.department')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.level')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.points')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.phone')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.joined')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.status')}</th>
+                    <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -632,17 +716,18 @@ export default function AdminDashboard() {
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
-                  <tr className="text-left whitespace-nowrap">
-                    <th className="px-4 py-3">Title</th>
-                    <th className="px-4 py-3">Doctor</th>
-                    <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">Subject</th>
-                    <th className="px-4 py-3">Day</th>
-                    <th className="px-4 py-3">Time</th>
-                    <th className="px-4 py-3">Hall</th>
-                    <th className="px-4 py-3">Level</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Active</th>
+                  <tr className="text-start whitespace-nowrap">
+                    <th className="px-4 py-3 text-start">{t('admin.col.title')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.doctor')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.department')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.subject')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.day')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.time')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.hall')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.level')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.type')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.active')}</th>
+                    <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -658,12 +743,19 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 text-muted-foreground">{l.level || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{l.type || '—'}</td>
                       <td className="px-4 py-3">{l.is_active ? '✓' : '—'}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => toggleLecture(l)} title={l.is_active ? t('admin.action.disable') : t('admin.action.enable')}>
+                          {l.is_active ? <Ban className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5 text-success" />}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteLecture(l)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Attendance */}
           <TabsContent value="attendance" className="space-y-4">
@@ -732,62 +824,95 @@ export default function AdminDashboard() {
           <TabsContent value="excuses">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Student</th><th className="px-4 py-3">Lecture</th>
-                  <th className="px-4 py-3">Reason</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.student')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.lecture')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.reason')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.status')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
                   {excuses.map(e => (
                     <tr key={e.id} className="border-t border-border">
                       <td className="px-4 py-3 font-medium">{e.profiles?.full_name || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{e.lectures?.title || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{e.reason}</td>
-                      <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{e.status}</span></td>
+                      <td className="px-4 py-3 text-muted-foreground max-w-xs truncate" title={e.reason}>{e.reason}</td>
+                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${
+                        e.status === 'approved' ? 'bg-success/10 text-success' :
+                        e.status === 'rejected' ? 'bg-destructive/10 text-destructive' :
+                        'bg-warning/10 text-warning'
+                      }`}>{e.status}</span></td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(e.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        {e.status !== 'approved' && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-success" onClick={() => reviewExcuse(e, 'approved')} title={t('admin.action.approve')}>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {e.status !== 'rejected' && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={() => reviewExcuse(e, 'rejected')} title={t('admin.action.reject')}>
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div></td>
                     </tr>
                   ))}
-                  {excuses.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No excuses</td></tr>}
+                  {excuses.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.excuses')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Warnings */}
           <TabsContent value="warnings">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Student</th><th className="px-4 py-3">Level</th>
-                  <th className="px-4 py-3">Reason</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.student')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.riskLevel')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.reason')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
                   {warnings.map(w => (
-                    <tr key={w.id} className="border-t border-border">
+                    <tr key={w.id} className={`border-t border-border ${w.is_resolved ? 'opacity-50' : ''}`}>
                       <td className="px-4 py-3 font-medium">{w.profiles?.full_name || '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${
-                          w.risk_level === 'high' ? 'bg-destructive/10 text-destructive' :
-                          w.risk_level === 'medium' ? 'bg-warning/10 text-warning' : 'bg-muted'
-                        }`}>{w.risk_level || '—'}</span>
-                      </td>
+                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${
+                        w.risk_level === 'high' ? 'bg-destructive/10 text-destructive' :
+                        w.risk_level === 'medium' ? 'bg-warning/10 text-warning' : 'bg-muted'
+                      }`}>{w.risk_level || '—'}</span></td>
                       <td className="px-4 py-3 text-muted-foreground">{w.message || w.alert_type}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        {!w.is_resolved && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-success" onClick={() => resolveWarning(w)}>
+                            <CheckCircle2 className="me-1 h-3.5 w-3.5" /> {t('admin.action.resolve')}
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('warning_alerts', w.id, 'warning')}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div></td>
                     </tr>
                   ))}
-                  {warnings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No warnings</td></tr>}
+                  {warnings.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.warnings')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
 
+
           {/* Office Hours */}
           <TabsContent value="office">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="rounded-2xl bg-card shadow-card overflow-hidden">
-                <div className="border-b border-border bg-muted/50 px-4 py-2 font-semibold">Office Hour Slots</div>
+                <div className="border-b border-border bg-muted/50 px-4 py-2 font-semibold">{t('admin.tab.office')}</div>
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/30"><tr className="text-left">
-                    <th className="px-4 py-2">Doctor</th><th className="px-4 py-2">Day</th><th className="px-4 py-2">Time</th>
+                  <thead className="bg-muted/30"><tr className="text-start">
+                    <th className="px-4 py-2 text-start">{t('admin.col.doctor')}</th>
+                    <th className="px-4 py-2 text-start">{t('admin.col.day')}</th>
+                    <th className="px-4 py-2 text-start">{t('admin.col.time')}</th>
                   </tr></thead>
                   <tbody>
                     {officeHours.map(o => (
@@ -803,14 +928,23 @@ export default function AdminDashboard() {
               <div className="rounded-2xl bg-card shadow-card overflow-hidden">
                 <div className="border-b border-border bg-muted/50 px-4 py-2 font-semibold">Bookings ({bookings.length})</div>
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/30"><tr className="text-left">
-                    <th className="px-4 py-2">Booking date</th><th className="px-4 py-2">Status</th>
+                  <thead className="bg-muted/30"><tr className="text-start">
+                    <th className="px-4 py-2 text-start">{t('admin.col.date')}</th>
+                    <th className="px-4 py-2 text-start">{t('admin.col.status')}</th>
+                    <th className="px-4 py-2 text-end">{t('admin.col.actions')}</th>
                   </tr></thead>
                   <tbody>
                     {bookings.map(b => (
                       <tr key={b.id} className="border-t border-border">
-                        <td className="px-4 py-2 text-muted-foreground text-xs">{new Date(b.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-2"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{b.status}</span></td>
+                        <td className="px-4 py-2 text-muted-foreground text-xs">{b.booking_date || new Date(b.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs ${b.status === 'cancelled' ? 'bg-destructive/10 text-destructive' : b.status === 'confirmed' ? 'bg-success/10 text-success' : 'bg-muted'}`}>{b.status}</span></td>
+                        <td className="px-4 py-2 text-end">
+                          {b.status !== 'cancelled' && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={() => cancelBooking(b)} title={t('admin.action.cancel')}>
+                              <XCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -819,56 +953,81 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
+
           {/* Ratings */}
           <TabsContent value="ratings">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Lecture ID</th><th className="px-4 py-3">Rating</th><th className="px-4 py-3">Comment</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.lecture')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.rating')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.comment')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
-                  {ratings.map(r => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{String(r.lecture_id).slice(0, 8)}</td>
-                      <td className="px-4 py-3">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-md truncate">{r.comment || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                  {ratings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No ratings</td></tr>}
+                  {ratings.map(r => {
+                    const lec = lectures.find(l => l.id === r.lecture_id);
+                    return (
+                      <tr key={r.id} className="border-t border-border">
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{lec?.title || String(r.lecture_id).slice(0, 8)}</td>
+                        <td className="px-4 py-3 text-warning">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
+                        <td className="px-4 py-3 text-muted-foreground max-w-md truncate" title={r.comment}>{r.comment || '—'}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-end">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('lecture_ratings', r.id, 'rating')}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {ratings.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.ratings')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Messages */}
           <TabsContent value="messages">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">From</th><th className="px-4 py-3">To</th><th className="px-4 py-3">Content</th><th className="px-4 py-3">Read</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.from')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.to')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.content')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.read')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
-                  {messages.map(m => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{String(m.sender_id).slice(0, 8)}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{String(m.receiver_id).slice(0, 8)}</td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-md truncate">{m.content}</td>
-                      <td className="px-4 py-3">{m.read ? '✓' : '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                  {messages.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No messages</td></tr>}
+                  {messages.map(m => {
+                    const from = users.find(u => u.user_id === m.sender_id);
+                    const to = users.find(u => u.user_id === m.receiver_id);
+                    return (
+                      <tr key={m.id} className="border-t border-border">
+                        <td className="px-4 py-3 text-xs">{from?.full_name || String(m.sender_id).slice(0, 8)}</td>
+                        <td className="px-4 py-3 text-xs">{to?.full_name || String(m.receiver_id).slice(0, 8)}</td>
+                        <td className="px-4 py-3 text-muted-foreground max-w-md truncate" title={m.content}>{m.content}</td>
+                        <td className="px-4 py-3">{m.read ? '✓' : '—'}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-end">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('messages', m.id, 'message')}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {messages.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.messages')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
 
+
           {/* Departments */}
           <TabsContent value="departments" className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{departments.length} departments</p>
-              <Button size="sm" onClick={() => openDeptDialog()}><Plus className="me-1.5 h-4 w-4" /> New department</Button>
+              <p className="text-sm text-muted-foreground">{departments.length} · {t('admin.tab.departments')}</p>
+              <Button size="sm" onClick={() => openDeptDialog()}><Plus className="me-1.5 h-4 w-4" /> {t('admin.action.newDept')}</Button>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               {departments.map(d => {
@@ -885,15 +1044,15 @@ export default function AdminDashboard() {
                         <p className="text-sm text-muted-foreground">{d.name_ar} {d.code && <span className="ms-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">{d.code}</span>}</p>
                       </div>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openDeptDialog(d)}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteDept(d)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openDeptDialog(d)} title={t('admin.action.edit')}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteDept(d)} title={t('admin.action.delete')}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Students</p><p className="font-bold tabular-nums">{studentCount}</p></div>
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Doctors</p><p className="font-bold tabular-nums">{doctorCount}</p></div>
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Lectures</p><p className="font-bold tabular-nums">{deptLectures}</p></div>
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Disabled</p><p className="font-bold tabular-nums text-destructive">{disabledCount}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.students')}</p><p className="font-bold tabular-nums">{studentCount}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.doctors')}</p><p className="font-bold tabular-nums">{doctorCount}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.lectures')}</p><p className="font-bold tabular-nums">{deptLectures}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.disabled')}</p><p className="font-bold tabular-nums text-destructive">{disabledCount}</p></div>
                     </div>
                   </div>
                 );
@@ -908,25 +1067,25 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Megaphone className="h-5 w-5" /></div>
                 <div>
-                  <h2 className="font-bold">Send a Broadcast</h2>
-                  <p className="text-xs text-muted-foreground">Deliver an announcement to all users' Notifications inbox.</p>
+                  <h2 className="font-bold">{t('admin.broadcast.title')}</h2>
+                  <p className="text-xs text-muted-foreground">{t('admin.broadcast.subtitle')}</p>
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Select value={broadcastTarget} onValueChange={(v: any) => setBroadcastTarget(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All users ({users.filter(u => !u.is_disabled).length})</SelectItem>
-                    <SelectItem value="student">Students only ({users.filter(u => u.role === 'student' && !u.is_disabled).length})</SelectItem>
-                    <SelectItem value="doctor">Doctors only ({users.filter(u => u.role === 'doctor' && !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="all">{t('admin.broadcast.allUsers')} ({users.filter(u => !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="student">{t('admin.broadcast.studentsOnly')} ({users.filter(u => u.role === 'student' && !u.is_disabled).length})</SelectItem>
+                    <SelectItem value="doctor">{t('admin.broadcast.doctorsOnly')} ({users.filter(u => u.role === 'doctor' && !u.is_disabled).length})</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input className="md:col-span-2" placeholder="Title" value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} />
+                <Input className="md:col-span-2" placeholder={t('admin.broadcast.titlePh')} value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)} />
               </div>
-              <Textarea rows={5} placeholder="Message body…" value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} />
+              <Textarea rows={5} placeholder={t('admin.broadcast.bodyPh')} value={broadcastBody} onChange={e => setBroadcastBody(e.target.value)} />
               <div className="flex justify-end">
                 <Button onClick={sendBroadcast} disabled={broadcasting}>
-                  <Send className="me-2 h-4 w-4" /> {broadcasting ? 'Sending…' : 'Send broadcast'}
+                  <Send className="me-2 h-4 w-4" /> {broadcasting ? t('admin.action.working') : t('admin.action.sendBroadcast')}
                 </Button>
               </div>
             </div>
@@ -991,28 +1150,28 @@ export default function AdminDashboard() {
           {/* System Health */}
           <TabsContent value="health">
             <div className="grid gap-3 md:grid-cols-4">
-              <StatCard icon={Activity} label="Attendance / 24h" value={last24h.length} tone="success" />
-              <StatCard icon={ClipboardCheck} label="Present rate" value={`${presentRate}%`} tone={presentRate >= 70 ? 'success' : presentRate >= 50 ? 'warning' : 'destructive'} />
-              <StatCard icon={AlertTriangle} label="Pending sync" value={offlineQueueSize} tone={offlineQueueSize ? 'warning' : 'primary'} />
-              <StatCard icon={Users} label="Active accounts" value={users.filter(u => !u.is_disabled).length} />
+              <StatCard icon={Activity} label={t('admin.health.att24')} value={last24h.length} tone="success" />
+              <StatCard icon={ClipboardCheck} label={t('admin.health.presentRate')} value={`${presentRate}%`} tone={presentRate >= 70 ? 'success' : presentRate >= 50 ? 'warning' : 'destructive'} />
+              <StatCard icon={AlertTriangle} label={t('admin.health.pendingSync')} value={offlineQueueSize} tone={offlineQueueSize ? 'warning' : 'primary'} />
+              <StatCard icon={Users} label={t('admin.health.activeAccounts')} value={users.filter(u => !u.is_disabled).length} />
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-2xl bg-card p-5 shadow-card">
-                <p className="font-semibold mb-2 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-primary" /> Data freshness</p>
+                <p className="font-semibold mb-2 flex items-center gap-2"><HeartPulse className="h-4 w-4 text-primary" /> {t('admin.health.dataFresh')}</p>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>Profiles loaded: {users.length}</li>
-                  <li>Lectures loaded: {lectures.length}</li>
-                  <li>Attendance loaded: {attendance.length}</li>
-                  <li>Excuses pending: {excuses.filter(e => e.status === 'pending').length}</li>
+                  <li>{t('admin.stat.students')} + {t('admin.stat.doctors')}: {users.length}</li>
+                  <li>{t('admin.stat.lectures')}: {lectures.length}</li>
+                  <li>{t('admin.stat.attendance')}: {attendance.length}</li>
+                  <li>{t('admin.stat.excuses')}: {excuses.filter(e => e.status === 'pending').length}</li>
                 </ul>
-                <Button size="sm" variant="outline" className="mt-3" onClick={loadAll}>Refresh now</Button>
+                <Button size="sm" variant="outline" className="mt-3" onClick={loadAll}>{t('admin.action.refresh')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
-                <p className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Security signals</p>
+                <p className="font-semibold mb-2 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> {t('admin.health.security')}</p>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>Admins: {userRoles.filter(r => r.role === 'admin').length}</li>
-                  <li>Disabled users: {stats.disabled}</li>
-                  <li>High-risk warnings: {warnings.filter(w => w.risk_level === 'high').length}</li>
+                  <li>{t('admin.filter.admins')}: {userRoles.filter(r => r.role === 'admin').length}</li>
+                  <li>{t('admin.stat.disabled')}: {stats.disabled}</li>
+                  <li>{t('admin.col.riskLevel')} (high): {warnings.filter(w => w.risk_level === 'high').length}</li>
                 </ul>
               </div>
             </div>
@@ -1071,13 +1230,17 @@ export default function AdminDashboard() {
           {/* Subjects CRUD */}
           <TabsContent value="subjects" className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{subjects.length} subjects</p>
-              <Button size="sm" onClick={() => openSubjDialog()}><Plus className="me-1.5 h-4 w-4" /> New subject</Button>
+              <p className="text-sm text-muted-foreground">{subjects.length} · {t('admin.tab.subjects')}</p>
+              <Button size="sm" onClick={() => openSubjDialog()}><Plus className="me-1.5 h-4 w-4" /> {t('admin.action.newSubject')}</Button>
             </div>
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Name</th><th className="px-4 py-3">Code</th><th className="px-4 py-3">Department</th><th className="px-4 py-3">Lectures</th><th className="px-4 py-3 text-right">Actions</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.name')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.code')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.department')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.stat.lectures')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
                   {subjects.map(s => (
@@ -1092,7 +1255,7 @@ export default function AdminDashboard() {
                       </div></td>
                     </tr>
                   ))}
-                  {subjects.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No subjects — create one to link with lectures.</td></tr>}
+                  {subjects.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.subjects')}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1101,15 +1264,20 @@ export default function AdminDashboard() {
           {/* All Notifications */}
           <TabsContent value="notif" className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{allNotifications.length} notifications (most recent 300)</p>
+              <p className="text-sm text-muted-foreground">{allNotifications.length} · {t('admin.tab.notif')}</p>
               <Button size="sm" variant="outline" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>
-                <Trash2 className="me-1.5 h-4 w-4" /> Purge read (&gt;7d)
+                <Trash2 className="me-1.5 h-4 w-4" /> {t('admin.maint.purgeNotifTitle')}
               </Button>
             </div>
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Recipient</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Read</th><th className="px-4 py-3">When</th><th className="px-4 py-3"></th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.recipient')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.title')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.type')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.read')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.when')}</th>
+                  <th className="px-4 py-3 text-end"></th>
                 </tr></thead>
                 <tbody>
                   {allNotifications.map(n => {
@@ -1121,11 +1289,11 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{n.type || '—'}</span></td>
                         <td className="px-4 py-3">{n.read ? '✓' : '—'}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right"><Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('notifications', n.id, 'notification')}><Trash2 className="h-3.5 w-3.5" /></Button></td>
+                        <td className="px-4 py-3 text-end"><Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('notifications', n.id, 'notification')}><Trash2 className="h-3.5 w-3.5" /></Button></td>
                       </tr>
                     );
                   })}
-                  {allNotifications.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No notifications</td></tr>}
+                  {allNotifications.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.notif')}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1137,30 +1305,30 @@ export default function AdminDashboard() {
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><RotateCcw className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Recompute student points</p><p className="text-xs text-muted-foreground">Recalculates points and level from attendance + approved excuses (3 pts each).</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.recomputeTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.recomputeDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('recompute-points')} disabled={maintBusy === 'recompute-points'}>{maintBusy === 'recompute-points' ? 'Recomputing…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('recompute-points')} disabled={maintBusy === 'recompute-points'}>{maintBusy === 'recompute-points' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><CheckCircle2 className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Mark all attendance synced</p><p className="text-xs text-muted-foreground">Flags any leftover offline-queued rows as synced.</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.markSyncedTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.markSyncedDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('mark-synced')} disabled={maintBusy === 'mark-synced'}>{maintBusy === 'mark-synced' ? 'Working…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('mark-synced')} disabled={maintBusy === 'mark-synced'}>{maintBusy === 'mark-synced' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><MessageSquare className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Purge stale typing indicators</p><p className="text-xs text-muted-foreground">Removes typing rows older than 60 seconds.</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.purgeTypingTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.purgeTypingDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('purge-typing')} disabled={maintBusy === 'purge-typing'}>{maintBusy === 'purge-typing' ? 'Working…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('purge-typing')} disabled={maintBusy === 'purge-typing'}>{maintBusy === 'purge-typing' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
               <div className="rounded-2xl bg-card p-5 shadow-card">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive"><Trash2 className="h-5 w-5" /></div>
-                  <div><p className="font-semibold">Purge old read notifications</p><p className="text-xs text-muted-foreground">Deletes read notifications older than 7 days.</p></div>
+                  <div><p className="font-semibold">{t('admin.maint.purgeNotifTitle')}</p><p className="text-xs text-muted-foreground">{t('admin.maint.purgeNotifDesc')}</p></div>
                 </div>
-                <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? 'Working…' : 'Run'}</Button>
+                <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? t('admin.action.working') : t('admin.action.run')}</Button>
               </div>
             </div>
           </TabsContent>
@@ -1171,13 +1339,13 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success"><Radio className="h-5 w-5 animate-pulse" /></div>
                 <div>
-                  <p className="font-bold">Realtime activity</p>
-                  <p className="text-xs text-muted-foreground">Streams inserts on attendance, messages, excuses, and bookings.</p>
+                  <p className="font-bold">{t('admin.live.title')}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.live.subtitle')}</p>
                 </div>
-                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>Clear</Button>
+                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>{t('admin.action.clear')}</Button>
               </div>
               {liveEvents.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">Listening… events will appear here as they happen.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">{t('admin.empty.live')}</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {liveEvents.map(e => (
@@ -1204,20 +1372,18 @@ export default function AdminDashboard() {
       <Dialog open={!!disableTarget} onOpenChange={(v) => !v && setDisableTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disable account: {disableTarget?.full_name}</DialogTitle>
+            <DialogTitle>{t('admin.disable.title')}: {disableTarget?.full_name}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            The user will be signed out and shown a "Account disabled" screen with the support phone number.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('admin.disable.warn')}</p>
           <Textarea
-            placeholder="Reason (shown to the user)"
+            placeholder={t('admin.disable.reasonPh')}
             value={disableReason}
             onChange={e => setDisableReason(e.target.value)}
             rows={3}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDisableTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDisable}><Ban className="me-2 h-4 w-4" /> Disable</Button>
+            <Button variant="outline" onClick={() => setDisableTarget(null)}>{t('admin.action.cancel')}</Button>
+            <Button variant="destructive" onClick={confirmDisable}><Ban className="me-2 h-4 w-4" /> {t('admin.action.disable')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1225,15 +1391,15 @@ export default function AdminDashboard() {
       {/* Department dialog */}
       <Dialog open={deptDialog.open} onOpenChange={(v) => !v && setDeptDialog({ open: false })}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{deptDialog.edit ? 'Edit department' : 'New department'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{deptDialog.edit ? t('admin.action.edit') : t('admin.action.newDept')}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Name (English)" value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} />
-            <Input placeholder="الاسم بالعربية" value={deptForm.name_ar} onChange={e => setDeptForm({ ...deptForm, name_ar: e.target.value })} />
-            <Input placeholder="Code (optional)" value={deptForm.code} onChange={e => setDeptForm({ ...deptForm, code: e.target.value })} />
+            <Input placeholder={t('admin.dept.namePh')} value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} />
+            <Input placeholder={t('admin.dept.nameArPh')} value={deptForm.name_ar} onChange={e => setDeptForm({ ...deptForm, name_ar: e.target.value })} />
+            <Input placeholder={t('admin.dept.codePh')} value={deptForm.code} onChange={e => setDeptForm({ ...deptForm, code: e.target.value })} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeptDialog({ open: false })}>Cancel</Button>
-            <Button onClick={saveDept}>{deptDialog.edit ? 'Save' : 'Create'}</Button>
+            <Button variant="outline" onClick={() => setDeptDialog({ open: false })}>{t('admin.action.cancel')}</Button>
+            <Button onClick={saveDept}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1241,20 +1407,20 @@ export default function AdminDashboard() {
       {/* Subject dialog */}
       <Dialog open={subjDialog.open} onOpenChange={(v) => !v && setSubjDialog({ open: false })}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{subjDialog.edit ? 'Edit subject' : 'New subject'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{subjDialog.edit ? t('admin.action.edit') : t('admin.action.newSubject')}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Subject name" value={subjForm.name} onChange={e => setSubjForm({ ...subjForm, name: e.target.value })} />
-            <Input placeholder="Code (optional)" value={subjForm.code} onChange={e => setSubjForm({ ...subjForm, code: e.target.value })} />
+            <Input placeholder={t('admin.subj.namePh')} value={subjForm.name} onChange={e => setSubjForm({ ...subjForm, name: e.target.value })} />
+            <Input placeholder={t('admin.dept.codePh')} value={subjForm.code} onChange={e => setSubjForm({ ...subjForm, code: e.target.value })} />
             <Select value={subjForm.department_id} onValueChange={(v) => setSubjForm({ ...subjForm, department_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('admin.col.department')} /></SelectTrigger>
               <SelectContent>
                 {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>Cancel</Button>
-            <Button onClick={saveSubj}>{subjDialog.edit ? 'Save' : 'Create'}</Button>
+            <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>{t('admin.action.cancel')}</Button>
+            <Button onClick={saveSubj}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
