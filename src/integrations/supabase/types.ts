@@ -1203,17 +1203,21 @@ export type Database = {
         Row: {
           academic_title: string | null
           avatar_url: string | null
+          bio: string | null
+          cover_url: string | null
           created_at: string
           department_id: string | null
           disabled_at: string | null
           disabled_reason: string | null
           full_name: string
           id: string
+          interests: string[]
           is_disabled: boolean
           level: number | null
           phone: string | null
           points: number
           role: string
+          skills: string[]
           student_id: string | null
           updated_at: string
           user_id: string
@@ -1221,17 +1225,21 @@ export type Database = {
         Insert: {
           academic_title?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
           created_at?: string
           department_id?: string | null
           disabled_at?: string | null
           disabled_reason?: string | null
           full_name: string
           id?: string
+          interests?: string[]
           is_disabled?: boolean
           level?: number | null
           phone?: string | null
           points?: number
           role: string
+          skills?: string[]
           student_id?: string | null
           updated_at?: string
           user_id: string
@@ -1239,17 +1247,21 @@ export type Database = {
         Update: {
           academic_title?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          cover_url?: string | null
           created_at?: string
           department_id?: string | null
           disabled_at?: string | null
           disabled_reason?: string | null
           full_name?: string
           id?: string
+          interests?: string[]
           is_disabled?: boolean
           level?: number | null
           phone?: string | null
           points?: number
           role?: string
+          skills?: string[]
           student_id?: string | null
           updated_at?: string
           user_id?: string

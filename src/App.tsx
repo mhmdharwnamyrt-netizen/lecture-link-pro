@@ -36,6 +36,7 @@ const ProfilePage = lazy(() => import("./pages/shared/Profile"));
 const MessagesPage = lazy(() => import("./pages/shared/Messages"));
 const OfficeHoursPage = lazy(() => import("./pages/shared/OfficeHours"));
 const CommunityPage = lazy(() => import("./pages/shared/Community"));
+const PublicProfilePage = lazy(() => import("./pages/shared/PublicProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
@@ -101,6 +102,9 @@ const App = () => (
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />
                   <Route path="/admin/reports" element={<Guarded><AdminReports /></Guarded>} />
                   <Route path="/admin/moderation" element={<Guarded><AdminModeration /></Guarded>} />
+
+                  {/* Public user profile (shared) */}
+                  <Route path="/u/:userId" element={<Guarded><PublicProfilePage /></Guarded>} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
