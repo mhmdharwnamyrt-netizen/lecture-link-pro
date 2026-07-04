@@ -327,7 +327,7 @@ export default function Community({ role }: { role: Role }) {
       .order('created_at', { ascending: true }).limit(200);
     if (error) return;
     const authorIds = [...new Set((data || []).map((c: any) => c.author_id))];
-    const [{ data: authors }, myLikes] = await Promise.all([
+    const [{ data: authors }, { data: myLikes }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
@@ -489,6 +489,29 @@ export default function Community({ role }: { role: Role }) {
             {!isCollapsed && c.children.map((child: any) => renderComment(postId, child, depth + 1))}
           </div>
         </div>
+      </div>
+    );
+  };
+
+  const renderPostMedia = (media?: PostMedia[]) => {
+    if (!media?.length) return null;
+    return (
+      <div className="mt-3 grid gap-2">
+        {media.map((m) => {
+          const src = m.display_url || m.storage_path;
+          if (m.media_type === 'video') {
+            return <video key={m.id} src={src} controls preload="metadata" className="max-h-96 w-full rounded-xl bg-muted object-contain" />;
+          }
+          if (m.media_type === 'audio') {
+            return (
+              <div key={m.id} className="rounded-xl border bg-muted/40 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium"><Mic className="h-4 w-4" /> {m.file_name || t('تسجيل صوتي', 'Voice note')}</div>
+                <audio src={src} controls preload="metadata" className="w-full" />
+              </div>
+            );
+          }
+          return <img key={m.id} src={src} alt={m.file_name || t('صورة منشور', 'Post image')} className="max-h-96 w-full rounded-xl object-cover" loading="lazy" />;
+        })}
       </div>
     );
   };
