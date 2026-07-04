@@ -29,8 +29,12 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   const [bio, setBio] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
+  const [hobbies, setHobbies] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState('');
   const [interestInput, setInterestInput] = useState('');
+  const [hobbyInput, setHobbyInput] = useState('');
+  const [favoriteInput, setFavoriteInput] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,6 +43,8 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
     setBio(p.bio || '');
     setSkills(Array.isArray(p.skills) ? p.skills : []);
     setInterests(Array.isArray(p.interests) ? p.interests : []);
+    setHobbies(Array.isArray(p.hobbies) ? p.hobbies : []);
+    setFavorites(Array.isArray(p.favorites) ? p.favorites : []);
   }, [profile]);
 
   const addTag = (list: string[], setter: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
@@ -53,7 +59,7 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
     setSaving(true);
     const { error } = await supabase
       .from('profiles')
-      .update({ bio: bio.trim() || null, skills, interests } as any)
+      .update({ bio: bio.trim() || null, skills, interests, hobbies, favorites } as any)
       .eq('id', profile.id);
     setSaving(false);
     if (error) {
@@ -162,39 +168,40 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
           )}
         </div>
 
-        {/* About / Skills / Interests preview */}
-        {((profile as any).bio || ((profile as any).skills?.length ?? 0) > 0 || ((profile as any).interests?.length ?? 0) > 0) && (
-          <div className="mb-3 rounded-2xl bg-card p-4 shadow-card space-y-3">
-            {(profile as any).bio && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" /> {language === 'ar' ? 'نبذة' : 'About'}
-                </p>
-                <p className="text-sm whitespace-pre-wrap">{(profile as any).bio}</p>
-              </div>
-            )}
-            {((profile as any).skills?.length ?? 0) > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">{language === 'ar' ? 'المهارات' : 'Skills'}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(profile as any).skills.map((s: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="rounded-full">{s}</Badge>
-                  ))}
+        {/* About / Skills / Interests / Hobbies / Favorites preview */}
+        {(() => {
+          const p: any = profile;
+          const anyItems = p.bio || (p.skills?.length ?? 0) || (p.interests?.length ?? 0) || (p.hobbies?.length ?? 0) || (p.favorites?.length ?? 0);
+          if (!anyItems) return null;
+          const sections = [
+            { key: 'skills', label: language === 'ar' ? 'المهارات' : 'Skills', items: p.skills, variant: 'secondary' as const },
+            { key: 'interests', label: language === 'ar' ? 'الاهتمامات' : 'Interests', items: p.interests, variant: 'outline' as const },
+            { key: 'hobbies', label: language === 'ar' ? 'الهوايات' : 'Hobbies', items: p.hobbies, variant: 'secondary' as const },
+            { key: 'favorites', label: language === 'ar' ? 'المفضلات' : 'Favorites', items: p.favorites, variant: 'outline' as const },
+          ];
+          return (
+            <div className="mb-3 rounded-2xl bg-card p-4 shadow-card space-y-3">
+              {p.bio && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> {language === 'ar' ? 'نبذة' : 'About'}
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">{p.bio}</p>
                 </div>
-              </div>
-            )}
-            {((profile as any).interests?.length ?? 0) > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">{language === 'ar' ? 'الاهتمامات' : 'Interests'}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(profile as any).interests.map((s: string, i: number) => (
-                    <Badge key={i} variant="outline" className="rounded-full">{s}</Badge>
-                  ))}
+              )}
+              {sections.map((sec) => (sec.items?.length ?? 0) > 0 ? (
+                <div key={sec.key}>
+                  <p className="text-xs text-muted-foreground mb-1.5">{sec.label}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sec.items.map((s: string, i: number) => (
+                      <Badge key={i} variant={sec.variant} className="rounded-full">{s}</Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              ) : null)}
+            </div>
+          );
+        })()}
 
         <div className="space-y-3">
           <div className="rounded-2xl bg-card p-4 shadow-card">
@@ -358,6 +365,31 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
                 ))}
               </div>
             </div>
+            {[
+              { key: 'hobbies', label: language === 'ar' ? 'الهوايات' : 'Hobbies', placeholder: language === 'ar' ? 'أضف هواية واضغط Enter' : 'Add a hobby, press Enter', list: hobbies, setList: setHobbies, input: hobbyInput, setInput: setHobbyInput, variant: 'secondary' as const },
+              { key: 'favorites', label: language === 'ar' ? 'المفضلات' : 'Favorites', placeholder: language === 'ar' ? 'أضف عنصرًا مفضلاً واضغط Enter' : 'Add a favorite, press Enter', list: favorites, setList: setFavorites, input: favoriteInput, setInput: setFavoriteInput, variant: 'outline' as const },
+            ].map((f) => (
+              <div key={f.key}>
+                <label className="text-sm font-medium mb-1.5 block">{f.label}</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={f.input}
+                    onChange={(e) => f.setInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(f.list, f.setList, f.input, f.setInput); } }}
+                    placeholder={f.placeholder}
+                  />
+                  <Button type="button" variant="outline" onClick={() => addTag(f.list, f.setList, f.input, f.setInput)}>+</Button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {f.list.map((s, i) => (
+                    <Badge key={i} variant={f.variant} className="rounded-full gap-1">
+                      {s}
+                      <button onClick={() => f.setList(f.list.filter((_, j) => j !== i))}><X className="h-3 w-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>{language === 'ar' ? 'إلغاء' : 'Cancel'}</Button>

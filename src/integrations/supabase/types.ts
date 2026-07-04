@@ -221,6 +221,27 @@ export type Database = {
           },
         ]
       }
+      community_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       community_mentions: {
         Row: {
           actor_id: string
@@ -1209,7 +1230,11 @@ export type Database = {
           department_id: string | null
           disabled_at: string | null
           disabled_reason: string | null
+          favorites: string[]
+          followers_count: number
+          following_count: number
           full_name: string
+          hobbies: string[]
           id: string
           interests: string[]
           is_disabled: boolean
@@ -1231,7 +1256,11 @@ export type Database = {
           department_id?: string | null
           disabled_at?: string | null
           disabled_reason?: string | null
+          favorites?: string[]
+          followers_count?: number
+          following_count?: number
           full_name: string
+          hobbies?: string[]
           id?: string
           interests?: string[]
           is_disabled?: boolean
@@ -1253,7 +1282,11 @@ export type Database = {
           department_id?: string | null
           disabled_at?: string | null
           disabled_reason?: string | null
+          favorites?: string[]
+          followers_count?: number
+          following_count?: number
           full_name?: string
+          hobbies?: string[]
           id?: string
           interests?: string[]
           is_disabled?: boolean

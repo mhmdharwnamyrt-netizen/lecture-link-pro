@@ -38,6 +38,7 @@ interface Post {
   tags: string[] | null; likes_count: number; comments_count: number; shares_count: number;
   saves_count?: number; score?: number; category?: PostCategory; is_answered?: boolean;
   is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; saved?: boolean; media?: PostMedia[];
+  mentions?: { name: string; user_id: string }[];
 }
 interface Comment {
   id: string; post_id: string; parent_id: string | null; author_id: string;
@@ -84,7 +85,8 @@ export default function Community({ role }: { role: Role }) {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'all' | 'mine' | 'trending' | 'saved'>('all');
+  const [tab, setTab] = useState<'all' | 'following' | 'mine' | 'trending' | 'saved'>('all');
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<PostCategory | null>(null);
   const [composerCategory, setComposerCategory] = useState<PostCategory>('discussion');
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
@@ -118,6 +120,48 @@ export default function Community({ role }: { role: Role }) {
   const displayName = (p?: { full_name?: string | null } | null, fallbackUser?: typeof user) =>
     p?.full_name || fallbackUser?.user_metadata?.full_name || fallbackUser?.email?.split('@')[0] || t('مستخدم', 'User');
   const avatarLetter = (name?: string | null) => (name?.trim()?.slice(0, 1) || 'U').toUpperCase();
+
+  // Load who I follow (once per user)
+  useEffect(() => {
+    if (!user?.id) { setFollowingIds([]); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('community_follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+      setFollowingIds((data || []).map((r: any) => r.following_id));
+    })();
+  }, [user?.id]);
+
+  // Render post text with @mentions turned into profile links
+  const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const renderRichContent = (content: string, mentions?: { name: string; user_id: string }[]) => {
+    if (!content) return null;
+    if (!mentions?.length) return content;
+    const sorted = [...mentions].sort((a, b) => b.name.length - a.name.length);
+    let parts: (string | JSX.Element)[] = [content];
+    sorted.forEach((m, idx) => {
+      const token = '@' + m.name;
+      const re = new RegExp(`(${escapeRegex(token)})`, 'gi');
+      const next: (string | JSX.Element)[] = [];
+      parts.forEach((part) => {
+        if (typeof part !== 'string') { next.push(part); return; }
+        part.split(re).forEach((piece, i) => {
+          if (piece && piece.toLowerCase() === token.toLowerCase()) {
+            next.push(
+              <Link key={`m-${idx}-${next.length}-${i}`} to={`/u/${m.user_id}`}
+                className="rounded px-1 font-medium text-primary hover:bg-primary/10">
+                {piece}
+              </Link>
+            );
+          } else if (piece) next.push(piece);
+        });
+      });
+      parts = next;
+    });
+    return parts;
+  };
+
   const detectMediaType = (file: File): MediaType | null => {
     if (file.type.startsWith('image/')) return 'image';
     if (file.type.startsWith('video/')) return 'video';
@@ -137,9 +181,14 @@ export default function Community({ role }: { role: Role }) {
       savedIds = (saves || []).map((s: any) => s.post_id);
       if (!savedIds.length) { setPosts([]); setLoading(false); return; }
     }
+    // "Following" tab: only posts from users I follow
+    if (tab === 'following') {
+      if (!user || followingIds.length === 0) { setPosts([]); setLoading(false); return; }
+    }
     let q = supabase.from('community_posts').select('*').eq('is_hidden', false);
     if (tab === 'mine' && user) q = q.eq('author_id', user.id);
     if (tab === 'saved') q = q.in('id', savedIds);
+    if (tab === 'following') q = q.in('author_id', followingIds);
     if (categoryFilter) q = q.eq('category', categoryFilter);
     if (activeTag) q = q.contains('tags', [activeTag]);
     if (query.trim()) q = q.ilike('content', `%${query.trim()}%`);
@@ -151,7 +200,7 @@ export default function Community({ role }: { role: Role }) {
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
     const postIds = (rows || []).map((r: any) => r.id);
-    const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }] = await Promise.all([
+    const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }, { data: mentionRows }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
@@ -164,6 +213,9 @@ export default function Community({ role }: { role: Role }) {
       postIds.length
         ? (supabase as any).from('community_post_media').select('*').in('post_id', postIds).order('created_at', { ascending: true })
         : Promise.resolve({ data: [] as any[] }),
+      postIds.length
+        ? supabase.from('community_mentions').select('post_id, mentioned_user_id').in('post_id', postIds)
+        : Promise.resolve({ data: [] as any[] }),
     ]);
     const mediaWithUrls = await Promise.all(((mediaRows as PostMedia[]) || []).map(async (m) => {
       const { data } = await supabase.storage.from(MEDIA_BUCKET).createSignedUrl(m.storage_path, 60 * 60);
@@ -173,16 +225,45 @@ export default function Community({ role }: { role: Role }) {
       (acc[m.post_id] ||= []).push(m);
       return acc;
     }, {});
+    // Resolve mention names → link data
+    const mentionedIds = [...new Set(((mentionRows as any[]) || []).map((r) => r.mentioned_user_id))];
+    let mentionProfiles: Record<string, string> = {};
+    if (mentionedIds.length) {
+      const { data: mp } = await supabase
+        .from('profiles').select('user_id,full_name').in('user_id', mentionedIds);
+      mentionProfiles = ((mp as any[]) || []).reduce((acc, r) => { acc[r.user_id] = r.full_name; return acc; }, {} as Record<string, string>);
+    }
+    const mentionsByPost: Record<string, { name: string; user_id: string }[]> = {};
+    ((mentionRows as any[]) || []).forEach((r) => {
+      const name = mentionProfiles[r.mentioned_user_id];
+      if (!name) return;
+      (mentionsByPost[r.post_id] ||= []).push({ name, user_id: r.mentioned_user_id });
+    });
+
     const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
     const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
     const saved = new Set(((mySaves as any[]) || []).map((r: any) => r.post_id));
-    setPosts((rows || []).map((p: any) => ({
+    const followingSet = new Set(followingIds);
+    let mapped = (rows || []).map((p: any) => ({
       ...p,
       author: map.get(p.author_id) || (p.author_id === user?.id ? profile : undefined),
       liked: liked.has(p.id),
       saved: saved.has(p.id),
       media: mediaByPost[p.id] || [],
-    })));
+      mentions: mentionsByPost[p.id] || [],
+    })) as Post[];
+
+    // Prioritize followed users in the default feed (pinned still first)
+    if (tab === 'all' && followingSet.size > 0) {
+      mapped = mapped.slice().sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        const aF = followingSet.has(a.author_id) ? 1 : 0;
+        const bF = followingSet.has(b.author_id) ? 1 : 0;
+        if (aF !== bF) return bF - aF;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+    setPosts(mapped);
     setLoading(false);
 
     // trending tags (client aggregation of latest posts)
@@ -196,7 +277,7 @@ export default function Community({ role }: { role: Role }) {
     setLeaderboard((data as LeaderRow[]) || []);
   };
 
-  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, categoryFilter, user?.id]);
+  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, categoryFilter, user?.id, followingIds.length]);
   useEffect(() => { loadLeaderboard(); }, []);
 
   // debounced search
@@ -620,6 +701,7 @@ export default function Community({ role }: { role: Role }) {
 
   const tabs = useMemo(() => ([
     { k: 'all', label: t('الكل', 'All') },
+    { k: 'following', label: t('المتابَعون', 'Following') },
     { k: 'trending', label: t('الأكثر تفاعلاً', 'Trending') },
     { k: 'saved', label: t('المحفوظة', 'Saved') },
     { k: 'mine', label: t('منشوراتي', 'Mine') },
@@ -907,7 +989,7 @@ export default function Community({ role }: { role: Role }) {
 
                   {p.content && (
                     <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                      {p.content}
+                      {renderRichContent(p.content, p.mentions)}
                     </div>
                   )}
                   {p.media?.length ? renderPostMedia(p.media) : (p.image_url?.startsWith('http') && (

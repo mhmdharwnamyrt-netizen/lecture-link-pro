@@ -9,7 +9,8 @@ import StorageImage from '@/components/StorageImage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MessageSquare, GraduationCap, User, Sparkles, Star, Heart, MessageCircle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, GraduationCap, User, Sparkles, Star, Heart, MessageCircle, UserPlus, UserCheck, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { createSignedUrl } from '@/lib/storage';
@@ -20,6 +21,8 @@ interface ProfileRow {
   role: string; academic_title: string | null; student_id: string | null;
   department_id: string | null; level: number | null; points: number;
   bio: string | null; skills: string[] | null; interests: string[] | null;
+  hobbies: string[] | null; favorites: string[] | null;
+  followers_count: number; following_count: number;
 }
 
 export default function PublicProfilePage() {
@@ -35,6 +38,8 @@ export default function PublicProfilePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [coverSrc, setCoverSrc] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -42,7 +47,7 @@ export default function PublicProfilePage() {
       setLoading(true);
       const { data: prof } = await supabase
         .from('profiles')
-        .select('id,user_id,full_name,avatar_url,cover_url,role,academic_title,student_id,department_id,level,points,bio,skills,interests')
+        .select('id,user_id,full_name,avatar_url,cover_url,role,academic_title,student_id,department_id,level,points,bio,skills,interests,hobbies,favorites,followers_count,following_count')
         .eq('user_id', userId)
         .maybeSingle();
       setProfile(prof as any);
@@ -57,9 +62,44 @@ export default function PublicProfilePage() {
         .order('created_at', { ascending: false })
         .limit(30);
       setPosts(pRows || []);
+      // Am I following this user?
+      if (me?.user_id && me.user_id !== userId) {
+        const { data: f } = await supabase
+          .from('community_follows')
+          .select('id')
+          .eq('follower_id', me.user_id)
+          .eq('following_id', userId)
+          .maybeSingle();
+        setIsFollowing(!!f);
+      }
       setLoading(false);
     })();
-  }, [userId]);
+  }, [userId, me?.user_id]);
+
+  const toggleFollow = async () => {
+    if (!me?.user_id || !userId || followBusy) return;
+    setFollowBusy(true);
+    if (isFollowing) {
+      const { error } = await supabase
+        .from('community_follows')
+        .delete()
+        .eq('follower_id', me.user_id)
+        .eq('following_id', userId);
+      if (!error) {
+        setIsFollowing(false);
+        setProfile((p) => p ? { ...p, followers_count: Math.max(0, p.followers_count - 1) } : p);
+      } else toast.error(error.message);
+    } else {
+      const { error } = await supabase
+        .from('community_follows')
+        .insert({ follower_id: me.user_id, following_id: userId });
+      if (!error) {
+        setIsFollowing(true);
+        setProfile((p) => p ? { ...p, followers_count: p.followers_count + 1 } : p);
+      } else toast.error(error.message);
+    }
+    setFollowBusy(false);
+  };
 
   const myRole = (me?.role as 'doctor' | 'student') || 'student';
   const isMe = me?.user_id === userId;
@@ -124,13 +164,40 @@ export default function PublicProfilePage() {
             </div>
           </div>
 
+          {/* Follower stats */}
+          <div className="mt-4 flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold tabular-nums">{profile?.followers_count ?? 0}</span>
+              <span className="text-muted-foreground">{t('متابع', 'followers')}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold tabular-nums">{profile?.following_count ?? 0}</span>
+              <span className="text-muted-foreground">{t('يتابع', 'following')}</span>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="mt-4 flex gap-2">
             {!isMe ? (
-              <Button onClick={startMessage} className="flex-1 h-11 rounded-xl">
-                <MessageSquare className="h-4 w-4 me-2" />
-                {t('مراسلة', 'Message')}
-              </Button>
+              <>
+                <Button
+                  onClick={toggleFollow}
+                  disabled={followBusy}
+                  variant={isFollowing ? 'outline' : 'default'}
+                  className="flex-1 h-11 rounded-xl"
+                >
+                  {isFollowing ? (
+                    <><UserCheck className="h-4 w-4 me-2" /> {t('تتم متابعته', 'Following')}</>
+                  ) : (
+                    <><UserPlus className="h-4 w-4 me-2" /> {t('متابعة', 'Follow')}</>
+                  )}
+                </Button>
+                <Button onClick={startMessage} variant="outline" className="flex-1 h-11 rounded-xl">
+                  <MessageSquare className="h-4 w-4 me-2" />
+                  {t('مراسلة', 'Message')}
+                </Button>
+              </>
             ) : (
               <Button asChild variant="outline" className="flex-1 h-11 rounded-xl">
                 <Link to={`/${myRole}/profile`}>{t('تعديل الملف الشخصي', 'Edit profile')}</Link>
@@ -149,29 +216,21 @@ export default function PublicProfilePage() {
             </div>
           )}
 
-          {/* Skills */}
-          {profile?.skills && profile.skills.length > 0 && (
-            <div className="mt-3 rounded-2xl border bg-card p-4">
-              <div className="text-sm font-semibold mb-2">{t('المهارات', 'Skills')}</div>
+          {[
+            { key: 'skills', title: t('المهارات', 'Skills'), variant: 'secondary' as const, items: profile?.skills },
+            { key: 'interests', title: t('الاهتمامات', 'Interests'), variant: 'outline' as const, items: profile?.interests },
+            { key: 'hobbies', title: t('الهوايات', 'Hobbies'), variant: 'secondary' as const, items: profile?.hobbies },
+            { key: 'favorites', title: t('المفضلات', 'Favorites'), variant: 'outline' as const, items: profile?.favorites },
+          ].map((sec) => (sec.items && sec.items.length > 0) ? (
+            <div key={sec.key} className="mt-3 rounded-2xl border bg-card p-4">
+              <div className="text-sm font-semibold mb-2">{sec.title}</div>
               <div className="flex flex-wrap gap-2">
-                {profile.skills.map((s, i) => (
-                  <Badge key={i} variant="secondary" className="rounded-full">{s}</Badge>
+                {sec.items.map((s, i) => (
+                  <Badge key={i} variant={sec.variant} className="rounded-full">{s}</Badge>
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Interests */}
-          {profile?.interests && profile.interests.length > 0 && (
-            <div className="mt-3 rounded-2xl border bg-card p-4">
-              <div className="text-sm font-semibold mb-2">{t('الاهتمامات', 'Interests')}</div>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.map((s, i) => (
-                  <Badge key={i} variant="outline" className="rounded-full">{s}</Badge>
-                ))}
-              </div>
-            </div>
-          )}
+          ) : null)}
 
           {/* Stats */}
           {profile?.role === 'student' && (
