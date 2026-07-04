@@ -150,6 +150,52 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
         </div>
 
 
+        {/* Quick actions: edit profile + view public profile */}
+        <div className="mb-3 flex gap-2">
+          <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4 me-2" /> {language === 'ar' ? 'تعديل الملف' : 'Edit profile'}
+          </Button>
+          {user && (
+            <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => navigate(`/u/${user.id}`)}>
+              <ExternalLink className="h-4 w-4 me-2" /> {language === 'ar' ? 'عرض الملف العام' : 'View public'}
+            </Button>
+          )}
+        </div>
+
+        {/* About / Skills / Interests preview */}
+        {((profile as any).bio || ((profile as any).skills?.length ?? 0) > 0 || ((profile as any).interests?.length ?? 0) > 0) && (
+          <div className="mb-3 rounded-2xl bg-card p-4 shadow-card space-y-3">
+            {(profile as any).bio && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" /> {language === 'ar' ? 'نبذة' : 'About'}
+                </p>
+                <p className="text-sm whitespace-pre-wrap">{(profile as any).bio}</p>
+              </div>
+            )}
+            {((profile as any).skills?.length ?? 0) > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">{language === 'ar' ? 'المهارات' : 'Skills'}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(profile as any).skills.map((s: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="rounded-full">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {((profile as any).interests?.length ?? 0) > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">{language === 'ar' ? 'الاهتمامات' : 'Interests'}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(profile as any).interests.map((s: string, i: number) => (
+                    <Badge key={i} variant="outline" className="rounded-full">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="rounded-2xl bg-card p-4 shadow-card">
             <p className="text-sm text-muted-foreground">{t('profile.phone')}</p>
