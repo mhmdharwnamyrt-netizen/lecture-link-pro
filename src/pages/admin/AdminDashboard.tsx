@@ -440,7 +440,7 @@ export default function AdminDashboard() {
         const { data, error } = await supabase.rpc('db_integrity_check');
         if (error) throw error;
         setIntegrity(data);
-        await logAdminAction({ action: 'maintenance.integrity_check', details: data });
+        await logAdminAction({ action: 'maintenance.integrity_check', details: data as any });
         toast({ title: 'Integrity check complete' });
       } else if (kind === 'health-check') {
         const { data, error } = await supabase.rpc('db_health_snapshot');
