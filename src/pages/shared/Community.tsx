@@ -73,9 +73,10 @@ export default function Community({ role }: { role: Role }) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
   const [text, setText] = useState('');
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
   const [posting, setPosting] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordElapsed, setRecordElapsed] = useState(0);
   const [openPost, setOpenPost] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -88,6 +89,21 @@ export default function Community({ role }: { role: Role }) {
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordChunksRef = useRef<Blob[]>([]);
+  const recordTimerRef = useRef<number | null>(null);
+
+  const displayName = (p?: Profile | null, fallbackUser?: typeof user) =>
+    p?.full_name || fallbackUser?.user_metadata?.full_name || fallbackUser?.email?.split('@')[0] || t('مستخدم', 'User');
+  const avatarLetter = (name?: string | null) => (name?.trim()?.slice(0, 1) || 'U').toUpperCase();
+  const detectMediaType = (file: File): MediaType | null => {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    if (file.type.startsWith('audio/')) return 'audio';
+    return null;
+  };
+  const mediaLimit = (type: MediaType) => (type === 'image' ? 8 : type === 'video' ? 80 : 30) * 1024 * 1024;
+  const mediaLabel = (type: MediaType) => type === 'image' ? t('صورة', 'Photo') : type === 'video' ? t('فيديو', 'Video') : t('صوت', 'Audio');
 
   // -------- Load posts (with search/tag filters) --------
   const loadPosts = async () => {
@@ -103,17 +119,28 @@ export default function Community({ role }: { role: Role }) {
     if (error) { toast.error(error.message); setLoading(false); return; }
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
-    const [{ data: authors }, myLikes] = await Promise.all([
+    const [{ data: authors }, { data: myLikes }, { data: mediaRows }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('post_id').eq('user_id', user.id).not('post_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
+      rows?.length
+        ? (supabase as any).from('community_post_media').select('*').in('post_id', (rows || []).map((r: any) => r.id)).order('created_at', { ascending: true })
+        : Promise.resolve({ data: [] as any[] }),
     ]);
-    const map = new Map(((authors as any).data || []).map((a: any) => [a.user_id, a]));
-    const liked = new Set(((myLikes as any).data || []).map((r: any) => r.post_id));
-    setPosts((rows || []).map((p: any) => ({ ...p, author: map.get(p.author_id), liked: liked.has(p.id) })));
+    const mediaWithUrls = await Promise.all(((mediaRows as PostMedia[]) || []).map(async (m) => {
+      const { data } = await supabase.storage.from(MEDIA_BUCKET).createSignedUrl(m.storage_path, 60 * 60);
+      return { ...m, display_url: data?.signedUrl || '' };
+    }));
+    const mediaByPost = mediaWithUrls.reduce<Record<string, PostMedia[]>>((acc, m) => {
+      (acc[m.post_id] ||= []).push(m);
+      return acc;
+    }, {});
+    const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
+    const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
+    setPosts((rows || []).map((p: any) => ({ ...p, author: map.get(p.author_id), liked: liked.has(p.id), media: mediaByPost[p.id] || [] })));
     setLoading(false);
 
     // trending tags (client aggregation of latest posts)
@@ -145,36 +172,118 @@ export default function Community({ role }: { role: Role }) {
     // eslint-disable-next-line
   }, [comments]);
 
-  const onPickImage = (f: File | null) => {
-    if (!f) { setImage(null); setImagePreview(null); return; }
-    if (f.size > 4 * 1024 * 1024) { toast.error(t('الصورة كبيرة (أقل من 4MB)', 'Image too large (<4MB)')); return; }
-    setImage(f); setImagePreview(URL.createObjectURL(f));
+  const onPickMedia = (files: FileList | File[] | null) => {
+    if (!files) return;
+    const next: SelectedMedia[] = [];
+    Array.from(files).slice(0, MAX_MEDIA_FILES - selectedMedia.length).forEach((file) => {
+      const type = detectMediaType(file);
+      if (!type) return toast.error(t('نوع الملف غير مدعوم', 'Unsupported file type'));
+      if (file.size > mediaLimit(type)) return toast.error(t(`${mediaLabel(type)} كبير جدًا`, `${mediaLabel(type)} is too large`));
+      next.push({ id: crypto.randomUUID(), file, type, previewUrl: URL.createObjectURL(file) });
+    });
+    if (next.length) setSelectedMedia((prev) => [...prev, ...next].slice(0, MAX_MEDIA_FILES));
+    if (fileRef.current) fileRef.current.value = '';
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!image || !user) return null;
-    const path = `community/${user.id}/${Date.now()}-${image.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const { error } = await supabase.storage.from('message-attachments').upload(path, image, { upsert: false });
-    if (error) { toast.error(error.message); return null; }
-    const { data } = await supabase.storage.from('message-attachments').createSignedUrl(path, 60 * 60 * 24 * 365);
-    return data?.signedUrl ?? null;
+  const removeMedia = (id: string) => {
+    setSelectedMedia((prev) => {
+      const item = prev.find((m) => m.id === id);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((m) => m.id !== id);
+    });
+  };
+
+  const clearMedia = () => {
+    selectedMedia.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+    setSelectedMedia([]);
+  };
+
+  const uploadMediaFiles = async (postId: string): Promise<PostMedia[]> => {
+    if (!user || selectedMedia.length === 0) return [];
+    const uploaded: PostMedia[] = [];
+    for (const item of selectedMedia) {
+      const ext = item.file.name.split('.').pop() || item.file.type.split('/')[1] || 'bin';
+      const safeName = item.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${user.id}/community/${postId}/${crypto.randomUUID()}-${safeName || `media.${ext}`}`;
+      const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, item.file, {
+        upsert: false,
+        contentType: item.file.type || undefined,
+        cacheControl: '3600',
+      });
+      if (error) throw error;
+      uploaded.push({
+        id: crypto.randomUUID(), post_id: postId, uploader_id: user.id, storage_path: path,
+        media_type: item.type, mime_type: item.file.type, file_name: item.file.name,
+        file_size: item.file.size, duration_seconds: item.duration ?? null,
+      });
+    }
+    return uploaded;
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordChunksRef.current = [];
+      recorder.ondataavailable = (event) => { if (event.data.size > 0) recordChunksRef.current.push(event.data); };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(recordChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
+        setSelectedMedia((prev) => [...prev, {
+          id: crypto.randomUUID(), file, type: 'audio', previewUrl: URL.createObjectURL(file), duration: recordElapsed,
+        }].slice(0, MAX_MEDIA_FILES));
+        setRecordElapsed(0);
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+      setRecordElapsed(0);
+      recordTimerRef.current = window.setInterval(() => setRecordElapsed((s) => s + 1), 1000);
+    } catch (e: any) {
+      toast.error(e?.message || t('تعذر بدء التسجيل', 'Could not start recording'));
+    }
+  };
+
+  const stopRecording = () => {
+    if (recordTimerRef.current) window.clearInterval(recordTimerRef.current);
+    recordTimerRef.current = null;
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
   };
 
   const createPost = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user || !text.trim()) return;
+    if (!user || (!text.trim() && selectedMedia.length === 0)) return;
     setPosting(true);
-    const image_url = image ? await uploadImage() : null;
-    const tags = Array.from(text.matchAll(/#([\p{L}\p{N}_]+)/gu)).map((m) => m[1]).slice(0, 5);
-    const { error } = await supabase.from('community_posts').insert({
-      author_id: user.id, content: text.trim(), image_url,
-      department_id: (profile as any)?.department_id ?? null, tags,
-    });
-    setPosting(false);
-    if (error) { toast.error(error.message); return; }
-    setText(''); setImage(null); setImagePreview(null);
-    toast.success(t('تم النشر', 'Posted'));
-    loadPosts();
+    try {
+      const tags = Array.from(text.matchAll(/#([\p{L}\p{N}_]+)/gu)).map((m) => m[1]).slice(0, 5);
+      const firstMedia = selectedMedia[0];
+      const { data: postRow, error } = await supabase.from('community_posts').insert({
+        author_id: user.id, content: text.trim(), image_url: null,
+        department_id: (profile as any)?.department_id ?? null, tags,
+        media_type: firstMedia?.type ?? null, media_mime: firstMedia?.file.type ?? null, media_name: firstMedia?.file.name ?? null,
+      } as any).select('id').single();
+      if (error) throw error;
+      const uploaded = await uploadMediaFiles((postRow as any).id);
+      if (uploaded.length) {
+        const rows = uploaded.map(({ id, display_url, ...m }) => m);
+        const { error: mediaError } = await (supabase as any).from('community_post_media').insert(rows);
+        if (mediaError) throw mediaError;
+        const first = uploaded.find((m) => m.media_type === 'image') || uploaded[0];
+        await supabase.from('community_posts').update({
+          image_url: first.storage_path, media_type: first.media_type, media_mime: first.mime_type, media_name: first.file_name,
+        } as any).eq('id', (postRow as any).id);
+      }
+      setText(''); clearMedia();
+      toast.success(t('تم النشر', 'Posted'));
+      loadPosts();
+    } catch (e: any) {
+      toast.error(e?.message || t('فشل النشر', 'Post failed'));
+    } finally {
+      setPosting(false);
+    }
   };
 
   const toggleLike = async (post: Post) => {
