@@ -387,7 +387,7 @@ export default function AdminDashboard() {
   };
 
   // ---- Maintenance actions ----
-  const runMaintenance = async (kind: 'recompute-points' | 'mark-synced' | 'purge-typing' | 'purge-read-notifications') => {
+  const runMaintenance = async (kind: 'recompute-points' | 'mark-synced' | 'purge-typing' | 'purge-read-notifications' | 'run-ai' | 'rebuild-stats' | 'integrity-check' | 'health-check' | 'purge-events') => {
     setMaintBusy(kind);
     try {
       if (kind === 'recompute-points') {
