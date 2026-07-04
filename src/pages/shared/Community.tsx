@@ -230,9 +230,10 @@ export default function Community({ role }: { role: Role }) {
         stream.getTracks().forEach((track) => track.stop());
         const blob = new Blob(recordChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
         const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
-        setSelectedMedia((prev) => [...prev, {
+        const audioItem: SelectedMedia = {
           id: crypto.randomUUID(), file, type: 'audio', previewUrl: URL.createObjectURL(file), duration: recordElapsed,
-        }].slice(0, MAX_MEDIA_FILES));
+        };
+        setSelectedMedia((prev) => [...prev, audioItem].slice(0, MAX_MEDIA_FILES));
         setRecordElapsed(0);
       };
       recorderRef.current = recorder;
@@ -260,21 +261,19 @@ export default function Community({ role }: { role: Role }) {
     try {
       const tags = Array.from(text.matchAll(/#([\p{L}\p{N}_]+)/gu)).map((m) => m[1]).slice(0, 5);
       const firstMedia = selectedMedia[0];
+      const postId = crypto.randomUUID();
+      const uploaded = await uploadMediaFiles(postId);
+      const firstUploaded = uploaded.find((m) => m.media_type === 'image') || uploaded[0];
       const { data: postRow, error } = await supabase.from('community_posts').insert({
-        author_id: user.id, content: text.trim(), image_url: null,
+        id: postId, author_id: user.id, content: text.trim(), image_url: firstUploaded?.storage_path ?? null,
         department_id: (profile as any)?.department_id ?? null, tags,
         media_type: firstMedia?.type ?? null, media_mime: firstMedia?.file.type ?? null, media_name: firstMedia?.file.name ?? null,
       } as any).select('id').single();
       if (error) throw error;
-      const uploaded = await uploadMediaFiles((postRow as any).id);
       if (uploaded.length) {
         const rows = uploaded.map(({ id, display_url, ...m }) => m);
         const { error: mediaError } = await (supabase as any).from('community_post_media').insert(rows);
         if (mediaError) throw mediaError;
-        const first = uploaded.find((m) => m.media_type === 'image') || uploaded[0];
-        await supabase.from('community_posts').update({
-          image_url: first.storage_path, media_type: first.media_type, media_mime: first.mime_type, media_name: first.file_name,
-        } as any).eq('id', (postRow as any).id);
       }
       setText(''); clearMedia();
       toast.success(t('تم النشر', 'Posted'));
@@ -336,8 +335,8 @@ export default function Community({ role }: { role: Role }) {
         ? supabase.from('community_reactions').select('comment_id').eq('user_id', user.id).not('comment_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
-    const map = new Map(((authors as any).data || []).map((a: any) => [a.user_id, a]));
-    const liked = new Set(((myLikes as any).data || []).map((r: any) => r.comment_id));
+    const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
+    const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.comment_id));
     setComments((prev) => ({
       ...prev,
       [postId]: (data || []).map((c: any) => ({ ...c, author: map.get(c.author_id), liked: liked.has(c.id) })),
