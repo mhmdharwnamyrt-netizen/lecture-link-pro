@@ -315,7 +315,136 @@ export default function AdminDashboard() {
     }
   };
 
-  // ---- Derived analytics for AI insights & health ----
+  // ---- Departments CRUD ----
+  const openDeptDialog = (edit?: any) => {
+    setDeptForm(edit ? { name: edit.name || '', name_ar: edit.name_ar || '', code: edit.code || '' } : { name: '', name_ar: '', code: '' });
+    setDeptDialog({ open: true, edit });
+  };
+  const saveDept = async () => {
+    if (!deptForm.name.trim()) return toast({ title: 'Name required', variant: 'destructive' });
+    const payload = { name: deptForm.name.trim(), name_ar: deptForm.name_ar.trim() || null, code: deptForm.code.trim() || null };
+    const q = deptDialog.edit
+      ? supabase.from('departments').update(payload).eq('id', deptDialog.edit.id)
+      : supabase.from('departments').insert(payload);
+    const { error } = await q;
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: deptDialog.edit ? 'dept.update' : 'dept.create', entity_type: 'department', details: payload });
+    toast({ title: deptDialog.edit ? 'Department updated' : 'Department created' });
+    setDeptDialog({ open: false });
+    loadAll();
+  };
+  const deleteDept = async (d: any) => {
+    if (!confirm(`Delete department "${d.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('departments').delete().eq('id', d.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'dept.delete', entity_type: 'department', entity_id: d.id, details: { name: d.name } });
+    toast({ title: 'Department deleted' });
+    loadAll();
+  };
+
+  // ---- Subjects CRUD ----
+  const openSubjDialog = (edit?: any) => {
+    setSubjForm(edit ? { name: edit.name || '', code: edit.code || '', department_id: edit.department_id || '' } : { name: '', code: '', department_id: '' });
+    setSubjDialog({ open: true, edit });
+  };
+  const saveSubj = async () => {
+    if (!subjForm.name.trim() || !subjForm.department_id) return toast({ title: 'Name and department required', variant: 'destructive' });
+    const payload = { name: subjForm.name.trim(), code: subjForm.code.trim() || null, department_id: subjForm.department_id };
+    const q = subjDialog.edit
+      ? supabase.from('subjects').update(payload).eq('id', subjDialog.edit.id)
+      : supabase.from('subjects').insert(payload);
+    const { error } = await q;
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: subjDialog.edit ? 'subject.update' : 'subject.create', entity_type: 'subject', details: payload });
+    toast({ title: subjDialog.edit ? 'Subject updated' : 'Subject created' });
+    setSubjDialog({ open: false });
+    loadAll();
+  };
+  const deleteSubj = async (s: any) => {
+    if (!confirm(`Delete subject "${s.name}"?`)) return;
+    const { error } = await supabase.from('subjects').delete().eq('id', s.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'subject.delete', entity_type: 'subject', entity_id: s.id, details: { name: s.name } });
+    toast({ title: 'Subject deleted' });
+    loadAll();
+  };
+
+  // ---- Moderation deletes ----
+  const deleteRow = async (table: 'messages' | 'lecture_ratings' | 'warning_alerts' | 'notifications', id: string, label: string) => {
+    if (!confirm(`Delete this ${label}?`)) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: `${table}.delete`, entity_type: table, entity_id: id });
+    toast({ title: `${label} deleted` });
+    loadAll();
+  };
+
+  // ---- Maintenance actions ----
+  const runMaintenance = async (kind: 'recompute-points' | 'mark-synced' | 'purge-typing' | 'purge-read-notifications') => {
+    setMaintBusy(kind);
+    try {
+      if (kind === 'recompute-points') {
+        // 3 points per present attendance + 3 per approved excuse
+        const students = users.filter(u => u.role === 'student');
+        let updated = 0;
+        for (const s of students) {
+          const [{ count: pCount }, { count: eCount }] = await Promise.all([
+            supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('student_id', s.user_id).eq('status', 'present'),
+            supabase.from('excuses').select('*', { count: 'exact', head: true }).eq('student_id', s.user_id).eq('status', 'approved'),
+          ]);
+          const points = ((pCount || 0) + (eCount || 0)) * 3;
+          const level = Math.max(1, Math.floor(points / 30) + 1);
+          if (points !== (s.points || 0) || level !== (s.level || 1)) {
+            await supabase.from('profiles').update({ points, level }).eq('id', s.id);
+            updated++;
+          }
+        }
+        await logAdminAction({ action: 'maintenance.recompute_points', details: { updated } });
+        toast({ title: 'Points recomputed', description: `${updated} student(s) updated` });
+      } else if (kind === 'mark-synced') {
+        const { error, count } = await supabase.from('attendance').update({ synced: true }).eq('synced', false).select('*', { count: 'exact', head: true });
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.mark_synced', details: { count } });
+        toast({ title: 'Attendance rows marked synced', description: `${count || 0} row(s)` });
+      } else if (kind === 'purge-typing') {
+        const cutoff = new Date(Date.now() - 60_000).toISOString();
+        const { error } = await supabase.from('typing_indicators').delete().lt('updated_at', cutoff);
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.purge_typing' });
+        toast({ title: 'Stale typing indicators purged' });
+      } else if (kind === 'purge-read-notifications') {
+        const cutoff = new Date(Date.now() - 7 * 86400_000).toISOString();
+        const { error } = await supabase.from('notifications').delete().eq('read', true).lt('created_at', cutoff);
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.purge_notifications' });
+        toast({ title: 'Old read notifications purged' });
+      }
+      loadAll();
+    } catch (e: any) {
+      toast({ title: 'Maintenance failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setMaintBusy(null);
+    }
+  };
+
+  // ---- Live feed (realtime) ----
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel('admin-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'attendance', text: `Attendance ${p.new.status}`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'message', text: `New message`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'excuses' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'excuse', text: `Excuse submitted`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'office_hour_bookings' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'booking', text: `Office-hours booking`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin]);
+
+
   const last24h = attendance.filter(a => Date.now() - new Date(a.created_at).getTime() < 86400_000);
   const presentRate = attendance.length ? Math.round((attendance.filter(a => a.status === 'present').length / attendance.length) * 100) : 0;
   const offlineQueueSize = attendance.filter(a => !a.synced).length;
