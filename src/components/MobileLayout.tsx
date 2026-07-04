@@ -38,6 +38,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
     { path: '/doctor/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
     { path: '/doctor/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/doctor/community', icon: Users, label: language === 'ar' ? 'الملتقى الطلابي' : 'Community' },
   ];
 
   const studentSidebarExtra = [
