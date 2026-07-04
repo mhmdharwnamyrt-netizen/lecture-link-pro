@@ -127,29 +127,42 @@ export default function Community({ role }: { role: Role }) {
   const mediaLimit = (type: MediaType) => (type === 'image' ? 8 : type === 'video' ? 80 : 30) * 1024 * 1024;
   const mediaLabel = (type: MediaType) => type === 'image' ? t('صورة', 'Photo') : type === 'video' ? t('فيديو', 'Video') : t('صوت', 'Audio');
 
-  // -------- Load posts (with search/tag filters) --------
+  // -------- Load posts (with search/tag/category filters + saved tab) --------
   const loadPosts = async () => {
     setLoading(true);
+    let savedIds: string[] = [];
+    if (tab === 'saved') {
+      if (!user) { setPosts([]); setLoading(false); return; }
+      const { data: saves } = await supabase.from('community_saved_posts').select('post_id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(200);
+      savedIds = (saves || []).map((s: any) => s.post_id);
+      if (!savedIds.length) { setPosts([]); setLoading(false); return; }
+    }
     let q = supabase.from('community_posts').select('*').eq('is_hidden', false);
     if (tab === 'mine' && user) q = q.eq('author_id', user.id);
+    if (tab === 'saved') q = q.in('id', savedIds);
+    if (categoryFilter) q = q.eq('category', categoryFilter);
     if (activeTag) q = q.contains('tags', [activeTag]);
     if (query.trim()) q = q.ilike('content', `%${query.trim()}%`);
-    if (tab === 'trending') q = q.order('likes_count', { ascending: false });
+    if (tab === 'trending') q = q.order('score', { ascending: false });
     else q = q.order('is_pinned', { ascending: false }).order('created_at', { ascending: false });
 
     const { data: rows, error } = await q.limit(80);
     if (error) { toast.error(error.message); setLoading(false); return; }
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
-    const [{ data: authors }, { data: myLikes }, { data: mediaRows }] = await Promise.all([
+    const postIds = (rows || []).map((r: any) => r.id);
+    const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('post_id').eq('user_id', user.id).not('post_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
-      rows?.length
-        ? (supabase as any).from('community_post_media').select('*').in('post_id', (rows || []).map((r: any) => r.id)).order('created_at', { ascending: true })
+      user && postIds.length
+        ? supabase.from('community_saved_posts').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+        : Promise.resolve({ data: [] as any[] }),
+      postIds.length
+        ? (supabase as any).from('community_post_media').select('*').in('post_id', postIds).order('created_at', { ascending: true })
         : Promise.resolve({ data: [] as any[] }),
     ]);
     const mediaWithUrls = await Promise.all(((mediaRows as PostMedia[]) || []).map(async (m) => {
@@ -162,10 +175,12 @@ export default function Community({ role }: { role: Role }) {
     }, {});
     const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
     const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
+    const saved = new Set(((mySaves as any[]) || []).map((r: any) => r.post_id));
     setPosts((rows || []).map((p: any) => ({
       ...p,
       author: map.get(p.author_id) || (p.author_id === user?.id ? profile : undefined),
       liked: liked.has(p.id),
+      saved: saved.has(p.id),
       media: mediaByPost[p.id] || [],
     })));
     setLoading(false);
@@ -176,7 +191,13 @@ export default function Community({ role }: { role: Role }) {
     setTrendingTags(Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([tag, count]) => ({ tag, count })));
   };
 
-  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, user?.id]);
+  const loadLeaderboard = async () => {
+    const { data } = await (supabase as any).rpc('community_leaderboard', { days: 30, lim: 10 });
+    setLeaderboard((data as LeaderRow[]) || []);
+  };
+
+  useEffect(() => { loadPosts(); /* eslint-disable-next-line */ }, [tab, activeTag, categoryFilter, user?.id]);
+  useEffect(() => { loadLeaderboard(); }, []);
 
   // debounced search
   useEffect(() => {
