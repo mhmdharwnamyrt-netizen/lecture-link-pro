@@ -1339,13 +1339,13 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success"><Radio className="h-5 w-5 animate-pulse" /></div>
                 <div>
-                  <p className="font-bold">Realtime activity</p>
-                  <p className="text-xs text-muted-foreground">Streams inserts on attendance, messages, excuses, and bookings.</p>
+                  <p className="font-bold">{t('admin.live.title')}</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.live.subtitle')}</p>
                 </div>
-                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>Clear</Button>
+                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>{t('admin.action.clear')}</Button>
               </div>
               {liveEvents.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">Listening… events will appear here as they happen.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">{t('admin.empty.live')}</p>
               ) : (
                 <ul className="divide-y divide-border">
                   {liveEvents.map(e => (
