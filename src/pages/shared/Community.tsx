@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X,
   Pin, Trash2, CornerDownRight, Loader2, Users, Search, Flag, Hash, Pencil,
-  ChevronDown, ChevronRight, Settings,
+  ChevronDown, ChevronRight, Settings, Video, Mic, Paperclip, StopCircle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,8 +32,9 @@ interface Profile {
 }
 interface Post {
   id: string; author_id: string; content: string; image_url: string | null;
+  media_type?: MediaType | null; media_mime?: string | null; media_name?: string | null;
   tags: string[] | null; likes_count: number; comments_count: number; shares_count: number;
-  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean;
+  is_pinned: boolean; created_at: string; author?: Profile; liked?: boolean; media?: PostMedia[];
 }
 interface Comment {
   id: string; post_id: string; parent_id: string | null; author_id: string;
@@ -42,9 +43,22 @@ interface Comment {
 }
 
 type Role = 'doctor' | 'student';
+type MediaType = 'image' | 'video' | 'audio';
+
+interface PostMedia {
+  id: string; post_id: string; uploader_id?: string; storage_path: string;
+  media_type: MediaType; mime_type?: string | null; file_name?: string | null;
+  file_size?: number | null; duration_seconds?: number | null; display_url?: string;
+}
+
+interface SelectedMedia {
+  id: string; file: File; type: MediaType; previewUrl: string; duration?: number;
+}
 
 const REPORT_REASONS_AR = ['محتوى مسيء', 'محتوى مضلل', 'مضايقة', 'محتوى غير لائق', 'رسائل مزعجة', 'أخرى'];
 const REPORT_REASONS_EN = ['Offensive content', 'Misinformation', 'Harassment', 'Inappropriate', 'Spam', 'Other'];
+const MAX_MEDIA_FILES = 4;
+const MEDIA_BUCKET = 'message-attachments';
 
 export default function Community({ role }: { role: Role }) {
   const { user, profile, isAdmin } = useAuth();
@@ -59,9 +73,10 @@ export default function Community({ role }: { role: Role }) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([]);
   const [text, setText] = useState('');
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
   const [posting, setPosting] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [recordElapsed, setRecordElapsed] = useState(0);
   const [openPost, setOpenPost] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -74,6 +89,21 @@ export default function Community({ role }: { role: Role }) {
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordChunksRef = useRef<Blob[]>([]);
+  const recordTimerRef = useRef<number | null>(null);
+
+  const displayName = (p?: { full_name?: string | null } | null, fallbackUser?: typeof user) =>
+    p?.full_name || fallbackUser?.user_metadata?.full_name || fallbackUser?.email?.split('@')[0] || t('مستخدم', 'User');
+  const avatarLetter = (name?: string | null) => (name?.trim()?.slice(0, 1) || 'U').toUpperCase();
+  const detectMediaType = (file: File): MediaType | null => {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    if (file.type.startsWith('audio/')) return 'audio';
+    return null;
+  };
+  const mediaLimit = (type: MediaType) => (type === 'image' ? 8 : type === 'video' ? 80 : 30) * 1024 * 1024;
+  const mediaLabel = (type: MediaType) => type === 'image' ? t('صورة', 'Photo') : type === 'video' ? t('فيديو', 'Video') : t('صوت', 'Audio');
 
   // -------- Load posts (with search/tag filters) --------
   const loadPosts = async () => {
@@ -89,17 +119,33 @@ export default function Community({ role }: { role: Role }) {
     if (error) { toast.error(error.message); setLoading(false); return; }
 
     const authorIds = [...new Set((rows || []).map((r: any) => r.author_id))];
-    const [{ data: authors }, myLikes] = await Promise.all([
+    const [{ data: authors }, { data: myLikes }, { data: mediaRows }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('post_id').eq('user_id', user.id).not('post_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
+      rows?.length
+        ? (supabase as any).from('community_post_media').select('*').in('post_id', (rows || []).map((r: any) => r.id)).order('created_at', { ascending: true })
+        : Promise.resolve({ data: [] as any[] }),
     ]);
-    const map = new Map(((authors as any).data || []).map((a: any) => [a.user_id, a]));
-    const liked = new Set(((myLikes as any).data || []).map((r: any) => r.post_id));
-    setPosts((rows || []).map((p: any) => ({ ...p, author: map.get(p.author_id), liked: liked.has(p.id) })));
+    const mediaWithUrls = await Promise.all(((mediaRows as PostMedia[]) || []).map(async (m) => {
+      const { data } = await supabase.storage.from(MEDIA_BUCKET).createSignedUrl(m.storage_path, 60 * 60);
+      return { ...m, display_url: data?.signedUrl || '' };
+    }));
+    const mediaByPost = mediaWithUrls.reduce<Record<string, PostMedia[]>>((acc, m) => {
+      (acc[m.post_id] ||= []).push(m);
+      return acc;
+    }, {});
+    const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
+    const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.post_id));
+    setPosts((rows || []).map((p: any) => ({
+      ...p,
+      author: map.get(p.author_id) || (p.author_id === user?.id ? profile : undefined),
+      liked: liked.has(p.id),
+      media: mediaByPost[p.id] || [],
+    })));
     setLoading(false);
 
     // trending tags (client aggregation of latest posts)
@@ -131,36 +177,123 @@ export default function Community({ role }: { role: Role }) {
     // eslint-disable-next-line
   }, [comments]);
 
-  const onPickImage = (f: File | null) => {
-    if (!f) { setImage(null); setImagePreview(null); return; }
-    if (f.size > 4 * 1024 * 1024) { toast.error(t('الصورة كبيرة (أقل من 4MB)', 'Image too large (<4MB)')); return; }
-    setImage(f); setImagePreview(URL.createObjectURL(f));
+  useEffect(() => () => {
+    selectedMedia.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+    if (recordTimerRef.current) window.clearInterval(recordTimerRef.current);
+    recorderRef.current?.stream.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  const onPickMedia = (files: FileList | File[] | null) => {
+    if (!files) return;
+    const next: SelectedMedia[] = [];
+    Array.from(files).slice(0, MAX_MEDIA_FILES - selectedMedia.length).forEach((file) => {
+      const type = detectMediaType(file);
+      if (!type) return toast.error(t('نوع الملف غير مدعوم', 'Unsupported file type'));
+      if (file.size > mediaLimit(type)) return toast.error(t(`${mediaLabel(type)} كبير جدًا`, `${mediaLabel(type)} is too large`));
+      next.push({ id: crypto.randomUUID(), file, type, previewUrl: URL.createObjectURL(file) });
+    });
+    if (next.length) setSelectedMedia((prev) => [...prev, ...next].slice(0, MAX_MEDIA_FILES));
+    if (fileRef.current) fileRef.current.value = '';
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!image || !user) return null;
-    const path = `community/${user.id}/${Date.now()}-${image.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const { error } = await supabase.storage.from('message-attachments').upload(path, image, { upsert: false });
-    if (error) { toast.error(error.message); return null; }
-    const { data } = await supabase.storage.from('message-attachments').createSignedUrl(path, 60 * 60 * 24 * 365);
-    return data?.signedUrl ?? null;
+  const removeMedia = (id: string) => {
+    setSelectedMedia((prev) => {
+      const item = prev.find((m) => m.id === id);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((m) => m.id !== id);
+    });
+  };
+
+  const clearMedia = () => {
+    selectedMedia.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+    setSelectedMedia([]);
+  };
+
+  const uploadMediaFiles = async (postId: string): Promise<PostMedia[]> => {
+    if (!user || selectedMedia.length === 0) return [];
+    const uploaded: PostMedia[] = [];
+    for (const item of selectedMedia) {
+      const ext = item.file.name.split('.').pop() || item.file.type.split('/')[1] || 'bin';
+      const safeName = item.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${user.id}/community/${postId}/${crypto.randomUUID()}-${safeName || `media.${ext}`}`;
+      const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, item.file, {
+        upsert: false,
+        contentType: item.file.type || undefined,
+        cacheControl: '3600',
+      });
+      if (error) throw error;
+      uploaded.push({
+        id: crypto.randomUUID(), post_id: postId, uploader_id: user.id, storage_path: path,
+        media_type: item.type, mime_type: item.file.type, file_name: item.file.name,
+        file_size: item.file.size, duration_seconds: item.duration ?? null,
+      });
+    }
+    return uploaded;
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordChunksRef.current = [];
+      recorder.ondataavailable = (event) => { if (event.data.size > 0) recordChunksRef.current.push(event.data); };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(recordChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: blob.type });
+        const audioItem: SelectedMedia = {
+          id: crypto.randomUUID(), file, type: 'audio', previewUrl: URL.createObjectURL(file), duration: recordElapsed,
+        };
+        setSelectedMedia((prev) => [...prev, audioItem].slice(0, MAX_MEDIA_FILES));
+        setRecordElapsed(0);
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+      setRecordElapsed(0);
+      recordTimerRef.current = window.setInterval(() => setRecordElapsed((s) => s + 1), 1000);
+    } catch (e: any) {
+      toast.error(e?.message || t('تعذر بدء التسجيل', 'Could not start recording'));
+    }
+  };
+
+  const stopRecording = () => {
+    if (recordTimerRef.current) window.clearInterval(recordTimerRef.current);
+    recordTimerRef.current = null;
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
   };
 
   const createPost = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user || !text.trim()) return;
+    if (!user || (!text.trim() && selectedMedia.length === 0)) return;
     setPosting(true);
-    const image_url = image ? await uploadImage() : null;
-    const tags = Array.from(text.matchAll(/#([\p{L}\p{N}_]+)/gu)).map((m) => m[1]).slice(0, 5);
-    const { error } = await supabase.from('community_posts').insert({
-      author_id: user.id, content: text.trim(), image_url,
-      department_id: (profile as any)?.department_id ?? null, tags,
-    });
-    setPosting(false);
-    if (error) { toast.error(error.message); return; }
-    setText(''); setImage(null); setImagePreview(null);
-    toast.success(t('تم النشر', 'Posted'));
-    loadPosts();
+    try {
+      const tags = Array.from(text.matchAll(/#([\p{L}\p{N}_]+)/gu)).map((m) => m[1]).slice(0, 5);
+      const firstMedia = selectedMedia[0];
+      const postId = crypto.randomUUID();
+      const uploaded = await uploadMediaFiles(postId);
+      const firstUploaded = uploaded.find((m) => m.media_type === 'image') || uploaded[0];
+      const { data: postRow, error } = await supabase.from('community_posts').insert({
+        id: postId, author_id: user.id, content: text.trim(), image_url: firstUploaded?.storage_path ?? null,
+        department_id: (profile as any)?.department_id ?? null, tags,
+        media_type: firstMedia?.type ?? null, media_mime: firstMedia?.file.type ?? null, media_name: firstMedia?.file.name ?? null,
+      } as any).select('id').single();
+      if (error) throw error;
+      if (uploaded.length) {
+        const rows = uploaded.map(({ id, display_url, ...m }) => m);
+        const { error: mediaError } = await (supabase as any).from('community_post_media').insert(rows);
+        if (mediaError) throw mediaError;
+      }
+      setText(''); clearMedia();
+      toast.success(t('تم النشر', 'Posted'));
+      loadPosts();
+    } catch (e: any) {
+      toast.error(e?.message || t('فشل النشر', 'Post failed'));
+    } finally {
+      setPosting(false);
+    }
   };
 
   const toggleLike = async (post: Post) => {
@@ -205,7 +338,7 @@ export default function Community({ role }: { role: Role }) {
       .order('created_at', { ascending: true }).limit(200);
     if (error) return;
     const authorIds = [...new Set((data || []).map((c: any) => c.author_id))];
-    const [{ data: authors }, myLikes] = await Promise.all([
+    const [{ data: authors }, { data: myLikes }] = await Promise.all([
       authorIds.length
         ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
@@ -213,8 +346,8 @@ export default function Community({ role }: { role: Role }) {
         ? supabase.from('community_reactions').select('comment_id').eq('user_id', user.id).not('comment_id', 'is', null)
         : Promise.resolve({ data: [] as any[] }),
     ]);
-    const map = new Map(((authors as any).data || []).map((a: any) => [a.user_id, a]));
-    const liked = new Set(((myLikes as any).data || []).map((r: any) => r.comment_id));
+    const map = new Map(((authors as any[]) || []).map((a: any) => [a.user_id, a]));
+    const liked = new Set(((myLikes as any[]) || []).map((r: any) => r.comment_id));
     setComments((prev) => ({
       ...prev,
       [postId]: (data || []).map((c: any) => ({ ...c, author: map.get(c.author_id), liked: liked.has(c.id) })),
@@ -371,6 +504,29 @@ export default function Community({ role }: { role: Role }) {
     );
   };
 
+  const renderPostMedia = (media?: PostMedia[]) => {
+    if (!media?.length) return null;
+    return (
+      <div className="mt-3 grid gap-2">
+        {media.map((m) => {
+          const src = m.display_url || m.storage_path;
+          if (m.media_type === 'video') {
+            return <video key={m.id} src={src} controls preload="metadata" className="max-h-96 w-full rounded-xl bg-muted object-contain" />;
+          }
+          if (m.media_type === 'audio') {
+            return (
+              <div key={m.id} className="rounded-xl border bg-muted/40 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium"><Mic className="h-4 w-4" /> {m.file_name || t('تسجيل صوتي', 'Voice note')}</div>
+                <audio src={src} controls preload="metadata" className="w-full" />
+              </div>
+            );
+          }
+          return <img key={m.id} src={src} alt={m.file_name || t('صورة منشور', 'Post image')} className="max-h-96 w-full rounded-xl object-cover" loading="lazy" />;
+        })}
+      </div>
+    );
+  };
+
   const tabs = useMemo(() => ([
     { k: 'all', label: t('الكل', 'All') },
     { k: 'trending', label: t('الأكثر تفاعلاً', 'Trending') },
@@ -426,7 +582,7 @@ export default function Community({ role }: { role: Role }) {
           <div className="flex gap-2">
             <Avatar className="h-9 w-9">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback>{(profile?.full_name || '?').slice(0, 1)}</AvatarFallback>
+              <AvatarFallback>{avatarLetter(displayName(profile, user))}</AvatarFallback>
             </Avatar>
             <Textarea
               value={text}
@@ -436,23 +592,44 @@ export default function Community({ role }: { role: Role }) {
               maxLength={5000}
             />
           </div>
-          {imagePreview && (
-            <div className="relative mt-2">
-              <img src={imagePreview} alt="" className="max-h-64 w-full rounded-lg object-cover" />
-              <button type="button" onClick={() => onPickImage(null)} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white">
-                <X className="h-4 w-4" />
-              </button>
+          {selectedMedia.length > 0 && (
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {selectedMedia.map((m) => (
+                <div key={m.id} className="relative overflow-hidden rounded-xl border bg-muted/30">
+                  {m.type === 'image' && <img src={m.previewUrl} alt={m.file.name} className="h-44 w-full object-cover" />}
+                  {m.type === 'video' && <video src={m.previewUrl} controls className="h-44 w-full bg-muted object-contain" />}
+                  {m.type === 'audio' && (
+                    <div className="p-3">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Mic className="h-4 w-4" /> {m.file.name}</div>
+                      <audio src={m.previewUrl} controls className="w-full" />
+                    </div>
+                  )}
+                  <button type="button" onClick={() => removeMedia(m.id)} className="absolute right-2 top-2 rounded-full bg-background/90 p-1 text-foreground shadow-sm">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
           <div className="mt-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onPickImage(e.target.files?.[0] || null)} />
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={fileRef} type="file" accept="image/*,video/*,audio/*" multiple hidden onChange={(e) => onPickMedia(e.target.files)} />
               <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
                 <ImageIcon className="h-4 w-4 me-1" /> {t('صورة', 'Photo')}
               </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
+                <Video className="h-4 w-4 me-1" /> {t('فيديو', 'Video')}
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
+                <Paperclip className="h-4 w-4 me-1" /> {t('صوت', 'Audio')}
+              </Button>
+              <Button type="button" variant={recording ? 'destructive' : 'ghost'} size="sm" onClick={recording ? stopRecording : startRecording} disabled={!recording && selectedMedia.length >= MAX_MEDIA_FILES}>
+                {recording ? <StopCircle className="h-4 w-4 me-1" /> : <Mic className="h-4 w-4 me-1" />}
+                {recording ? t(`إيقاف ${recordElapsed}ث`, `Stop ${recordElapsed}s`) : t('تسجيل', 'Record')}
+              </Button>
               <span className="text-xs text-muted-foreground">{text.length}/5000</span>
             </div>
-            <Button type="submit" size="sm" disabled={posting || !text.trim()}>
+            <Button type="submit" size="sm" disabled={posting || (!text.trim() && selectedMedia.length === 0)}>
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 me-1" /> {t('نشر', 'Post')}</>}
             </Button>
           </div>
@@ -497,11 +674,11 @@ export default function Community({ role }: { role: Role }) {
                     <div className="flex gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={p.author?.avatar_url || undefined} />
-                        <AvatarFallback>{(p.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
+                        <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold">{p.author?.full_name || '—'}</span>
+                          <span className="font-semibold">{displayName(p.author, p.author_id === user?.id ? user : undefined)}</span>
                           {p.author?.role === 'doctor' && <Badge variant="secondary" className="h-5 px-1.5 text-xs">Dr.</Badge>}
                           {p.is_pinned && <Pin className="h-3.5 w-3.5 text-primary" />}
                         </div>
@@ -534,12 +711,14 @@ export default function Community({ role }: { role: Role }) {
                     </DropdownMenu>
                   </header>
 
-                  <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                    {p.content}
-                  </div>
-                  {p.image_url && (
-                    <img src={p.image_url} alt="" className="mt-3 max-h-96 w-full rounded-xl object-cover" loading="lazy" />
+                  {p.content && (
+                    <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
+                      {p.content}
+                    </div>
                   )}
+                  {p.media?.length ? renderPostMedia(p.media) : (p.image_url?.startsWith('http') && (
+                    <img src={p.image_url} alt={t('صورة منشور', 'Post image')} className="mt-3 max-h-96 w-full rounded-xl object-cover" loading="lazy" />
+                  ))}
                   {p.tags && p.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {p.tags.map((tg) => (
