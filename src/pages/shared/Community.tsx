@@ -989,7 +989,7 @@ export default function Community({ role }: { role: Role }) {
 
                   {p.content && (
                     <div className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed">
-                      {p.content}
+                      {renderRichContent(p.content, p.mentions)}
                     </div>
                   )}
                   {p.media?.length ? renderPostMedia(p.media) : (p.image_url?.startsWith('http') && (
