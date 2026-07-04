@@ -308,6 +308,28 @@ export default function Community({ role }: { role: Role }) {
     setRecording(false);
   };
 
+  // Resolve @mentions: match @name tokens against profiles.full_name (case-insensitive prefix)
+  const resolveMentions = async (body: string): Promise<string[]> => {
+    const raw = Array.from(body.matchAll(/@([\p{L}\p{N}_ ]{2,40})/gu)).map((m) => m[1].trim());
+    if (!raw.length) return [];
+    const uniqueNames = [...new Set(raw)];
+    const found: string[] = [];
+    for (const name of uniqueNames.slice(0, 10)) {
+      const { data } = await supabase.from('profiles')
+        .select('user_id').ilike('full_name', `%${name}%`).limit(1);
+      if (data?.[0]?.user_id && !found.includes(data[0].user_id)) found.push(data[0].user_id);
+    }
+    return found;
+  };
+
+  const insertMentions = async (userIds: string[], postId?: string, commentId?: string) => {
+    if (!user || userIds.length === 0) return;
+    const rows = userIds.filter((uid) => uid !== user.id).map((uid) => ({
+      mentioned_user_id: uid, actor_id: user.id, post_id: postId ?? null, comment_id: commentId ?? null,
+    }));
+    if (rows.length) await (supabase as any).from('community_mentions').insert(rows);
+  };
+
   const createPost = async (e: FormEvent) => {
     e.preventDefault();
     if (!user || (!text.trim() && selectedMedia.length === 0)) return;
@@ -318,9 +340,10 @@ export default function Community({ role }: { role: Role }) {
       const postId = crypto.randomUUID();
       const uploaded = await uploadMediaFiles(postId);
       const firstUploaded = uploaded.find((m) => m.media_type === 'image') || uploaded[0];
-      const { data: postRow, error } = await supabase.from('community_posts').insert({
+      const { error } = await supabase.from('community_posts').insert({
         id: postId, author_id: user.id, content: text.trim(), image_url: firstUploaded?.storage_path ?? null,
         department_id: (profile as any)?.department_id ?? null, tags,
+        category: composerCategory,
         media_type: firstMedia?.type ?? null, media_mime: firstMedia?.file.type ?? null, media_name: firstMedia?.file.name ?? null,
       } as any).select('id').single();
       if (error) throw error;
@@ -329,7 +352,9 @@ export default function Community({ role }: { role: Role }) {
         const { error: mediaError } = await (supabase as any).from('community_post_media').insert(rows);
         if (mediaError) throw mediaError;
       }
-      setText(''); clearMedia();
+      const mentionedIds = await resolveMentions(text);
+      await insertMentions(mentionedIds, postId);
+      setText(''); clearMedia(); setComposerCategory('discussion');
       toast.success(t('تم النشر', 'Posted'));
       loadPosts();
     } catch (e: any) {
@@ -337,6 +362,25 @@ export default function Community({ role }: { role: Role }) {
     } finally {
       setPosting(false);
     }
+  };
+
+  const toggleSave = async (post: Post) => {
+    if (!user) return;
+    setPosts((prev) => prev.map((p) => p.id === post.id
+      ? { ...p, saved: !p.saved, saves_count: (p.saves_count || 0) + (p.saved ? -1 : 1) } : p));
+    if (post.saved) {
+      await supabase.from('community_saved_posts').delete().eq('user_id', user.id).eq('post_id', post.id);
+    } else {
+      await supabase.from('community_saved_posts').insert({ user_id: user.id, post_id: post.id });
+      toast.success(t('تم الحفظ', 'Saved'));
+    }
+  };
+
+  const markAnswered = async (post: Post) => {
+    const { error } = await supabase.from('community_posts')
+      .update({ is_answered: !post.is_answered } as any).eq('id', post.id);
+    if (error) return toast.error(error.message);
+    setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, is_answered: !post.is_answered } : p));
   };
 
   const toggleLike = async (post: Post) => {
