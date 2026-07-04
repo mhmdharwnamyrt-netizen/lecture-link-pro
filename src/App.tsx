@@ -100,11 +100,13 @@ const App = () => (
                   <Route path="/student/messages" element={<Guarded><MessagesPage role="student" /></Guarded>} />
                   <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
                   <Route path="/student/community" element={<Guarded><CommunityPage role="student" /></Guarded>} />
+                  <Route path="/student/trainings" element={<Guarded><TrainingsPage role="student" /></Guarded>} />
 
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />
                   <Route path="/admin/reports" element={<Guarded><AdminReports /></Guarded>} />
                   <Route path="/admin/moderation" element={<Guarded><AdminModeration /></Guarded>} />
+                  <Route path="/admin/trainings" element={<Guarded><AdminTrainings /></Guarded>} />
 
                   {/* Public user profile (shared) */}
                   <Route path="/u/:userId" element={<Guarded><PublicProfilePage /></Guarded>} />
