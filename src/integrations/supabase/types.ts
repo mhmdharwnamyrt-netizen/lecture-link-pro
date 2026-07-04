@@ -221,6 +221,53 @@ export type Database = {
           },
         ]
       }
+      community_post_media: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          file_name: string | null
+          file_size: number | null
+          id: string
+          media_type: string
+          mime_type: string | null
+          post_id: string
+          storage_path: string
+          uploader_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          media_type: string
+          mime_type?: string | null
+          post_id: string
+          storage_path: string
+          uploader_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          media_type?: string
+          mime_type?: string | null
+          post_id?: string
+          storage_path?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_posts: {
         Row: {
           author_id: string
@@ -234,6 +281,9 @@ export type Database = {
           is_hidden: boolean
           is_pinned: boolean
           likes_count: number
+          media_mime: string | null
+          media_name: string | null
+          media_type: string | null
           pinned_at: string | null
           pinned_by: string | null
           shares_count: number
@@ -252,6 +302,9 @@ export type Database = {
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number
+          media_mime?: string | null
+          media_name?: string | null
+          media_type?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
           shares_count?: number
@@ -270,6 +323,9 @@ export type Database = {
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number
+          media_mime?: string | null
+          media_name?: string | null
+          media_type?: string | null
           pinned_at?: string | null
           pinned_by?: string | null
           shares_count?: number
