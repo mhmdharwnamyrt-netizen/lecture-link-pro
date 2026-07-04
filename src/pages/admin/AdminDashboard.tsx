@@ -1026,8 +1026,8 @@ export default function AdminDashboard() {
           {/* Departments */}
           <TabsContent value="departments" className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{departments.length} departments</p>
-              <Button size="sm" onClick={() => openDeptDialog()}><Plus className="me-1.5 h-4 w-4" /> New department</Button>
+              <p className="text-sm text-muted-foreground">{departments.length} · {t('admin.tab.departments')}</p>
+              <Button size="sm" onClick={() => openDeptDialog()}><Plus className="me-1.5 h-4 w-4" /> {t('admin.action.newDept')}</Button>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               {departments.map(d => {
@@ -1044,15 +1044,15 @@ export default function AdminDashboard() {
                         <p className="text-sm text-muted-foreground">{d.name_ar} {d.code && <span className="ms-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">{d.code}</span>}</p>
                       </div>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openDeptDialog(d)}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteDept(d)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openDeptDialog(d)} title={t('admin.action.edit')}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteDept(d)} title={t('admin.action.delete')}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Students</p><p className="font-bold tabular-nums">{studentCount}</p></div>
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Doctors</p><p className="font-bold tabular-nums">{doctorCount}</p></div>
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Lectures</p><p className="font-bold tabular-nums">{deptLectures}</p></div>
-                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">Disabled</p><p className="font-bold tabular-nums text-destructive">{disabledCount}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.students')}</p><p className="font-bold tabular-nums">{studentCount}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.doctors')}</p><p className="font-bold tabular-nums">{doctorCount}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.lectures')}</p><p className="font-bold tabular-nums">{deptLectures}</p></div>
+                      <div className="rounded-lg bg-muted/40 p-2"><p className="text-[10px] text-muted-foreground">{t('admin.stat.disabled')}</p><p className="font-bold tabular-nums text-destructive">{disabledCount}</p></div>
                     </div>
                   </div>
                 );
