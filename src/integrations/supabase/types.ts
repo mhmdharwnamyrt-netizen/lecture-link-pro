@@ -293,7 +293,7 @@ export type Database = {
         Insert: {
           author_id: string
           comments_count?: number
-          content: string
+          content?: string
           created_at?: string
           department_id?: string | null
           edited_at?: string | null
