@@ -13,7 +13,7 @@ import {
   Users, GraduationCap, BookOpen, ClipboardCheck, Search, ArrowLeft, Shield, Ban, CheckCircle2,
   AlertTriangle, MessageSquare, Calendar, FileText, FileSpreadsheet, ScrollText, BarChart3,
   Activity, UserCog, Trash2, Building2, ShieldCheck, Megaphone, Layers, HeartPulse, Sparkles, Send,
-  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw, XCircle
+  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw, XCircle, Languages
 } from 'lucide-react';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { logAdminAction } from '@/lib/adminLog';
