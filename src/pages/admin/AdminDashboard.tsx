@@ -601,23 +601,23 @@ export default function AdminDashboard() {
 
         <Tabs defaultValue="users">
           <TabsList className="flex-wrap h-auto">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="lectures">Lectures</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="excuses">Excuses</TabsTrigger>
-            <TabsTrigger value="warnings">Warnings</TabsTrigger>
-            <TabsTrigger value="office">Office Hours</TabsTrigger>
-            <TabsTrigger value="ratings">Ratings</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-            <TabsTrigger value="departments">Departments</TabsTrigger>
-            <TabsTrigger value="broadcast"><Megaphone className="me-1 h-3.5 w-3.5" /> Broadcast</TabsTrigger>
-            <TabsTrigger value="bulk"><Layers className="me-1 h-3.5 w-3.5" /> Bulk Ops</TabsTrigger>
-            <TabsTrigger value="health"><HeartPulse className="me-1 h-3.5 w-3.5" /> Health</TabsTrigger>
-            <TabsTrigger value="subjects"><BookMarked className="me-1 h-3.5 w-3.5" /> Subjects</TabsTrigger>
-            <TabsTrigger value="notif"><Bell className="me-1 h-3.5 w-3.5" /> Notifications</TabsTrigger>
-            <TabsTrigger value="maintenance"><Wrench className="me-1 h-3.5 w-3.5" /> Maintenance</TabsTrigger>
-            <TabsTrigger value="live"><Radio className="me-1 h-3.5 w-3.5" /> Live Feed</TabsTrigger>
-            <TabsTrigger value="insights"><Sparkles className="me-1 h-3.5 w-3.5" /> AI Insights</TabsTrigger>
+            <TabsTrigger value="users">{t('admin.tab.users')}</TabsTrigger>
+            <TabsTrigger value="lectures">{t('admin.tab.lectures')}</TabsTrigger>
+            <TabsTrigger value="attendance">{t('admin.tab.attendance')}</TabsTrigger>
+            <TabsTrigger value="excuses">{t('admin.tab.excuses')}</TabsTrigger>
+            <TabsTrigger value="warnings">{t('admin.tab.warnings')}</TabsTrigger>
+            <TabsTrigger value="office">{t('admin.tab.office')}</TabsTrigger>
+            <TabsTrigger value="ratings">{t('admin.tab.ratings')}</TabsTrigger>
+            <TabsTrigger value="messages">{t('admin.tab.messages')}</TabsTrigger>
+            <TabsTrigger value="departments">{t('admin.tab.departments')}</TabsTrigger>
+            <TabsTrigger value="broadcast"><Megaphone className="me-1 h-3.5 w-3.5" /> {t('admin.tab.broadcast')}</TabsTrigger>
+            <TabsTrigger value="bulk"><Layers className="me-1 h-3.5 w-3.5" /> {t('admin.tab.bulk')}</TabsTrigger>
+            <TabsTrigger value="health"><HeartPulse className="me-1 h-3.5 w-3.5" /> {t('admin.tab.health')}</TabsTrigger>
+            <TabsTrigger value="subjects"><BookMarked className="me-1 h-3.5 w-3.5" /> {t('admin.tab.subjects')}</TabsTrigger>
+            <TabsTrigger value="notif"><Bell className="me-1 h-3.5 w-3.5" /> {t('admin.tab.notif')}</TabsTrigger>
+            <TabsTrigger value="maintenance"><Wrench className="me-1 h-3.5 w-3.5" /> {t('admin.tab.maintenance')}</TabsTrigger>
+            <TabsTrigger value="live"><Radio className="me-1 h-3.5 w-3.5" /> {t('admin.tab.live')}</TabsTrigger>
+            <TabsTrigger value="insights"><Sparkles className="me-1 h-3.5 w-3.5" /> {t('admin.tab.insights')}</TabsTrigger>
           </TabsList>
 
           {/* Users */}
