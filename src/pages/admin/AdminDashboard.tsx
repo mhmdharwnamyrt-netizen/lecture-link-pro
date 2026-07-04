@@ -529,6 +529,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="broadcast"><Megaphone className="me-1 h-3.5 w-3.5" /> Broadcast</TabsTrigger>
             <TabsTrigger value="bulk"><Layers className="me-1 h-3.5 w-3.5" /> Bulk Ops</TabsTrigger>
             <TabsTrigger value="health"><HeartPulse className="me-1 h-3.5 w-3.5" /> Health</TabsTrigger>
+            <TabsTrigger value="subjects"><BookMarked className="me-1 h-3.5 w-3.5" /> Subjects</TabsTrigger>
+            <TabsTrigger value="notif"><Bell className="me-1 h-3.5 w-3.5" /> Notifications</TabsTrigger>
+            <TabsTrigger value="maintenance"><Wrench className="me-1 h-3.5 w-3.5" /> Maintenance</TabsTrigger>
+            <TabsTrigger value="live"><Radio className="me-1 h-3.5 w-3.5" /> Live Feed</TabsTrigger>
             <TabsTrigger value="insights"><Sparkles className="me-1 h-3.5 w-3.5" /> AI Insights</TabsTrigger>
           </TabsList>
 
