@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Users, GraduationCap, BookOpen, ClipboardCheck, Search, ArrowLeft, Shield, Ban, CheckCircle2,
   AlertTriangle, MessageSquare, Calendar, FileText, FileSpreadsheet, ScrollText, BarChart3,
-  Activity, UserCog, Trash2, Building2, ShieldCheck, Megaphone, Layers, HeartPulse, Sparkles, Send
+  Activity, UserCog, Trash2, Building2, ShieldCheck, Megaphone, Layers, HeartPulse, Sparkles, Send,
+  Plus, Pencil, Wrench, Bell, Radio, BookMarked, RotateCcw
 } from 'lucide-react';
 import { exportToExcel, exportToPDF } from '@/lib/exportUtils';
 import { logAdminAction } from '@/lib/adminLog';
@@ -80,6 +81,23 @@ export default function AdminDashboard() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  // New: departments/subjects CRUD
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [deptDialog, setDeptDialog] = useState<{ open: boolean; edit?: any }>({ open: false });
+  const [deptForm, setDeptForm] = useState({ name: '', name_ar: '', code: '' });
+  const [subjDialog, setSubjDialog] = useState<{ open: boolean; edit?: any }>({ open: false });
+  const [subjForm, setSubjForm] = useState({ name: '', code: '', department_id: '' });
+
+  // New: notifications inbox admin
+  const [allNotifications, setAllNotifications] = useState<any[]>([]);
+
+  // New: maintenance
+  const [maintBusy, setMaintBusy] = useState<string | null>(null);
+
+  // New: live feed
+  const [liveEvents, setLiveEvents] = useState<Array<{ id: string; kind: string; text: string; at: string }>>([]);
+
+
   useEffect(() => { if (!loading && !user) navigate('/login'); }, [loading, user]);
   useEffect(() => {
     if (!user) return;
@@ -141,7 +159,15 @@ export default function AdminDashboard() {
       .order('created_at', { ascending: false })
       .limit(500);
     setAttendance(att || []);
+
+    const [sj, nt] = await Promise.all([
+      supabase.from('subjects').select('*, departments(name)').order('name'),
+      supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(300),
+    ]);
+    setSubjects(sj.data || []);
+    setAllNotifications(nt.data || []);
   };
+
 
   const filteredUsers = users.filter(u => {
     if (filterRole === 'admin') {
@@ -289,7 +315,137 @@ export default function AdminDashboard() {
     }
   };
 
-  // ---- Derived analytics for AI insights & health ----
+  // ---- Departments CRUD ----
+  const openDeptDialog = (edit?: any) => {
+    setDeptForm(edit ? { name: edit.name || '', name_ar: edit.name_ar || '', code: edit.code || '' } : { name: '', name_ar: '', code: '' });
+    setDeptDialog({ open: true, edit });
+  };
+  const saveDept = async () => {
+    if (!deptForm.name.trim()) return toast({ title: 'Name required', variant: 'destructive' });
+    const payload = { name: deptForm.name.trim(), name_ar: deptForm.name_ar.trim() || null, code: deptForm.code.trim() || null };
+    const q = deptDialog.edit
+      ? supabase.from('departments').update(payload).eq('id', deptDialog.edit.id)
+      : supabase.from('departments').insert(payload);
+    const { error } = await q;
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: deptDialog.edit ? 'dept.update' : 'dept.create', entity_type: 'department', details: payload });
+    toast({ title: deptDialog.edit ? 'Department updated' : 'Department created' });
+    setDeptDialog({ open: false });
+    loadAll();
+  };
+  const deleteDept = async (d: any) => {
+    if (!confirm(`Delete department "${d.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('departments').delete().eq('id', d.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'dept.delete', entity_type: 'department', entity_id: d.id, details: { name: d.name } });
+    toast({ title: 'Department deleted' });
+    loadAll();
+  };
+
+  // ---- Subjects CRUD ----
+  const openSubjDialog = (edit?: any) => {
+    setSubjForm(edit ? { name: edit.name || '', code: edit.code || '', department_id: edit.department_id || '' } : { name: '', code: '', department_id: '' });
+    setSubjDialog({ open: true, edit });
+  };
+  const saveSubj = async () => {
+    if (!subjForm.name.trim() || !subjForm.department_id) return toast({ title: 'Name and department required', variant: 'destructive' });
+    const payload = { name: subjForm.name.trim(), code: subjForm.code.trim() || null, department_id: subjForm.department_id };
+    const q = subjDialog.edit
+      ? supabase.from('subjects').update(payload).eq('id', subjDialog.edit.id)
+      : supabase.from('subjects').insert(payload);
+    const { error } = await q;
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: subjDialog.edit ? 'subject.update' : 'subject.create', entity_type: 'subject', details: payload });
+    toast({ title: subjDialog.edit ? 'Subject updated' : 'Subject created' });
+    setSubjDialog({ open: false });
+    loadAll();
+  };
+  const deleteSubj = async (s: any) => {
+    if (!confirm(`Delete subject "${s.name}"?`)) return;
+    const { error } = await supabase.from('subjects').delete().eq('id', s.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: 'subject.delete', entity_type: 'subject', entity_id: s.id, details: { name: s.name } });
+    toast({ title: 'Subject deleted' });
+    loadAll();
+  };
+
+  // ---- Moderation deletes ----
+  const deleteRow = async (table: 'messages' | 'lecture_ratings' | 'warning_alerts' | 'notifications', id: string, label: string) => {
+    if (!confirm(`Delete this ${label}?`)) return;
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    await logAdminAction({ action: `${table}.delete`, entity_type: table, entity_id: id });
+    toast({ title: `${label} deleted` });
+    loadAll();
+  };
+
+  // ---- Maintenance actions ----
+  const runMaintenance = async (kind: 'recompute-points' | 'mark-synced' | 'purge-typing' | 'purge-read-notifications') => {
+    setMaintBusy(kind);
+    try {
+      if (kind === 'recompute-points') {
+        // 3 points per present attendance + 3 per approved excuse
+        const students = users.filter(u => u.role === 'student');
+        let updated = 0;
+        for (const s of students) {
+          const [{ count: pCount }, { count: eCount }] = await Promise.all([
+            supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('student_id', s.user_id).eq('status', 'present'),
+            supabase.from('excuses').select('*', { count: 'exact', head: true }).eq('student_id', s.user_id).eq('status', 'approved'),
+          ]);
+          const points = ((pCount || 0) + (eCount || 0)) * 3;
+          const level = Math.max(1, Math.floor(points / 30) + 1);
+          if (points !== (s.points || 0) || level !== (s.level || 1)) {
+            await supabase.from('profiles').update({ points, level }).eq('id', s.id);
+            updated++;
+          }
+        }
+        await logAdminAction({ action: 'maintenance.recompute_points', details: { updated } });
+        toast({ title: 'Points recomputed', description: `${updated} student(s) updated` });
+      } else if (kind === 'mark-synced') {
+        const { data, error } = await supabase.from('attendance').update({ synced: true }).eq('synced', false).select('id');
+        if (error) throw error;
+        const count = data?.length || 0;
+        await logAdminAction({ action: 'maintenance.mark_synced', details: { count } });
+        toast({ title: 'Attendance rows marked synced', description: `${count || 0} row(s)` });
+      } else if (kind === 'purge-typing') {
+        const cutoff = new Date(Date.now() - 60_000).toISOString();
+        const { error } = await supabase.from('typing_indicators').delete().lt('updated_at', cutoff);
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.purge_typing' });
+        toast({ title: 'Stale typing indicators purged' });
+      } else if (kind === 'purge-read-notifications') {
+        const cutoff = new Date(Date.now() - 7 * 86400_000).toISOString();
+        const { error } = await supabase.from('notifications').delete().eq('read', true).lt('created_at', cutoff);
+        if (error) throw error;
+        await logAdminAction({ action: 'maintenance.purge_notifications' });
+        toast({ title: 'Old read notifications purged' });
+      }
+      loadAll();
+    } catch (e: any) {
+      toast({ title: 'Maintenance failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setMaintBusy(null);
+    }
+  };
+
+  // ---- Live feed (realtime) ----
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel('admin-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'attendance', text: `Attendance ${p.new.status}`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'message', text: `New message`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'excuses' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'excuse', text: `Excuse submitted`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'office_hour_bookings' },
+        (p: any) => setLiveEvents(evs => [{ id: p.new.id, kind: 'booking', text: `Office-hours booking`, at: new Date().toISOString() }, ...evs].slice(0, 50)))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [isAdmin]);
+
+
   const last24h = attendance.filter(a => Date.now() - new Date(a.created_at).getTime() < 86400_000);
   const presentRate = attendance.length ? Math.round((attendance.filter(a => a.status === 'present').length / attendance.length) * 100) : 0;
   const offlineQueueSize = attendance.filter(a => !a.synced).length;
@@ -373,6 +529,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="broadcast"><Megaphone className="me-1 h-3.5 w-3.5" /> Broadcast</TabsTrigger>
             <TabsTrigger value="bulk"><Layers className="me-1 h-3.5 w-3.5" /> Bulk Ops</TabsTrigger>
             <TabsTrigger value="health"><HeartPulse className="me-1 h-3.5 w-3.5" /> Health</TabsTrigger>
+            <TabsTrigger value="subjects"><BookMarked className="me-1 h-3.5 w-3.5" /> Subjects</TabsTrigger>
+            <TabsTrigger value="notif"><Bell className="me-1 h-3.5 w-3.5" /> Notifications</TabsTrigger>
+            <TabsTrigger value="maintenance"><Wrench className="me-1 h-3.5 w-3.5" /> Maintenance</TabsTrigger>
+            <TabsTrigger value="live"><Radio className="me-1 h-3.5 w-3.5" /> Live Feed</TabsTrigger>
             <TabsTrigger value="insights"><Sparkles className="me-1 h-3.5 w-3.5" /> AI Insights</TabsTrigger>
           </TabsList>
 
@@ -705,7 +865,11 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Departments */}
-          <TabsContent value="departments">
+          <TabsContent value="departments" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{departments.length} departments</p>
+              <Button size="sm" onClick={() => openDeptDialog()}><Plus className="me-1.5 h-4 w-4" /> New department</Button>
+            </div>
             <div className="grid gap-3 md:grid-cols-3">
               {departments.map(d => {
                 const deptUsers = users.filter(u => u.department_id === d.id);
@@ -718,10 +882,11 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="font-bold">{d.name}</p>
-                        <p className="text-sm text-muted-foreground">{d.name_ar}</p>
+                        <p className="text-sm text-muted-foreground">{d.name_ar} {d.code && <span className="ms-1 rounded bg-muted px-1.5 py-0.5 text-[10px]">{d.code}</span>}</p>
                       </div>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                        <Building2 className="h-5 w-5 text-primary" />
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => openDeptDialog(d)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteDept(d)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
@@ -735,6 +900,7 @@ export default function AdminDashboard() {
               })}
             </div>
           </TabsContent>
+
 
           {/* Broadcast */}
           <TabsContent value="broadcast">
@@ -901,8 +1067,138 @@ export default function AdminDashboard() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Subjects CRUD */}
+          <TabsContent value="subjects" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{subjects.length} subjects</p>
+              <Button size="sm" onClick={() => openSubjDialog()}><Plus className="me-1.5 h-4 w-4" /> New subject</Button>
+            </div>
+            <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50"><tr className="text-left">
+                  <th className="px-4 py-3">Name</th><th className="px-4 py-3">Code</th><th className="px-4 py-3">Department</th><th className="px-4 py-3">Lectures</th><th className="px-4 py-3 text-right">Actions</th>
+                </tr></thead>
+                <tbody>
+                  {subjects.map(s => (
+                    <tr key={s.id} className="border-t border-border hover:bg-muted/30">
+                      <td className="px-4 py-3 font-medium">{s.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.code || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.departments?.name || '—'}</td>
+                      <td className="px-4 py-3 tabular-nums">{lectures.filter(l => l.subject_id === s.id).length}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => openSubjDialog(s)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteSubj(s)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div></td>
+                    </tr>
+                  ))}
+                  {subjects.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No subjects — create one to link with lectures.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* All Notifications */}
+          <TabsContent value="notif" className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{allNotifications.length} notifications (most recent 300)</p>
+              <Button size="sm" variant="outline" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>
+                <Trash2 className="me-1.5 h-4 w-4" /> Purge read (&gt;7d)
+              </Button>
+            </div>
+            <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50"><tr className="text-left">
+                  <th className="px-4 py-3">Recipient</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Read</th><th className="px-4 py-3">When</th><th className="px-4 py-3"></th>
+                </tr></thead>
+                <tbody>
+                  {allNotifications.map(n => {
+                    const target = users.find(u => u.user_id === n.user_id);
+                    return (
+                      <tr key={n.id} className="border-t border-border hover:bg-muted/30">
+                        <td className="px-4 py-3 font-medium">{target?.full_name || <span className="text-xs text-muted-foreground">{String(n.user_id).slice(0,8)}</span>}</td>
+                        <td className="px-4 py-3 text-muted-foreground max-w-md truncate" title={n.message}>{n.title}</td>
+                        <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{n.type || '—'}</span></td>
+                        <td className="px-4 py-3">{n.read ? '✓' : '—'}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right"><Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('notifications', n.id, 'notification')}><Trash2 className="h-3.5 w-3.5" /></Button></td>
+                      </tr>
+                    );
+                  })}
+                  {allNotifications.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No notifications</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* Maintenance */}
+          <TabsContent value="maintenance" className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><RotateCcw className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Recompute student points</p><p className="text-xs text-muted-foreground">Recalculates points and level from attendance + approved excuses (3 pts each).</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('recompute-points')} disabled={maintBusy === 'recompute-points'}>{maintBusy === 'recompute-points' ? 'Recomputing…' : 'Run'}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><CheckCircle2 className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Mark all attendance synced</p><p className="text-xs text-muted-foreground">Flags any leftover offline-queued rows as synced.</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('mark-synced')} disabled={maintBusy === 'mark-synced'}>{maintBusy === 'mark-synced' ? 'Working…' : 'Run'}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 text-warning"><MessageSquare className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Purge stale typing indicators</p><p className="text-xs text-muted-foreground">Removes typing rows older than 60 seconds.</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('purge-typing')} disabled={maintBusy === 'purge-typing'}>{maintBusy === 'purge-typing' ? 'Working…' : 'Run'}</Button>
+              </div>
+              <div className="rounded-2xl bg-card p-5 shadow-card">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive"><Trash2 className="h-5 w-5" /></div>
+                  <div><p className="font-semibold">Purge old read notifications</p><p className="text-xs text-muted-foreground">Deletes read notifications older than 7 days.</p></div>
+                </div>
+                <Button size="sm" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>{maintBusy === 'purge-read-notifications' ? 'Working…' : 'Run'}</Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Live Feed */}
+          <TabsContent value="live" className="space-y-3">
+            <div className="rounded-2xl bg-card p-5 shadow-card">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success"><Radio className="h-5 w-5 animate-pulse" /></div>
+                <div>
+                  <p className="font-bold">Realtime activity</p>
+                  <p className="text-xs text-muted-foreground">Streams inserts on attendance, messages, excuses, and bookings.</p>
+                </div>
+                <Button size="sm" variant="outline" className="ms-auto" onClick={() => setLiveEvents([])}>Clear</Button>
+              </div>
+              {liveEvents.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Listening… events will appear here as they happen.</p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {liveEvents.map(e => (
+                    <li key={e.id + e.at} className="flex items-center gap-3 py-2 text-sm">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+                        e.kind === 'attendance' ? 'bg-success/10 text-success' :
+                        e.kind === 'message' ? 'bg-primary/10 text-primary' :
+                        e.kind === 'excuse' ? 'bg-warning/10 text-warning' :
+                        'bg-muted'
+                      }`}>{e.kind}</span>
+                      <span className="flex-1">{e.text}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{new Date(e.at).toLocaleTimeString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
+
 
       {/* Disable dialog */}
       <Dialog open={!!disableTarget} onOpenChange={(v) => !v && setDisableTarget(null)}>
@@ -925,6 +1221,44 @@ export default function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Department dialog */}
+      <Dialog open={deptDialog.open} onOpenChange={(v) => !v && setDeptDialog({ open: false })}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{deptDialog.edit ? 'Edit department' : 'New department'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Name (English)" value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} />
+            <Input placeholder="الاسم بالعربية" value={deptForm.name_ar} onChange={e => setDeptForm({ ...deptForm, name_ar: e.target.value })} />
+            <Input placeholder="Code (optional)" value={deptForm.code} onChange={e => setDeptForm({ ...deptForm, code: e.target.value })} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeptDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveDept}>{deptDialog.edit ? 'Save' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Subject dialog */}
+      <Dialog open={subjDialog.open} onOpenChange={(v) => !v && setSubjDialog({ open: false })}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{subjDialog.edit ? 'Edit subject' : 'New subject'}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input placeholder="Subject name" value={subjForm.name} onChange={e => setSubjForm({ ...subjForm, name: e.target.value })} />
+            <Input placeholder="Code (optional)" value={subjForm.code} onChange={e => setSubjForm({ ...subjForm, code: e.target.value })} />
+            <Select value={subjForm.department_id} onValueChange={(v) => setSubjForm({ ...subjForm, department_id: v })}>
+              <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
+              <SelectContent>
+                {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveSubj}>{subjDialog.edit ? 'Save' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
