@@ -571,7 +571,7 @@ export default function Community({ role }: { role: Role }) {
           <div className="flex gap-2">
             <Avatar className="h-9 w-9">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback>{(profile?.full_name || '?').slice(0, 1)}</AvatarFallback>
+              <AvatarFallback>{avatarLetter(displayName(profile, user))}</AvatarFallback>
             </Avatar>
             <Textarea
               value={text}
@@ -581,23 +581,44 @@ export default function Community({ role }: { role: Role }) {
               maxLength={5000}
             />
           </div>
-          {imagePreview && (
-            <div className="relative mt-2">
-              <img src={imagePreview} alt="" className="max-h-64 w-full rounded-lg object-cover" />
-              <button type="button" onClick={() => onPickImage(null)} className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white">
-                <X className="h-4 w-4" />
-              </button>
+          {selectedMedia.length > 0 && (
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {selectedMedia.map((m) => (
+                <div key={m.id} className="relative overflow-hidden rounded-xl border bg-muted/30">
+                  {m.type === 'image' && <img src={m.previewUrl} alt={m.file.name} className="h-44 w-full object-cover" />}
+                  {m.type === 'video' && <video src={m.previewUrl} controls className="h-44 w-full bg-muted object-contain" />}
+                  {m.type === 'audio' && (
+                    <div className="p-3">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Mic className="h-4 w-4" /> {m.file.name}</div>
+                      <audio src={m.previewUrl} controls className="w-full" />
+                    </div>
+                  )}
+                  <button type="button" onClick={() => removeMedia(m.id)} className="absolute right-2 top-2 rounded-full bg-background/90 p-1 text-foreground shadow-sm">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
           <div className="mt-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onPickImage(e.target.files?.[0] || null)} />
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={fileRef} type="file" accept="image/*,video/*,audio/*" multiple hidden onChange={(e) => onPickMedia(e.target.files)} />
               <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
                 <ImageIcon className="h-4 w-4 me-1" /> {t('صورة', 'Photo')}
               </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
+                <Video className="h-4 w-4 me-1" /> {t('فيديو', 'Video')}
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
+                <Paperclip className="h-4 w-4 me-1" /> {t('صوت', 'Audio')}
+              </Button>
+              <Button type="button" variant={recording ? 'destructive' : 'ghost'} size="sm" onClick={recording ? stopRecording : startRecording} disabled={!recording && selectedMedia.length >= MAX_MEDIA_FILES}>
+                {recording ? <StopCircle className="h-4 w-4 me-1" /> : <Mic className="h-4 w-4 me-1" />}
+                {recording ? t(`إيقاف ${recordElapsed}ث`, `Stop ${recordElapsed}s`) : t('تسجيل', 'Record')}
+              </Button>
               <span className="text-xs text-muted-foreground">{text.length}/5000</span>
             </div>
-            <Button type="submit" size="sm" disabled={posting || !text.trim()}>
+            <Button type="submit" size="sm" disabled={posting || (!text.trim() && selectedMedia.length === 0)}>
               {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 me-1" /> {t('نشر', 'Post')}</>}
             </Button>
           </div>
