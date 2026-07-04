@@ -1264,15 +1264,20 @@ export default function AdminDashboard() {
           {/* All Notifications */}
           <TabsContent value="notif" className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{allNotifications.length} notifications (most recent 300)</p>
+              <p className="text-sm text-muted-foreground">{allNotifications.length} · {t('admin.tab.notif')}</p>
               <Button size="sm" variant="outline" onClick={() => runMaintenance('purge-read-notifications')} disabled={maintBusy === 'purge-read-notifications'}>
-                <Trash2 className="me-1.5 h-4 w-4" /> Purge read (&gt;7d)
+                <Trash2 className="me-1.5 h-4 w-4" /> {t('admin.maint.purgeNotifTitle')}
               </Button>
             </div>
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Recipient</th><th className="px-4 py-3">Title</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Read</th><th className="px-4 py-3">When</th><th className="px-4 py-3"></th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.recipient')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.title')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.type')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.read')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.when')}</th>
+                  <th className="px-4 py-3 text-end"></th>
                 </tr></thead>
                 <tbody>
                   {allNotifications.map(n => {
@@ -1284,11 +1289,11 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{n.type || '—'}</span></td>
                         <td className="px-4 py-3">{n.read ? '✓' : '—'}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right"><Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('notifications', n.id, 'notification')}><Trash2 className="h-3.5 w-3.5" /></Button></td>
+                        <td className="px-4 py-3 text-end"><Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('notifications', n.id, 'notification')}><Trash2 className="h-3.5 w-3.5" /></Button></td>
                       </tr>
                     );
                   })}
-                  {allNotifications.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No notifications</td></tr>}
+                  {allNotifications.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.notif')}</td></tr>}
                 </tbody>
               </table>
             </div>
