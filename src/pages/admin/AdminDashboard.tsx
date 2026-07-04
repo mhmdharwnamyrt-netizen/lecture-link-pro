@@ -958,23 +958,34 @@ export default function AdminDashboard() {
           <TabsContent value="ratings">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Lecture ID</th><th className="px-4 py-3">Rating</th><th className="px-4 py-3">Comment</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.lecture')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.rating')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.comment')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
-                  {ratings.map(r => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{String(r.lecture_id).slice(0, 8)}</td>
-                      <td className="px-4 py-3">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-md truncate">{r.comment || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                  {ratings.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No ratings</td></tr>}
+                  {ratings.map(r => {
+                    const lec = lectures.find(l => l.id === r.lecture_id);
+                    return (
+                      <tr key={r.id} className="border-t border-border">
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{lec?.title || String(r.lecture_id).slice(0, 8)}</td>
+                        <td className="px-4 py-3 text-warning">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</td>
+                        <td className="px-4 py-3 text-muted-foreground max-w-md truncate" title={r.comment}>{r.comment || '—'}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 text-end">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('lecture_ratings', r.id, 'rating')}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {ratings.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.ratings')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Messages */}
           <TabsContent value="messages">
