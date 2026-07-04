@@ -824,25 +824,46 @@ export default function AdminDashboard() {
           <TabsContent value="excuses">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">Student</th><th className="px-4 py-3">Lecture</th>
-                  <th className="px-4 py-3">Reason</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.student')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.lecture')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.reason')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.status')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
                   {excuses.map(e => (
                     <tr key={e.id} className="border-t border-border">
                       <td className="px-4 py-3 font-medium">{e.profiles?.full_name || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{e.lectures?.title || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{e.reason}</td>
-                      <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{e.status}</span></td>
+                      <td className="px-4 py-3 text-muted-foreground max-w-xs truncate" title={e.reason}>{e.reason}</td>
+                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${
+                        e.status === 'approved' ? 'bg-success/10 text-success' :
+                        e.status === 'rejected' ? 'bg-destructive/10 text-destructive' :
+                        'bg-warning/10 text-warning'
+                      }`}>{e.status}</span></td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(e.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        {e.status !== 'approved' && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-success" onClick={() => reviewExcuse(e, 'approved')} title={t('admin.action.approve')}>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {e.status !== 'rejected' && (
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={() => reviewExcuse(e, 'rejected')} title={t('admin.action.reject')}>
+                            <XCircle className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div></td>
                     </tr>
                   ))}
-                  {excuses.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No excuses</td></tr>}
+                  {excuses.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.excuses')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Warnings */}
           <TabsContent value="warnings">
