@@ -926,6 +926,10 @@ export default function Community({ role }: { role: Role }) {
                     <Button variant="ghost" size="sm" onClick={() => sharePost(p)}>
                       <Share2 className="h-4 w-4 me-1" /> {p.shares_count}
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => toggleSave(p)} className={p.saved ? 'text-primary' : ''}>
+                      {p.saved ? <BookmarkCheck className="h-4 w-4 me-1 fill-primary" /> : <Bookmark className="h-4 w-4 me-1" />}
+                      {p.saves_count || 0}
+                    </Button>
                   </div>
 
                   <AnimatePresence>
