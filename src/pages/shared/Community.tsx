@@ -84,7 +84,8 @@ export default function Community({ role }: { role: Role }) {
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'all' | 'mine' | 'trending' | 'saved'>('all');
+  const [tab, setTab] = useState<'all' | 'following' | 'mine' | 'trending' | 'saved'>('all');
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<PostCategory | null>(null);
   const [composerCategory, setComposerCategory] = useState<PostCategory>('discussion');
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
