@@ -65,15 +65,19 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
         {children}
       </main>
 
-      {/* Floating search FAB (opens global command palette) */}
-      <button
-        type="button"
-        onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
-        aria-label="Open search"
-        className={`fixed bottom-24 md:bottom-6 ${isRTL ? 'left-4' : 'right-4'} z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-bloom hover:scale-105 transition-transform`}
-      >
-        <Search className="h-5 w-5" />
-      </button>
+      {/* Floating search FAB (hidden on messaging routes to avoid overlapping the send button) */}
+      {!location.pathname.includes('/messages') && (
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+          aria-label="Open search"
+          className={`fixed bottom-24 md:bottom-6 ${isRTL ? 'left-4' : 'right-4'} z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-bloom hover:scale-105 transition-transform`}
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      )}
+
+
 
 
       {/* Mobile Bottom Navigation - Curved / Liquid */}
