@@ -716,17 +716,18 @@ export default function AdminDashboard() {
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50">
-                  <tr className="text-left whitespace-nowrap">
-                    <th className="px-4 py-3">Title</th>
-                    <th className="px-4 py-3">Doctor</th>
-                    <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">Subject</th>
-                    <th className="px-4 py-3">Day</th>
-                    <th className="px-4 py-3">Time</th>
-                    <th className="px-4 py-3">Hall</th>
-                    <th className="px-4 py-3">Level</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Active</th>
+                  <tr className="text-start whitespace-nowrap">
+                    <th className="px-4 py-3 text-start">{t('admin.col.title')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.doctor')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.department')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.subject')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.day')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.time')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.hall')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.level')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.type')}</th>
+                    <th className="px-4 py-3 text-start">{t('admin.col.active')}</th>
+                    <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -742,12 +743,19 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 text-muted-foreground">{l.level || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{l.type || '—'}</td>
                       <td className="px-4 py-3">{l.is_active ? '✓' : '—'}</td>
+                      <td className="px-4 py-3"><div className="flex justify-end gap-1">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => toggleLecture(l)} title={l.is_active ? t('admin.action.disable') : t('admin.action.enable')}>
+                          {l.is_active ? <Ban className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5 text-success" />}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteLecture(l)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Attendance */}
           <TabsContent value="attendance" className="space-y-4">
