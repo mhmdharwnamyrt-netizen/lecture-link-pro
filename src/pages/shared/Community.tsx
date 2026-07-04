@@ -93,7 +93,7 @@ export default function Community({ role }: { role: Role }) {
   const recordChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<number | null>(null);
 
-  const displayName = (p?: Profile | null, fallbackUser?: typeof user) =>
+  const displayName = (p?: { full_name?: string | null } | null, fallbackUser?: typeof user) =>
     p?.full_name || fallbackUser?.user_metadata?.full_name || fallbackUser?.email?.split('@')[0] || t('مستخدم', 'User');
   const avatarLetter = (name?: string | null) => (name?.trim()?.slice(0, 1) || 'U').toUpperCase();
   const detectMediaType = (file: File): MediaType | null => {
