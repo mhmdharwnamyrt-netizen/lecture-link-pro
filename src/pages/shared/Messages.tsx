@@ -59,9 +59,29 @@ export default function MessagesPage({ role }: { role: 'doctor' | 'student' }) {
     if (!loading && !user) navigate('/login');
   }, [loading, user, navigate]);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     if (profile) loadConversations();
   }, [profile]);
+
+  // Auto-open a chat when arriving with ?to=<profileId>
+  useEffect(() => {
+    const to = searchParams.get('to');
+    if (!to || !profile || activeChat?.id === to) return;
+    (async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, student_id, user_id, avatar_url')
+        .eq('id', to)
+        .maybeSingle();
+      if (data) setActiveChat(data);
+      // Clear the param so back-nav doesn't re-trigger
+      const next = new URLSearchParams(searchParams);
+      next.delete('to');
+      setSearchParams(next, { replace: true });
+    })();
+  }, [profile, searchParams, activeChat, setSearchParams]);
 
   useEffect(() => {
     if (!activeChat || !profile) return;
