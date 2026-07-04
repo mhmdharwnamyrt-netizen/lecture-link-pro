@@ -52,8 +52,11 @@ export default function PublicProfilePage() {
         .eq('user_id', userId)
         .maybeSingle();
       setProfile(prof as any);
-      if (prof?.cover_url) {
-        createSignedUrl('face-photos', prof.cover_url, 3600).then(setCoverSrc);
+      const cover = parseCoverValue(prof?.cover_url);
+      if (cover?.kind === 'path') {
+        createSignedUrl('face-photos', cover.path, 3600).then(setCoverSrc);
+      } else {
+        setCoverSrc(null);
       }
       const { data: pRows } = await supabase
         .from('community_posts')
