@@ -4,6 +4,8 @@ import {
   Heart, MessageCircle, Share2, Send, MoreHorizontal, Image as ImageIcon, X,
   Pin, Trash2, CornerDownRight, Loader2, Users, Search, Flag, Hash, Pencil,
   ChevronDown, ChevronRight, Settings, Video, Mic, Paperclip, StopCircle,
+  Bookmark, BookmarkCheck, Trophy, CheckCircle2, MessageSquare, HelpCircle,
+  BookOpen, Megaphone, AtSign, Sparkles, Crown, Medal,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
