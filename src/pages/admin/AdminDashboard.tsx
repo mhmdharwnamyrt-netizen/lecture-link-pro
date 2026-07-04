@@ -991,24 +991,37 @@ export default function AdminDashboard() {
           <TabsContent value="messages">
             <div className="rounded-2xl bg-card shadow-card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50"><tr className="text-left">
-                  <th className="px-4 py-3">From</th><th className="px-4 py-3">To</th><th className="px-4 py-3">Content</th><th className="px-4 py-3">Read</th><th className="px-4 py-3">Date</th>
+                <thead className="bg-muted/50"><tr className="text-start">
+                  <th className="px-4 py-3 text-start">{t('admin.col.from')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.to')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.content')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.read')}</th>
+                  <th className="px-4 py-3 text-start">{t('admin.col.date')}</th>
+                  <th className="px-4 py-3 text-end">{t('admin.col.actions')}</th>
                 </tr></thead>
                 <tbody>
-                  {messages.map(m => (
-                    <tr key={m.id} className="border-t border-border">
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{String(m.sender_id).slice(0, 8)}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{String(m.receiver_id).slice(0, 8)}</td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-md truncate">{m.content}</td>
-                      <td className="px-4 py-3">{m.read ? '✓' : '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                  {messages.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No messages</td></tr>}
+                  {messages.map(m => {
+                    const from = users.find(u => u.user_id === m.sender_id);
+                    const to = users.find(u => u.user_id === m.receiver_id);
+                    return (
+                      <tr key={m.id} className="border-t border-border">
+                        <td className="px-4 py-3 text-xs">{from?.full_name || String(m.sender_id).slice(0, 8)}</td>
+                        <td className="px-4 py-3 text-xs">{to?.full_name || String(m.receiver_id).slice(0, 8)}</td>
+                        <td className="px-4 py-3 text-muted-foreground max-w-md truncate" title={m.content}>{m.content}</td>
+                        <td className="px-4 py-3">{m.read ? '✓' : '—'}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(m.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-3 text-end">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteRow('messages', m.id, 'message')}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {messages.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">{t('admin.empty.messages')}</td></tr>}
                 </tbody>
               </table>
             </div>
           </TabsContent>
+
 
           {/* Departments */}
           <TabsContent value="departments" className="space-y-3">
