@@ -907,10 +907,12 @@ export default function AdminDashboard() {
           <TabsContent value="office">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="rounded-2xl bg-card shadow-card overflow-hidden">
-                <div className="border-b border-border bg-muted/50 px-4 py-2 font-semibold">Office Hour Slots</div>
+                <div className="border-b border-border bg-muted/50 px-4 py-2 font-semibold">{t('admin.tab.office')}</div>
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/30"><tr className="text-left">
-                    <th className="px-4 py-2">Doctor</th><th className="px-4 py-2">Day</th><th className="px-4 py-2">Time</th>
+                  <thead className="bg-muted/30"><tr className="text-start">
+                    <th className="px-4 py-2 text-start">{t('admin.col.doctor')}</th>
+                    <th className="px-4 py-2 text-start">{t('admin.col.day')}</th>
+                    <th className="px-4 py-2 text-start">{t('admin.col.time')}</th>
                   </tr></thead>
                   <tbody>
                     {officeHours.map(o => (
@@ -926,14 +928,23 @@ export default function AdminDashboard() {
               <div className="rounded-2xl bg-card shadow-card overflow-hidden">
                 <div className="border-b border-border bg-muted/50 px-4 py-2 font-semibold">Bookings ({bookings.length})</div>
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/30"><tr className="text-left">
-                    <th className="px-4 py-2">Booking date</th><th className="px-4 py-2">Status</th>
+                  <thead className="bg-muted/30"><tr className="text-start">
+                    <th className="px-4 py-2 text-start">{t('admin.col.date')}</th>
+                    <th className="px-4 py-2 text-start">{t('admin.col.status')}</th>
+                    <th className="px-4 py-2 text-end">{t('admin.col.actions')}</th>
                   </tr></thead>
                   <tbody>
                     {bookings.map(b => (
                       <tr key={b.id} className="border-t border-border">
-                        <td className="px-4 py-2 text-muted-foreground text-xs">{new Date(b.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-2"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{b.status}</span></td>
+                        <td className="px-4 py-2 text-muted-foreground text-xs">{b.booking_date || new Date(b.created_at).toLocaleDateString()}</td>
+                        <td className="px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-xs ${b.status === 'cancelled' ? 'bg-destructive/10 text-destructive' : b.status === 'confirmed' ? 'bg-success/10 text-success' : 'bg-muted'}`}>{b.status}</span></td>
+                        <td className="px-4 py-2 text-end">
+                          {b.status !== 'cancelled' && (
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-destructive" onClick={() => cancelBooking(b)} title={t('admin.action.cancel')}>
+                              <XCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -941,6 +952,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </TabsContent>
+
 
           {/* Ratings */}
           <TabsContent value="ratings">
