@@ -1372,20 +1372,18 @@ export default function AdminDashboard() {
       <Dialog open={!!disableTarget} onOpenChange={(v) => !v && setDisableTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disable account: {disableTarget?.full_name}</DialogTitle>
+            <DialogTitle>{t('admin.disable.title')}: {disableTarget?.full_name}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            The user will be signed out and shown a "Account disabled" screen with the support phone number.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('admin.disable.warn')}</p>
           <Textarea
-            placeholder="Reason (shown to the user)"
+            placeholder={t('admin.disable.reasonPh')}
             value={disableReason}
             onChange={e => setDisableReason(e.target.value)}
             rows={3}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDisableTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDisable}><Ban className="me-2 h-4 w-4" /> Disable</Button>
+            <Button variant="outline" onClick={() => setDisableTarget(null)}>{t('admin.action.cancel')}</Button>
+            <Button variant="destructive" onClick={confirmDisable}><Ban className="me-2 h-4 w-4" /> {t('admin.action.disable')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1393,15 +1391,15 @@ export default function AdminDashboard() {
       {/* Department dialog */}
       <Dialog open={deptDialog.open} onOpenChange={(v) => !v && setDeptDialog({ open: false })}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{deptDialog.edit ? 'Edit department' : 'New department'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{deptDialog.edit ? t('admin.action.edit') : t('admin.action.newDept')}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Name (English)" value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} />
-            <Input placeholder="الاسم بالعربية" value={deptForm.name_ar} onChange={e => setDeptForm({ ...deptForm, name_ar: e.target.value })} />
-            <Input placeholder="Code (optional)" value={deptForm.code} onChange={e => setDeptForm({ ...deptForm, code: e.target.value })} />
+            <Input placeholder={t('admin.dept.namePh')} value={deptForm.name} onChange={e => setDeptForm({ ...deptForm, name: e.target.value })} />
+            <Input placeholder={t('admin.dept.nameArPh')} value={deptForm.name_ar} onChange={e => setDeptForm({ ...deptForm, name_ar: e.target.value })} />
+            <Input placeholder={t('admin.dept.codePh')} value={deptForm.code} onChange={e => setDeptForm({ ...deptForm, code: e.target.value })} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeptDialog({ open: false })}>Cancel</Button>
-            <Button onClick={saveDept}>{deptDialog.edit ? 'Save' : 'Create'}</Button>
+            <Button variant="outline" onClick={() => setDeptDialog({ open: false })}>{t('admin.action.cancel')}</Button>
+            <Button onClick={saveDept}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1409,19 +1407,19 @@ export default function AdminDashboard() {
       {/* Subject dialog */}
       <Dialog open={subjDialog.open} onOpenChange={(v) => !v && setSubjDialog({ open: false })}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{subjDialog.edit ? 'Edit subject' : 'New subject'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{subjDialog.edit ? t('admin.action.edit') : t('admin.action.newSubject')}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input placeholder="Subject name" value={subjForm.name} onChange={e => setSubjForm({ ...subjForm, name: e.target.value })} />
-            <Input placeholder="Code (optional)" value={subjForm.code} onChange={e => setSubjForm({ ...subjForm, code: e.target.value })} />
+            <Input placeholder={t('admin.subj.namePh')} value={subjForm.name} onChange={e => setSubjForm({ ...subjForm, name: e.target.value })} />
+            <Input placeholder={t('admin.dept.codePh')} value={subjForm.code} onChange={e => setSubjForm({ ...subjForm, code: e.target.value })} />
             <Select value={subjForm.department_id} onValueChange={(v) => setSubjForm({ ...subjForm, department_id: v })}>
-              <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('admin.col.department')} /></SelectTrigger>
               <SelectContent>
                 {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>Cancel</Button>
+            <Button variant="outline" onClick={() => setSubjDialog({ open: false })}>{t('admin.action.cancel')}</Button>
             <Button onClick={saveSubj}>{subjDialog.edit ? 'Save' : 'Create'}</Button>
           </DialogFooter>
         </DialogContent>
