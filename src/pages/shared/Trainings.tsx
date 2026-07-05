@@ -34,7 +34,7 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
 
   const [items, setItems] = useState<Training[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'university' | 'company'>('all');
+  const [filter, setFilter] = useState<TrainingFilter>('all');
   const [q, setQ] = useState('');
 
   useEffect(() => {
@@ -50,19 +50,18 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
     })();
   }, []);
 
-  const visible = items.filter(i => {
-    if (filter !== 'all' && i.type !== filter) return false;
-    if (q.trim()) {
-      const s = q.toLowerCase();
-      return (
-        i.title.toLowerCase().includes(s) ||
-        (i.company_name || '').toLowerCase().includes(s) ||
-        (i.description || '').toLowerCase().includes(s) ||
-        (i.tags || []).some(tg => tg.toLowerCase().includes(s))
-      );
-    }
-    return true;
+  const searched = items.filter(i => {
+    if (!q.trim()) return true;
+    const s = q.toLowerCase();
+    return (
+      i.title.toLowerCase().includes(s) ||
+      (i.company_name || '').toLowerCase().includes(s) ||
+      (i.description || '').toLowerCase().includes(s) ||
+      (i.tags || []).some(tg => tg.toLowerCase().includes(s))
+    );
   });
+  // Unified sort/filter — identical order to dashboard break-mode cards
+  const visible = sortTrainings(filterTrainings(searched, filter));
 
   return (
     <MobileLayout role={role}>
