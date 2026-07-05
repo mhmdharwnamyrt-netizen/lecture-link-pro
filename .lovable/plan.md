@@ -1,101 +1,88 @@
-# خطة نظام التدريبات + رفع الأفاتار
+# خطة التنفيذ الشاملة
 
-## الجزء الأول — نظام التدريبات المفتوح
+## 1) صور أفاتار عشوائية تلقائيًا (بدون اختيار يدوي)
 
-### السلوك المطلوب
-- أي **طالب / دكتور / معيد** ينتمي للكلية يقدر يضيف تدريب (بدل ما كان مقصور على الأدمن).
-- منشئ التدريب يختار طريقة التقديم:
-  1. **رابط خارجي** (form بره — Google Form مثلًا) — النموذج الحالي.
-  2. **نموذج داخل النظام** ينشئه بنفسه، يخصّص الحقول، ويعرض الردود.
-- يقدر يحدد **حد أقصى للمتقدمين** (مثلًا 30). لما يوصل الحد، النظام يقفل التقديم تلقائيًا ويعرض للطالب رقم 31 رسالة "اكتمل العدد".
-- منشئ التدريب فقط + الأدمن يشوفوا الردود ويقدروا يعدلوا/يحذفوا التدريب.
+- توسيع مكتبة الأفاتار من 20 إلى **40 صورة متنوعة** (أشكال، ألوان، أنماط مختلفة تمامًا — لا تكرار).
+- عند التسجيل: يتم تعيين واحدة **عشوائيًا** تلقائيًا لكل مستخدم جديد (trigger على `profiles`).
+- لكل مستخدم حالي بدون `avatar_url`: يتم تعيين واحدة عشوائيًا لمرة واحدة.
+- يقدر المستخدم يرفع صورته الشخصية لاحقًا لو حب — بس مش شرط.
+- الأفاتار الافتراضية تكون SVG/CDN URLs جاهزة (DiceBear notionists/adventurer style — 40 seed مختلفة).
 
-### الشاشات الجديدة
-1. **زر "+ إضافة تدريب"** أعلى صفحة `/{role}/trainings` لأي مستخدم مسجّل.
-2. **معالج إنشاء تدريب** بخطوتين:
-   - بيانات التدريب (عنوان، وصف، نوع، جهة، مكان، آخر موعد، شعار/صورة، وسوم).
-   - طريقة التقديم:
-     - «رابط خارجي» → لصق URL.
-     - «نموذج داخلي» → منشئ حقول (Field builder): إضافة حقول من الأنواع نص قصير / نص طويل / رقم / بريد / هاتف / اختيار من متعدد / تحميل ملف اختياري / موافقة، مع تحديد المطلوب/الاختياري. وحقل «الحد الأقصى للمتقدمين» (اختياري).
-3. **صفحة تفاصيل التدريب** `/{role}/trainings/:id`:
-   - عرض البيانات + زر «تقديم».
-   - لو رابط خارجي: يفتح الرابط.
-   - لو نموذج داخلي: يعرض النموذج ويقبل الرد. لو المستخدم قدّم قبل كده يعرض «تم تقديمك». لو العدد اكتمل يعرض «اكتمل عدد المتقدمين».
-4. **لوحة إدارة التدريب لمنشئه** `/{role}/trainings/:id/manage`:
-   - جدول الردود (تصدير CSV)، عدّاد X من Y، تفعيل/إغلاق يدوي، تعديل/حذف.
+## 2) صفحة الملتقى (Community)
 
-### قواعد الأمان (RLS)
-- `trainings.INSERT`: مسموح لأي `authenticated`؛ `created_by = auth.uid()` إلزامي.
-- `trainings.UPDATE/DELETE`: `created_by = auth.uid()` أو أدمن.
-- `training_form_fields`: نفس مالك التدريب فقط (+ أدمن) للكتابة؛ قراءة عامة للمصادَقين.
-- `training_applications`:
-  - **INSERT**: أي مصادَق يقدّم على تدريبه، وواحد فقط لكل تدريب (`UNIQUE(training_id, applicant_id)`).
-  - **SELECT**: المتقدم يشوف رده فقط؛ منشئ التدريب + الأدمن يشوفوا كل الردود.
-- إغلاق تلقائي عبر **Trigger** بعد كل `INSERT` ناجح: لو `applications_count >= max_applicants` يخلي `is_active=false`.
+- **إصلاح ظهور صورة اللوجو**: التأكد إن `avatar_url` في كل بطاقة post بيمر على `StorageImage` مع fallback صحيح، ومعالجة signed URLs بالكاش.
+- **تسريع تحميل المنشورات**: 
+  - إضافة `skeleton loader` أثناء التحميل.
+  - جلب صور الأفاتار عبر `Promise.all` بدلاً من تسلسلي.
+  - تقليل عدد الحقول المُختارة من `select('*')` إلى الأعمدة الضرورية.
+  - كاش signed URLs لمدة ساعة في `sessionStorage`.
 
-### التغييرات على الواجهة
-- إعادة تصميم بطاقة التدريب لعرض **عدد المتقدمين / السعة** مع شريط تقدم، وشارة «مكتمل» لما تُغلق.
-- زر «تعديل / إدارة» يظهر لمنشئ التدريب فقط.
+## 3) صفحة الـ Profile (بروفايل مستخدم آخر)
+
+- التأكد إن أزرار **المراسلة** و**المتابعة** ظاهرة **دائمًا** في `PublicProfile.tsx` (موجودين بالفعل — تأكيد المسار الصحيح والـ routing).
+- إضافة اختصار "زيارة البروفايل" من كل بطاقة منشور تفتح `/{role}/user/{userId}`.
+
+## 4) لوحة الطالب في وضع الإجازة الصيفية
+
+- إخفاء كل الكروت المتعلقة بالمحاضرات (اليوم/التالية/الحضور).
+- إظهار بدلاً منها:
+  - **بطاقات التدريبات** (المرتّبة بأقرب موعد).
+  - **آخر المنشورات من الملتقى** (feed مصغّر).
+  - **بطاقة إحصائيات الأداء التاريخي**: نسبة الحضور الكلية، إجمالي النقاط، ترتيب في اللوحة، عدد المنشورات والإعجابات.
+  - **اقتراحات للتطوير**: كورسات/مقالات (روابط ثابتة).
+
+## 5) نظام الأدوار: إضافة المعيد (TA) والإداري (Admin عبر دعوة)
+
+### أ) المعيد (Teaching Assistant)
+- إضافة قيمة `teaching_assistant` لـ enum `app_role` (أو استخدام حقل `role` في profiles).
+- **نفس صلاحيات الدكتور بالكامل**: محاضرات، حضور، تحليلات، إنذارات، ساعات مكتبية، تقييمات.
+- تسجيل جديد: اختيار "طالب / دكتور / معيد" — والمعيد يستخدم نفس مفتاح `BSUT2024`.
+- تحديث كل RLS policies اللي فيها `role='doctor'` لتشمل `role IN ('doctor','teaching_assistant')`.
+- تحديث كل `MobileLayout` و`App.tsx` routes: مسار `/ta/*` يعيد استخدام صفحات الدكتور.
+
+### ب) الإداري (Admin — بدعوة فقط)
+- جدول جديد `admin_invites`: `id, token, email, invited_by, expires_at, used_at, created_at`.
+- صفحة `/admin/invites` داخل AdminDashboard: زر "إنشاء رابط دعوة" → ينشئ token فريد → ينسخ الرابط `/invite/admin/{token}`.
+- صفحة عامة `/invite/admin/{token}`:
+  - تتحقق من صلاحية الـ token.
+  - تطلب من المستخدم تسجيل حساب (email/password) أو تسجيل دخول.
+  - عند النجاح: تُضيف صف في `user_roles` بدور `admin` + تعلّم الـ token كمستخدم.
+- Edge function `redeem-admin-invite` (SECURITY DEFINER) للتحقق واستهلاك الدعوة.
+
+## 6) التغييرات التقنية بالتفصيل
+
+### قاعدة البيانات (migration واحدة):
+```sql
+-- 1. توسيع app_role
+ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'teaching_assistant';
+
+-- 2. جدول admin_invites + RLS + GRANT + trigger for expiry
+CREATE TABLE public.admin_invites (...);
+
+-- 3. Trigger على profiles: عند INSERT بدون avatar_url → assign random
+CREATE FUNCTION public.assign_random_avatar() ...
+CREATE TRIGGER on_profile_created_assign_avatar ...
+
+-- 4. Backfill: للمستخدمين الحاليين بدون avatar
+UPDATE profiles SET avatar_url = ... WHERE avatar_url IS NULL;
+
+-- 5. تحديث RLS policies اللي بتقيّد على 'doctor' لتشمل 'teaching_assistant'
+```
+
+### ملفات جديدة:
+- `src/lib/defaultAvatars.ts` — قائمة 40 URL.
+- `src/pages/admin/AdminInvites.tsx` — إدارة دعوات الإداري.
+- `src/pages/AdminInviteRedeem.tsx` — صفحة استهلاك الدعوة (عامة).
+- `supabase/functions/redeem-admin-invite/index.ts` — edge function.
+
+### ملفات معدّلة:
+- `src/pages/Register.tsx` — إضافة خيار "معيد" + assign avatar عشوائي.
+- `src/pages/student/StudentDashboard.tsx` — منطق الإجازة.
+- `src/pages/shared/Community.tsx` — تسريع + إصلاح صور.
+- `src/App.tsx` — routes للمعيد ودعوة الإداري.
+- `src/contexts/AuthContext.tsx` — دعم role الجديد.
+- `src/components/MobileLayout.tsx` — قوائم المعيد.
 
 ---
 
-## الجزء الثاني — رفع الأفاتار
-
-نضبط تجربة الرفع في `AvatarUploader`:
-- عرض **معاينة فورية** للصورة المختارة قبل انتهاء الرفع (blob URL).
-- **حالة تحميل** واضحة (spinner + شريط تقدّم النسبة داخل الأفاتار).
-- toast **نجاح** أخضر عند الحفظ، toast **فشل** أحمر يذكر السبب.
-- التحقق من النوع (`image/*`) والحجم (≤ 5MB) قبل الرفع.
-- زر الكاميرا يظل ظاهر باستمرار (كنا صلحنا مشكلة القص في الغلاف).
-
----
-
-## تفاصيل تقنية (Technical)
-
-### تعديل جدول `trainings`
-- إسقاط قيود INSERT/UPDATE/DELETE الحصرية للأدمن، واستبدالها بسياسات `created_by`.
-- إضافة أعمدة: `application_mode text` (`external` | `internal` — افتراضي `external`)، `max_applicants int NULL`، `applications_count int NOT NULL DEFAULT 0`، `is_full boolean GENERATED ALWAYS AS ...` (أو نستخدم الفلاق مباشرة).
-- تخفيف قيد `apply_url NOT NULL` → nullable (لأنه اختياري في وضع النموذج الداخلي)، مع CHECK: (`application_mode='external' AND apply_url IS NOT NULL`) OR `application_mode='internal'`.
-
-### جداول جديدة
-```
-training_form_fields (
-  id uuid PK,
-  training_id uuid FK → trainings ON DELETE CASCADE,
-  field_key text,             -- سلاج فريد داخل التدريب
-  label text, label_ar text,
-  field_type text CHECK IN ('short_text','long_text','number','email','phone','select','checkbox','file'),
-  required boolean DEFAULT false,
-  options jsonb,              -- لخيارات select
-  order_index int,
-  created_at timestamptz
-)
-UNIQUE(training_id, field_key)
-
-training_applications (
-  id uuid PK,
-  training_id uuid FK → trainings ON DELETE CASCADE,
-  applicant_id uuid NOT NULL,     -- auth.users.id
-  answers jsonb NOT NULL,         -- { field_key: value }
-  status text DEFAULT 'submitted', -- submitted | reviewed | accepted | rejected
-  created_at timestamptz,
-  UNIQUE(training_id, applicant_id)
-)
-```
-
-### Triggers
-- `trg_training_apps_bump`: بعد INSERT على `training_applications` يزيد `applications_count`، ولو وصل `max_applicants` يخلي `is_active=false`.
-- `trg_training_apps_notify`: إشعار لمنشئ التدريب بكل رد جديد.
-
-### واجهات جديدة
-- `src/pages/shared/TrainingCreate.tsx` (معالج الإنشاء + Field builder).
-- `src/pages/shared/TrainingDetail.tsx` (عرض + تقديم).
-- `src/pages/shared/TrainingManage.tsx` (لوحة المنشئ + جدول الردود + تصدير CSV).
-- تحديث `Trainings.tsx` لعرض السعة والحالة وزر الإضافة.
-- تحديث `AvatarUploader.tsx` بمعاينة فورية وحالة تحميل نظيفة.
-
-### الاعتبارات
-- ملفات المرفقات في نوع الحقل `file` تُرفع لباكت `message-attachments` باسم `training-<id>/<applicant>/<field_key>`.
-- التحقق من صحة النموذج بـ zod client-side قبل الإرسال.
-- إخفاء زر «إدارة» لأي مستخدم مش المنشئ/الأدمن.
-- الأدمن يفضل يقدر يعمل كل شيء زي ما كان.
+**بعد الموافقة** سأبدأ بالـ migration ثم الكود على التوازي.
