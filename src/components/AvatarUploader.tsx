@@ -19,16 +19,25 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [displaySrc, setDisplaySrc] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const avatarPath = (profile as any)?.avatar_url as string | undefined;
 
   // Resolve signed URL for private-bucket avatar
   useEffect(() => {
     let mounted = true;
-    if (!avatarPath) { setDisplaySrc(null); return; }
-    createSignedUrl('face-photos', avatarPath, 60 * 60 * 24).then((url) => {
-      if (mounted) setDisplaySrc(url);
-    });
+    setLoadError(false);
+    if (!avatarPath) { setDisplaySrc(null); setResolving(false); return; }
+    setResolving(true);
+    createSignedUrl('face-photos', avatarPath, 60 * 60 * 24)
+      .then((url) => {
+        if (!mounted) return;
+        if (!url) { setDisplaySrc(null); setLoadError(true); }
+        else setDisplaySrc(url);
+      })
+      .catch(() => { if (mounted) setLoadError(true); })
+      .finally(() => { if (mounted) setResolving(false); });
     return () => { mounted = false; };
   }, [avatarPath]);
 
