@@ -7,16 +7,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import IdentityVerification from '@/components/student/IdentityVerification';
 import InstallApp from '@/components/InstallApp';
 import AvatarUploader from '@/components/AvatarUploader';
 import CoverUploader from '@/components/CoverUploader';
-import { useToast } from '@/hooks/use-toast';
-import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor, Pencil, Sparkles, X, ExternalLink } from 'lucide-react';
+import ProfileSectionCard from '@/components/profile/ProfileSectionCard';
+import { LogOut, Shield, Globe, Camera, Sun, Moon, Monitor, Sparkles, ExternalLink, Wrench, Heart, Music, Star } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   const { profile, signOut, refreshProfile, user } = useAuth();
