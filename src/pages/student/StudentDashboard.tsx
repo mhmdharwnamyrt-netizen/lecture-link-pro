@@ -188,10 +188,10 @@ export default function StudentDashboard() {
       });
     }
 
-    // Trainings preview
+    // Trainings preview — richer list for break-mode filtering
     const { data: trs } = await supabase
-      .from('trainings').select('id,title,type,company_name,apply_url,deadline,tags')
-      .eq('is_active', true).order('created_at', { ascending: false }).limit(3);
+      .from('trainings').select('id,title,type,company_name,apply_url,deadline,tags,location')
+      .eq('is_active', true).order('created_at', { ascending: false }).limit(12);
     setTrainings(trs || []);
 
     // Community feed preview (shown always but especially useful during quiet weeks)
