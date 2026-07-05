@@ -43,6 +43,8 @@ const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
+const AdminInvites = lazy(() => import("./pages/admin/AdminInvites"));
+const AdminInviteRedeem = lazy(() => import("./pages/AdminInviteRedeem"));
 const TrainingsPage = lazy(() => import("./pages/shared/Trainings"));
 const TrainingCreate = lazy(() => import("./pages/shared/TrainingCreate"));
 const TrainingDetail = lazy(() => import("./pages/shared/TrainingDetail"));
@@ -118,6 +120,10 @@ const App = () => (
                   <Route path="/admin/reports" element={<Guarded><AdminReports /></Guarded>} />
                   <Route path="/admin/moderation" element={<Guarded><AdminModeration /></Guarded>} />
                   <Route path="/admin/trainings" element={<Guarded><AdminTrainings /></Guarded>} />
+                  <Route path="/admin/invites" element={<Guarded><AdminInvites /></Guarded>} />
+
+                  {/* Admin invite redemption (public URL — auth checked inside) */}
+                  <Route path="/invite/admin/:token" element={<AdminInviteRedeem />} />
 
                   {/* Public user profile (shared) */}
                   <Route path="/u/:userId" element={<Guarded><PublicProfilePage /></Guarded>} />

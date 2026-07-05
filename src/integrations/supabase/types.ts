@@ -64,6 +64,39 @@ export type Database = {
           },
         ]
       }
+      admin_invites: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          label: string | null
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          label?: string | null
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
       admin_logs: {
         Row: {
           action: string
@@ -1238,6 +1271,7 @@ export type Database = {
           id: string
           interests: string[]
           is_disabled: boolean
+          is_ta: boolean
           level: number | null
           phone: string | null
           points: number
@@ -1264,6 +1298,7 @@ export type Database = {
           id?: string
           interests?: string[]
           is_disabled?: boolean
+          is_ta?: boolean
           level?: number | null
           phone?: string | null
           points?: number
@@ -1290,6 +1325,7 @@ export type Database = {
           id?: string
           interests?: string[]
           is_disabled?: boolean
+          is_ta?: boolean
           level?: number | null
           phone?: string | null
           points?: number
@@ -1697,6 +1733,7 @@ export type Database = {
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
       rebuild_statistics: { Args: never; Returns: string }
+      redeem_admin_invite: { Args: { p_token: string }; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

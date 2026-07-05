@@ -621,6 +621,7 @@ export default function AdminDashboard() {
             <Button asChild variant="outline" size="sm"><Link to="/admin/reports"><FileSpreadsheet className="me-2 h-4 w-4" /> {t('admin.reports')}</Link></Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/moderation"><Flag className="me-2 h-4 w-4" /> {language === 'ar' ? 'الإشراف' : 'Moderation'}</Link></Button>
             <Button asChild variant="outline" size="sm"><Link to="/admin/logs"><ScrollText className="me-2 h-4 w-4" /> {t('admin.logs')}</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link to="/admin/invites"><Shield className="me-2 h-4 w-4" /> {language === 'ar' ? 'دعوات الإدارة' : 'Admin invites'}</Link></Button>
             <Button variant="outline" size="sm" onClick={() => navigate(profile?.role === 'doctor' ? '/doctor' : '/student')}>
               <ArrowLeft className="me-2 h-4 w-4" /> {t('admin.backToApp')}
             </Button>
