@@ -40,7 +40,8 @@ export default function AdminInviteRedeem() {
       if (res?.ok) {
         setStatus('ok');
         toast.success(t('تم منحك صلاحية الإدارة', 'Admin access granted'));
-        setTimeout(() => navigate('/admin'), 1200);
+        // Full reload so AuthContext picks up the new admin role
+        setTimeout(() => { window.location.href = '/admin'; }, 1200);
       } else {
         setStatus('err');
         const map: Record<string, string> = {
