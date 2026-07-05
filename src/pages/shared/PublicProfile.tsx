@@ -77,9 +77,19 @@ export default function PublicProfilePage() {
           .maybeSingle();
         setIsFollowing(!!f);
       }
+      // Unread messages from this user → shown on the Message button
+      if (me?.id && prof?.id && me.id !== prof.id) {
+        const { count } = await supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('sender_id', prof.id)
+          .eq('receiver_id', me.id)
+          .eq('read', false);
+        setUnread(count || 0);
+      }
       setLoading(false);
     })();
-  }, [userId, me?.user_id]);
+  }, [userId, me?.user_id, me?.id]);
 
   const toggleFollow = async () => {
     if (!me?.user_id || !userId || followBusy) return;
