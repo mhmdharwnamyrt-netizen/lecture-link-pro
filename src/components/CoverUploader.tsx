@@ -30,6 +30,8 @@ export default function CoverUploader({ className = '' }: Props) {
   const coverValue = (profile as any)?.cover_url as string | undefined;
   const parsed = parseCoverValue(coverValue);
   const [signed, setSigned] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(
@@ -39,10 +41,20 @@ export default function CoverUploader({ className = '' }: Props) {
 
   useEffect(() => {
     let alive = true;
+    setLoadError(false);
     if (parsed?.kind === 'path') {
-      createSignedUrl('face-photos', parsed.path, 3600).then(u => { if (alive) setSigned(u); });
+      setResolving(true);
+      createSignedUrl('face-photos', parsed.path, 3600)
+        .then(u => {
+          if (!alive) return;
+          if (!u) { setSigned(null); setLoadError(true); }
+          else setSigned(u);
+        })
+        .catch(() => { if (alive) setLoadError(true); })
+        .finally(() => { if (alive) setResolving(false); });
     } else {
       setSigned(null);
+      setResolving(false);
     }
     return () => { alive = false; };
   }, [coverValue]);
@@ -101,6 +113,19 @@ export default function CoverUploader({ className = '' }: Props) {
     <>
       <div className={`relative w-full h-full ${className}`} style={heroStyle}>
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+        {resolving && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/25 backdrop-blur-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-white" />
+            <span className="text-xs font-medium text-white">
+              {t('يتم تحميل الغلاف…', 'Loading cover…')}
+            </span>
+          </div>
+        )}
+        {loadError && !resolving && (
+          <div className="absolute inset-x-3 bottom-3 rounded-full bg-destructive/85 px-3 py-1 text-center text-[11px] font-medium text-destructive-foreground backdrop-blur">
+            {t('تعذّر تحميل صورة الغلاف — جرّب إعادة الرفع', 'Cover failed to load — try re-uploading')}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setOpen(true)}

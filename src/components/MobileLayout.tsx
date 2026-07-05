@@ -1,69 +1,81 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar, MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import {
+  Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar,
+  MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users, MoreHorizontal,
+  Briefcase, X,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface MobileLayoutProps {
   children: ReactNode;
   role: 'doctor' | 'student';
 }
 
+type NavItem = { path: string; icon: any; label: string };
+
 export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const location = useLocation();
   const { t, isRTL, language } = useLanguage();
   const { profile, isAdmin } = useAuth();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isAr = language === 'ar';
 
-  const doctorNav = [
-    { path: '/doctor', icon: Home, label: t('nav.home') },
-    { path: '/doctor/lectures', icon: BookOpen, label: t('nav.lectures') },
-    { path: '/doctor/schedule-parser', icon: Bot, label: t('nav.schedule') },
-    { path: '/doctor/analytics', icon: BarChart3, label: t('nav.analytics') },
-    { path: '/doctor/profile', icon: User, label: t('nav.profile') },
+  // 4 primary + a persistent "More" button (5 slots total)
+  const doctorPrimary: NavItem[] = [
+    { path: '/doctor',                 icon: Home,     label: t('nav.home') },
+    { path: '/doctor/lectures',        icon: BookOpen, label: t('nav.lectures') },
+    { path: '/doctor/schedule-parser', icon: Bot,      label: t('nav.schedule') },
+    { path: '/doctor/profile',         icon: User,     label: t('nav.profile') },
   ];
 
-  const studentNav = [
-    { path: '/student', icon: Home, label: t('nav.home') },
-    { path: '/student/lectures', icon: BookOpen, label: t('nav.lectures') },
-    { path: '/student/schedule-ai', icon: Bot, label: t('nav.mySchedule') },
-    { path: '/student/notifications', icon: Bell, label: t('nav.alerts') },
-    { path: '/student/profile', icon: User, label: t('nav.profile') },
+  const studentPrimary: NavItem[] = [
+    { path: '/student',               icon: Home,     label: t('nav.home') },
+    { path: '/student/lectures',      icon: BookOpen, label: t('nav.lectures') },
+    { path: '/student/notifications', icon: Bell,     label: t('nav.alerts') },
+    { path: '/student/profile',       icon: User,     label: t('nav.profile') },
   ];
 
-  const navItems = role === 'doctor' ? doctorNav : studentNav;
+  const primary = role === 'doctor' ? doctorPrimary : studentPrimary;
 
-  const doctorSidebarExtra = [
+  // Everything else lives inside the More drawer
+  const doctorExtra: NavItem[] = [
+    { path: '/doctor/analytics',     icon: BarChart3,     label: t('nav.analytics') },
     { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
-    { path: '/doctor/notifications', icon: Bell, label: t('nav.alerts') },
-    { path: '/doctor/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
-    { path: '/doctor/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
-    { path: '/doctor/community', icon: Users, label: language === 'ar' ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/doctor/notifications', icon: Bell,          label: t('nav.alerts') },
+    { path: '/doctor/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages' },
+    { path: '/doctor/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
   ];
 
-  const studentSidebarExtra = [
-    { path: '/student/calendar', icon: Calendar, label: t('nav.calendar') },
-    { path: '/student/offline-queue', icon: CloudOff, label: language === 'ar' ? 'قائمة الانتظار' : 'Offline Queue' },
-    { path: '/student/messages', icon: MessageCircle, label: language === 'ar' ? 'الرسائل' : 'Messages' },
-    { path: '/student/office-hours', icon: Clock, label: language === 'ar' ? 'الساعات المكتبية' : 'Office Hours' },
-    { path: '/student/community', icon: Users, label: language === 'ar' ? 'الملتقى الطلابي' : 'Community' },
+  const studentExtra: NavItem[] = [
+    { path: '/student/schedule-ai',   icon: Bot,           label: t('nav.mySchedule') },
+    { path: '/student/calendar',      icon: Calendar,      label: t('nav.calendar') },
+    { path: '/student/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages' },
+    { path: '/student/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
+    { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue' },
   ];
 
-  const sidebarExtra = role === 'doctor' ? [...doctorSidebarExtra] : [...studentSidebarExtra];
-  sidebarExtra.push({ path: '/leaderboard', icon: Trophy, label: language === 'ar' ? 'لوحة الصدارة' : 'Leaderboard' });
+  const extras: NavItem[] = [
+    ...(role === 'doctor' ? doctorExtra : studentExtra),
+    { path: '/leaderboard', icon: Trophy, label: isAr ? 'لوحة الصدارة' : 'Leaderboard' },
+  ];
   if (isAdmin) {
-    sidebarExtra.push({ path: '/admin', icon: Shield, label: language === 'ar' ? 'لوحة الإدارة' : 'Admin Dashboard' });
+    extras.push({ path: '/admin', icon: Shield, label: isAr ? 'لوحة الإدارة' : 'Admin Dashboard' });
   }
 
-  // Determine display name for header
-  const displayName = profile?.full_name || '';
-  const subtitle = role === 'doctor'
-    ? (profile?.academic_title || 'Dr.')
-    : (profile?.student_id ? `${t('common.id')}: ${profile.student_id}` : '');
+  // Desktop sidebar shows every route in one column
+  const sidebarAll = [...primary, ...extras];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <main className={`flex-1 pb-20 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
+      <main className={`flex-1 pb-24 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
         {children}
       </main>
 
@@ -73,50 +85,144 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
           type="button"
           onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
           aria-label="Open search"
-          className={`fixed bottom-24 md:bottom-6 ${isRTL ? 'left-4' : 'right-4'} z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-bloom hover:scale-105 transition-transform`}
+          className={`fixed bottom-28 md:bottom-6 ${isRTL ? 'left-4' : 'right-4'} z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-bloom hover:scale-105 transition-transform`}
         >
           <Search className="h-5 w-5" />
         </button>
       )}
 
-
-
-
-      {/* Mobile Bottom Navigation - Curved / Liquid */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 safe-bottom md:hidden">
-        <div className="relative mx-auto max-w-md">
-          {/* Curved svg backdrop */}
-          <svg viewBox="0 0 400 80" className="absolute -top-px left-0 right-0 w-full h-20 drop-shadow-[0_-4px_12px_rgba(0,0,0,0.08)]" preserveAspectRatio="none">
-            <path d="M0 20 L0 80 L400 80 L400 20 Q200 60 0 20 Z" fill="hsl(var(--card))" />
-          </svg>
-          <div className="relative flex items-end justify-around px-2 pb-2 pt-3 h-20">
-            {navItems.map(item => {
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="relative flex flex-col items-center gap-0.5 px-3 py-1 flex-1"
+      {/* ============ Mobile bottom navigation — floating pill ============ */}
+      <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 pt-2 safe-bottom md:hidden pointer-events-none">
+        <div className="mx-auto flex max-w-md items-stretch justify-between gap-1 rounded-[28px] border border-border/60 bg-card/95 p-1.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] backdrop-blur-xl pointer-events-auto">
+          {primary.map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                aria-label={item.label}
+                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2"
+              >
+                {active && (
+                  <motion.span
+                    layoutId="mobileNavActive"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-0 rounded-2xl bg-primary/12"
+                  />
+                )}
+                <item.icon
+                  className={`relative h-[22px] w-[22px] transition-colors ${
+                    active ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                />
+                <span
+                  className={`relative text-[10px] font-medium leading-tight transition-colors ${
+                    active ? 'text-primary' : 'text-muted-foreground'
+                  }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="navBubble"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                      className="absolute -top-5 h-11 w-11 rounded-full bg-primary shadow-bloom flex items-center justify-center"
-                    >
-                      <item.icon className="h-5 w-5 text-primary-foreground" />
-                    </motion.div>
-                  )}
-                  {!isActive && <item.icon className="h-5 w-5 text-muted-foreground" />}
-                  <span className={`text-[10px] font-medium mt-0.5 ${isActive ? 'text-primary mt-6' : 'text-muted-foreground'}`}>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          {/* More trigger */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-label={isAr ? 'المزيد' : 'More'}
+            className="relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2"
+          >
+            {moreOpen && (
+              <span className="absolute inset-0 rounded-2xl bg-primary/12" />
+            )}
+            <MoreHorizontal
+              className={`relative h-[22px] w-[22px] transition-colors ${
+                moreOpen ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            />
+            <span
+              className={`relative text-[10px] font-medium leading-tight transition-colors ${
+                moreOpen ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              {isAr ? 'المزيد' : 'More'}
+            </span>
+          </button>
         </div>
       </nav>
 
-      {/* Desktop Sidebar */}
+      {/* ============ More drawer (mobile) ============ */}
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl border-0 bg-card/95 p-0 backdrop-blur-xl max-h-[85vh] md:hidden"
+        >
+          {/* Grabber */}
+          <div className="flex justify-center pt-3">
+            <div className="h-1.5 w-12 rounded-full bg-muted-foreground/25" />
+          </div>
+
+          <SheetHeader className="px-5 pb-3 pt-4 text-start">
+            <SheetTitle className="flex items-center justify-between">
+              <span className="text-base font-semibold">
+                {isAr ? 'المزيد من الأقسام' : 'More sections'}
+              </span>
+              <button
+                onClick={() => setMoreOpen(false)}
+                aria-label="Close"
+                className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </SheetTitle>
+            {profile?.full_name && (
+              <p className="text-xs text-muted-foreground">{profile.full_name}</p>
+            )}
+          </SheetHeader>
+
+          <div className="px-4 pb-6 pt-1">
+            <div className="grid grid-cols-3 gap-2.5">
+              <AnimatePresence>
+                {extras.map((item, i) => {
+                  const active = location.pathname === item.path;
+                  return (
+                    <motion.div
+                      key={item.path}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.025 }}
+                    >
+                      <Link
+                        to={item.path}
+                        onClick={() => setMoreOpen(false)}
+                        className={`flex h-24 flex-col items-center justify-center gap-2 rounded-2xl border p-2 text-center transition ${
+                          active
+                            ? 'border-primary/40 bg-primary/10'
+                            : 'border-border/60 bg-background hover:bg-muted/60'
+                        }`}
+                      >
+                        <span
+                          className={`grid h-11 w-11 place-items-center rounded-xl ${
+                            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                          }`}
+                        >
+                          <item.icon className="h-5 w-5" />
+                        </span>
+                        <span className="text-[11px] font-medium leading-tight text-foreground line-clamp-2">
+                          {item.label}
+                        </span>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ============ Desktop sidebar ============ */}
       <aside
         className={`fixed top-0 hidden h-full w-64 border-border bg-card p-4 md:block ${
           isRTL ? 'right-0 border-l' : 'left-0 border-r'
@@ -133,23 +239,8 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
             </p>
           </div>
         </div>
-        <div className="space-y-1">
-          {navItems.map(item => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-          {sidebarExtra.map(item => {
+        <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-6rem)] pr-1">
+          {sidebarAll.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link

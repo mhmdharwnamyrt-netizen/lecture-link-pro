@@ -19,16 +19,25 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [displaySrc, setDisplaySrc] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const avatarPath = (profile as any)?.avatar_url as string | undefined;
 
   // Resolve signed URL for private-bucket avatar
   useEffect(() => {
     let mounted = true;
-    if (!avatarPath) { setDisplaySrc(null); return; }
-    createSignedUrl('face-photos', avatarPath, 60 * 60 * 24).then((url) => {
-      if (mounted) setDisplaySrc(url);
-    });
+    setLoadError(false);
+    if (!avatarPath) { setDisplaySrc(null); setResolving(false); return; }
+    setResolving(true);
+    createSignedUrl('face-photos', avatarPath, 60 * 60 * 24)
+      .then((url) => {
+        if (!mounted) return;
+        if (!url) { setDisplaySrc(null); setLoadError(true); }
+        else setDisplaySrc(url);
+      })
+      .catch(() => { if (mounted) setLoadError(true); })
+      .finally(() => { if (mounted) setResolving(false); });
     return () => { mounted = false; };
   }, [avatarPath]);
 
@@ -75,15 +84,34 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
         style={{ width: size, height: size }}
       >
         {displaySrc ? (
-          <img src={displaySrc} alt="" className="h-full w-full object-cover" />
+          <img
+            src={displaySrc}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={() => { setDisplaySrc(null); setLoadError(true); }}
+          />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
-            <Icon className="h-1/2 w-1/2 text-primary" />
+          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
+            {resolving ? (
+              <Loader2 className="h-1/3 w-1/3 animate-spin text-primary/70" />
+            ) : loadError ? (
+              <>
+                <Icon className="h-1/3 w-1/3 text-destructive/70" />
+                <span className="mt-1 text-[9px] font-medium text-destructive">
+                  {language === 'ar' ? 'تعذّر تحميل الصورة' : 'Failed to load'}
+                </span>
+              </>
+            ) : (
+              <Icon className="h-1/2 w-1/2 text-primary" />
+            )}
           </div>
         )}
         {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/45">
             <Loader2 className="h-6 w-6 animate-spin text-white" />
+            <span className="text-[10px] font-medium text-white">
+              {language === 'ar' ? 'جاري الرفع…' : 'Uploading…'}
+            </span>
           </div>
         )}
         {showButton && (

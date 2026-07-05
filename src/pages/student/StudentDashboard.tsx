@@ -18,6 +18,7 @@ import { requestNotificationPermission, startLectureReminders, stopLectureRemind
 import DashboardHero from '@/components/DashboardHero';
 import AttendanceSuccess from '@/components/AttendanceSuccess';
 import { celebrate } from '@/lib/confetti';
+import { sortTrainings, filterTrainings } from '@/lib/trainings';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
@@ -495,21 +496,9 @@ export default function StudentDashboard() {
         {/* Trainings preview — filter + sorted cards with deadline & apply CTA */}
         {trainings.length > 0 && (() => {
           const isRTL = language === 'ar';
-          const filtered = trainings.filter(tr => trainingFilter === 'all' || tr.type === trainingFilter);
-          // Sort: soonest upcoming deadlines first, then no-deadline, then already passed
+          const filtered = filterTrainings(trainings, trainingFilter);
+          const sorted = sortTrainings(filtered);
           const now = Date.now();
-          const sorted = [...filtered].sort((a, b) => {
-            const da = a.deadline ? new Date(a.deadline).getTime() : null;
-            const db = b.deadline ? new Date(b.deadline).getTime() : null;
-            const aUp = da !== null && da >= now;
-            const bUp = db !== null && db >= now;
-            if (aUp && bUp) return da! - db!;
-            if (aUp) return -1;
-            if (bUp) return 1;
-            if (da === null && db === null) return 0;
-            if (da === null) return -1;
-            return 1;
-          });
           const visible = activeLectures.length === 0 ? sorted.slice(0, 6) : sorted.slice(0, 3);
           const filters: Array<{ k: 'all' | 'university' | 'company'; label: string; Icon: any }> = [
             { k: 'all', label: isRTL ? 'الكل' : 'All', Icon: Filter },
