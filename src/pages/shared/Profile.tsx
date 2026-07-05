@@ -15,58 +15,12 @@ import ProfileSectionCard from '@/components/profile/ProfileSectionCard';
 import { LogOut, Shield, Globe, Camera, Sun, Moon, Monitor, Sparkles, ExternalLink, Wrench, Heart, Music, Star } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
-  const { profile, signOut, refreshProfile, user } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [hasFace, setHasFace] = useState(false);
   const [stats, setStats] = useState({ attendance: 0 });
-  const [editOpen, setEditOpen] = useState(false);
-  const [bio, setBio] = useState('');
-  const [skills, setSkills] = useState<string[]>([]);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [hobbies, setHobbies] = useState<string[]>([]);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState('');
-  const [interestInput, setInterestInput] = useState('');
-  const [hobbyInput, setHobbyInput] = useState('');
-  const [favoriteInput, setFavoriteInput] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const p: any = profile;
-    if (!p) return;
-    setBio(p.bio || '');
-    setSkills(Array.isArray(p.skills) ? p.skills : []);
-    setInterests(Array.isArray(p.interests) ? p.interests : []);
-    setHobbies(Array.isArray(p.hobbies) ? p.hobbies : []);
-    setFavorites(Array.isArray(p.favorites) ? p.favorites : []);
-  }, [profile]);
-
-  const addTag = (list: string[], setter: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
-    const v = input.trim();
-    if (!v || list.includes(v) || list.length >= 15) return;
-    setter([...list, v]);
-    setInput('');
-  };
-
-  const saveProfileMeta = async () => {
-    if (!profile) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ bio: bio.trim() || null, skills, interests, hobbies, favorites } as any)
-      .eq('id', profile.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: language === 'ar' ? 'فشل الحفظ' : 'Save failed', description: error.message, variant: 'destructive' });
-      return;
-    }
-    await refreshProfile();
-    setEditOpen(false);
-    toast({ title: language === 'ar' ? 'تم التحديث' : 'Profile updated' });
-  };
 
   useEffect(() => {
     if (profile && role === 'student') {
