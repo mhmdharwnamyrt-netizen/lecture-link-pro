@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
+import { sortTrainings, filterTrainings, type TrainingFilter } from '@/lib/trainings';
 
 type Training = {
   id: string; title: string; description: string | null;
