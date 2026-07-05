@@ -5,7 +5,7 @@ import {
   MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users, MoreHorizontal,
   Briefcase, X,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
