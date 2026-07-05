@@ -18,6 +18,7 @@ import { requestNotificationPermission, startLectureReminders, stopLectureRemind
 import DashboardHero from '@/components/DashboardHero';
 import AttendanceSuccess from '@/components/AttendanceSuccess';
 import { celebrate } from '@/lib/confetti';
+import { sortTrainings, filterTrainings } from '@/lib/trainings';
 
 export default function StudentDashboard() {
   const { profile, loading, user } = useAuth();
