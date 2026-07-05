@@ -609,7 +609,7 @@ export default function Community({ role }: { role: Role }) {
         <div className="flex gap-2">
           <Link to={`/u/${c.author_id}`} className="shrink-0">
             <Avatar className="h-8 w-8 transition hover:ring-2 hover:ring-primary/40">
-              <AvatarImage src={c.author?.avatar_url || undefined} />
+              <SmartAvatarImage src={c.author?.avatar_url} />
               <AvatarFallback>{(c.author?.full_name || '?').slice(0, 1)}</AvatarFallback>
             </Avatar>
           </Link>
@@ -790,7 +790,7 @@ export default function Community({ role }: { role: Role }) {
                         {idx === 0 ? <Crown className="h-4 w-4 text-amber-500" /> : idx === 1 ? <Medal className="h-4 w-4 text-slate-400" /> : idx === 2 ? <Medal className="h-4 w-4 text-orange-500" /> : idx + 1}
                       </div>
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={row.avatar_url || undefined} />
+                        <SmartAvatarImage src={row.avatar_url} />
                         <AvatarFallback>{avatarLetter(row.full_name)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -829,7 +829,7 @@ export default function Community({ role }: { role: Role }) {
           </div>
           <div className="flex gap-2">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={profile?.avatar_url || undefined} />
+              <SmartAvatarImage src={profile?.avatar_url} />
               <AvatarFallback>{avatarLetter(displayName(profile, user))}</AvatarFallback>
             </Avatar>
             <Textarea
@@ -922,7 +922,7 @@ export default function Community({ role }: { role: Role }) {
                     <div className="flex gap-3">
                       <Link to={`/u/${p.author_id}`} className="shrink-0">
                         <Avatar className="h-10 w-10 transition hover:ring-2 hover:ring-primary/40">
-                          <AvatarImage src={p.author?.avatar_url || undefined} />
+                          <SmartAvatarImage src={p.author?.avatar_url} />
                           <AvatarFallback>{avatarLetter(displayName(p.author, p.author_id === user?.id ? user : undefined))}</AvatarFallback>
                         </Avatar>
                       </Link>
