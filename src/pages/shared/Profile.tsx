@@ -57,11 +57,14 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   return (
     <MobileLayout role={role}>
       <div className="px-4 pt-4 md:px-8">
-        {/* Hero Cover — themable, with picker */}
-        <div className="relative -mx-4 md:-mx-8 mb-16 h-40 overflow-hidden md:rounded-3xl md:h-48">
-          <CoverUploader />
+        {/* Hero Cover — outer wrapper is overflow-visible so the avatar + camera button aren't clipped.
+            Inner wrapper handles the rounded cover clipping. */}
+        <div className="relative -mx-4 md:-mx-8 mb-16">
+          <div className="relative h-40 overflow-hidden md:rounded-3xl md:h-48">
+            <CoverUploader />
+          </div>
 
-          {/* Avatar with progress ring + upload */}
+          {/* Avatar with progress ring + upload (sits BELOW the cover clip on purpose) */}
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
             <div className="relative h-28 w-28">
               {role === 'student' && (
@@ -96,53 +99,49 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
           {profile.student_id && <p className="text-sm tabular-nums text-muted-foreground">{t('common.id')}: {profile.student_id}</p>}
         </div>
 
-
-        {/* Quick actions: edit profile + view public profile */}
-        <div className="mb-3 flex gap-2">
-          <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setEditOpen(true)}>
-            <Pencil className="h-4 w-4 me-2" /> {language === 'ar' ? 'تعديل الملف' : 'Edit profile'}
-          </Button>
-          {user && (
-            <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => navigate(`/u/${user.id}`)}>
-              <ExternalLink className="h-4 w-4 me-2" /> {language === 'ar' ? 'عرض الملف العام' : 'View public'}
+        {/* Quick action: view public profile */}
+        {user && (
+          <div className="mb-4">
+            <Button variant="outline" className="w-full h-11 rounded-xl" onClick={() => navigate(`/u/${user.id}`)}>
+              <ExternalLink className="h-4 w-4 me-2" /> {language === 'ar' ? 'عرض الملف العام' : 'View public profile'}
             </Button>
-          )}
+          </div>
+        )}
+
+        {/* Independent optional profile sections — each is its own card, add only what you want */}
+        <div className="mb-4 space-y-2.5">
+          <ProfileSectionCard
+            field="bio" kind="text" icon={Sparkles}
+            labelAr="نبذة" labelEn="About"
+            placeholderAr="اكتب نبذة قصيرة عنك…" placeholderEn="Write a short bio…"
+            tint="from-violet-500/15 to-fuchsia-500/5"
+          />
+          <ProfileSectionCard
+            field="skills" kind="tags" icon={Wrench}
+            labelAr="المهارات" labelEn="Skills"
+            placeholderAr="أضف مهارة واضغط Enter" placeholderEn="Add a skill, press Enter"
+            tint="from-sky-500/15 to-blue-500/5"
+          />
+          <ProfileSectionCard
+            field="interests" kind="tags" icon={Heart}
+            labelAr="الاهتمامات" labelEn="Interests"
+            placeholderAr="أضف اهتمامًا واضغط Enter" placeholderEn="Add an interest, press Enter"
+            tint="from-rose-500/15 to-pink-500/5"
+          />
+          <ProfileSectionCard
+            field="hobbies" kind="tags" icon={Music}
+            labelAr="الهوايات" labelEn="Hobbies"
+            placeholderAr="أضف هواية واضغط Enter" placeholderEn="Add a hobby, press Enter"
+            tint="from-emerald-500/15 to-green-500/5"
+          />
+          <ProfileSectionCard
+            field="favorites" kind="tags" icon={Star}
+            labelAr="المفضلات" labelEn="Favorites"
+            placeholderAr="أضف عنصرًا مفضلاً واضغط Enter" placeholderEn="Add a favorite, press Enter"
+            tint="from-amber-500/15 to-yellow-500/5"
+          />
         </div>
 
-        {/* About / Skills / Interests / Hobbies / Favorites preview */}
-        {(() => {
-          const p: any = profile;
-          const anyItems = p.bio || (p.skills?.length ?? 0) || (p.interests?.length ?? 0) || (p.hobbies?.length ?? 0) || (p.favorites?.length ?? 0);
-          if (!anyItems) return null;
-          const sections = [
-            { key: 'skills', label: language === 'ar' ? 'المهارات' : 'Skills', items: p.skills, variant: 'secondary' as const },
-            { key: 'interests', label: language === 'ar' ? 'الاهتمامات' : 'Interests', items: p.interests, variant: 'outline' as const },
-            { key: 'hobbies', label: language === 'ar' ? 'الهوايات' : 'Hobbies', items: p.hobbies, variant: 'secondary' as const },
-            { key: 'favorites', label: language === 'ar' ? 'المفضلات' : 'Favorites', items: p.favorites, variant: 'outline' as const },
-          ];
-          return (
-            <div className="mb-3 rounded-2xl bg-card p-4 shadow-card space-y-3">
-              {p.bio && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" /> {language === 'ar' ? 'نبذة' : 'About'}
-                  </p>
-                  <p className="text-sm whitespace-pre-wrap">{p.bio}</p>
-                </div>
-              )}
-              {sections.map((sec) => (sec.items?.length ?? 0) > 0 ? (
-                <div key={sec.key}>
-                  <p className="text-xs text-muted-foreground mb-1.5">{sec.label}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sec.items.map((s: string, i: number) => (
-                      <Badge key={i} variant={sec.variant} className="rounded-full">{s}</Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null)}
-            </div>
-          );
-        })()}
 
         <div className="space-y-3">
           <div className="rounded-2xl bg-card p-4 shadow-card">
