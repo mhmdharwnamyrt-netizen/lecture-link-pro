@@ -213,9 +213,14 @@ export default function PublicProfilePage() {
                     <><UserPlus className="h-4 w-4 me-2" /> {t('متابعة', 'Follow')}</>
                   )}
                 </Button>
-                <Button onClick={startMessage} variant="outline" className="flex-1 h-11 rounded-xl">
+                <Button onClick={startMessage} variant="outline" className="relative flex-1 h-11 rounded-xl">
                   <MessageSquare className="h-4 w-4 me-2" />
                   {t('مراسلة', 'Message')}
+                  {unread > 0 && (
+                    <span className="absolute -top-1.5 -end-1.5 grid min-w-[20px] h-5 place-items-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground shadow ring-2 ring-background">
+                      {unread > 99 ? '99+' : unread}
+                    </span>
+                  )}
                 </Button>
               </>
             ) : (
