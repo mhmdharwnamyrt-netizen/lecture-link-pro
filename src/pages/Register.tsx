@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DOCTOR_SECRET_KEY, ACADEMIC_TITLES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
-import { GraduationCap, User, ArrowRight, ArrowLeft, Shield, Check, BookOpen, Plus, X } from 'lucide-react';
+import { GraduationCap, User, ArrowRight, ArrowLeft, Shield, Check, BookOpen, Plus, X, Users as UsersIcon } from 'lucide-react';
 
 interface Department {
   id: string;
@@ -20,7 +20,7 @@ interface Subject {
 }
 
 export default function RegisterPage() {
-  const [role, setRole] = useState<'doctor' | 'student' | null>(null);
+  const [role, setRole] = useState<'doctor' | 'student' | 'ta' | null>(null);
 
   return (
     <div className="flex min-h-screen flex-col bg-background safe-top safe-bottom">
@@ -35,8 +35,8 @@ export default function RegisterPage() {
         <AnimatePresence mode="wait">
           {!role ? (
             <RoleSelection key="role" onSelect={setRole} />
-          ) : role === 'doctor' ? (
-            <DoctorRegistration key="doctor" onBack={() => setRole(null)} />
+          ) : role === 'doctor' || role === 'ta' ? (
+            <DoctorRegistration key={role} onBack={() => setRole(null)} isTA={role === 'ta'} />
           ) : (
             <StudentRegistration key="student" onBack={() => setRole(null)} />
           )}
@@ -46,7 +46,7 @@ export default function RegisterPage() {
   );
 }
 
-function RoleSelection({ onSelect }: { onSelect: (role: 'doctor' | 'student') => void }) {
+function RoleSelection({ onSelect }: { onSelect: (role: 'doctor' | 'student' | 'ta') => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -66,11 +66,24 @@ function RoleSelection({ onSelect }: { onSelect: (role: 'doctor' | 'student') =>
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
             <GraduationCap className="h-7 w-7 text-primary" />
           </div>
-          <div className="text-left">
+          <div className="text-left rtl:text-right">
             <p className="font-semibold">Doctor / Instructor</p>
             <p className="text-sm text-muted-foreground">Manage lectures & attendance</p>
           </div>
-          <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+          <ArrowRight className="ml-auto rtl:mr-auto rtl:ml-0 h-5 w-5 text-muted-foreground" />
+        </button>
+        <button
+          onClick={() => onSelect('ta')}
+          className="flex items-center gap-4 rounded-2xl bg-card p-6 shadow-card transition-all hover:shadow-elevated active:scale-[0.98]"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-fuchsia-500/10">
+            <UsersIcon className="h-7 w-7 text-fuchsia-500" />
+          </div>
+          <div className="text-left rtl:text-right">
+            <p className="font-semibold">Teaching Assistant / معيد</p>
+            <p className="text-sm text-muted-foreground">Same permissions as a doctor</p>
+          </div>
+          <ArrowRight className="ml-auto rtl:mr-auto rtl:ml-0 h-5 w-5 text-muted-foreground" />
         </button>
         <button
           onClick={() => onSelect('student')}
@@ -79,18 +92,18 @@ function RoleSelection({ onSelect }: { onSelect: (role: 'doctor' | 'student') =>
           <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-accent/10">
             <User className="h-7 w-7 text-accent" />
           </div>
-          <div className="text-left">
+          <div className="text-left rtl:text-right">
             <p className="font-semibold">Student</p>
             <p className="text-sm text-muted-foreground">Register attendance & track points</p>
           </div>
-          <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground" />
+          <ArrowRight className="ml-auto rtl:mr-auto rtl:ml-0 h-5 w-5 text-muted-foreground" />
         </button>
       </div>
     </motion.div>
   );
 }
 
-function DoctorRegistration({ onBack }: { onBack: () => void }) {
+function DoctorRegistration({ onBack, isTA = false }: { onBack: () => void; isTA?: boolean }) {
   const [step, setStep] = useState(1);
   const [secretKey, setSecretKey] = useState('');
   const [fullName, setFullName] = useState('');
@@ -196,8 +209,9 @@ function DoctorRegistration({ onBack }: { onBack: () => void }) {
         full_name: fullName,
         phone,
         role: 'doctor',
-        academic_title: academicTitle,
-      }).select().single();
+        is_ta: isTA,
+        academic_title: isTA ? (academicTitle || 'Teaching Assistant') : academicTitle,
+      } as any).select().single();
       if (profileError) throw profileError;
 
       // Insert doctor departments
