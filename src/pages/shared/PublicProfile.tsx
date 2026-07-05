@@ -134,7 +134,7 @@ export default function PublicProfilePage() {
           {(() => {
             const cover = parseCoverValue(profile?.cover_url);
             if (cover?.kind === 'preset') {
-              return <div className="absolute inset-0" style={{ background: cover.preset.gradient }} />;
+              return <img src={cover.preset.image} alt="" className="h-full w-full object-cover" loading="lazy" />;
             }
             if (coverSrc) {
               return <img src={coverSrc} alt="" className="h-full w-full object-cover" />;

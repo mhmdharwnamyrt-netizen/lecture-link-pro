@@ -7,70 +7,20 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import IdentityVerification from '@/components/student/IdentityVerification';
 import InstallApp from '@/components/InstallApp';
 import AvatarUploader from '@/components/AvatarUploader';
 import CoverUploader from '@/components/CoverUploader';
-import { useToast } from '@/hooks/use-toast';
-import { LogOut, User, GraduationCap, Shield, Globe, Camera, Sun, Moon, Monitor, Pencil, Sparkles, X, ExternalLink } from 'lucide-react';
+import ProfileSectionCard from '@/components/profile/ProfileSectionCard';
+import { LogOut, Shield, Globe, Camera, Sun, Moon, Monitor, Sparkles, ExternalLink, Wrench, Heart, Music, Star } from 'lucide-react';
 
 export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
-  const { profile, signOut, refreshProfile, user } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [hasFace, setHasFace] = useState(false);
   const [stats, setStats] = useState({ attendance: 0 });
-  const [editOpen, setEditOpen] = useState(false);
-  const [bio, setBio] = useState('');
-  const [skills, setSkills] = useState<string[]>([]);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [hobbies, setHobbies] = useState<string[]>([]);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState('');
-  const [interestInput, setInterestInput] = useState('');
-  const [hobbyInput, setHobbyInput] = useState('');
-  const [favoriteInput, setFavoriteInput] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const p: any = profile;
-    if (!p) return;
-    setBio(p.bio || '');
-    setSkills(Array.isArray(p.skills) ? p.skills : []);
-    setInterests(Array.isArray(p.interests) ? p.interests : []);
-    setHobbies(Array.isArray(p.hobbies) ? p.hobbies : []);
-    setFavorites(Array.isArray(p.favorites) ? p.favorites : []);
-  }, [profile]);
-
-  const addTag = (list: string[], setter: (v: string[]) => void, input: string, setInput: (v: string) => void) => {
-    const v = input.trim();
-    if (!v || list.includes(v) || list.length >= 15) return;
-    setter([...list, v]);
-    setInput('');
-  };
-
-  const saveProfileMeta = async () => {
-    if (!profile) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ bio: bio.trim() || null, skills, interests, hobbies, favorites } as any)
-      .eq('id', profile.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: language === 'ar' ? 'فشل الحفظ' : 'Save failed', description: error.message, variant: 'destructive' });
-      return;
-    }
-    await refreshProfile();
-    setEditOpen(false);
-    toast({ title: language === 'ar' ? 'تم التحديث' : 'Profile updated' });
-  };
 
   useEffect(() => {
     if (profile && role === 'student') {
@@ -107,11 +57,14 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
   return (
     <MobileLayout role={role}>
       <div className="px-4 pt-4 md:px-8">
-        {/* Hero Cover — themable, with picker */}
-        <div className="relative -mx-4 md:-mx-8 mb-16 h-40 overflow-hidden md:rounded-3xl md:h-48">
-          <CoverUploader />
+        {/* Hero Cover — outer wrapper is overflow-visible so the avatar + camera button aren't clipped.
+            Inner wrapper handles the rounded cover clipping. */}
+        <div className="relative -mx-4 md:-mx-8 mb-16">
+          <div className="relative h-40 overflow-hidden md:rounded-3xl md:h-48">
+            <CoverUploader />
+          </div>
 
-          {/* Avatar with progress ring + upload */}
+          {/* Avatar with progress ring + upload (sits BELOW the cover clip on purpose) */}
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
             <div className="relative h-28 w-28">
               {role === 'student' && (
@@ -146,53 +99,49 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
           {profile.student_id && <p className="text-sm tabular-nums text-muted-foreground">{t('common.id')}: {profile.student_id}</p>}
         </div>
 
-
-        {/* Quick actions: edit profile + view public profile */}
-        <div className="mb-3 flex gap-2">
-          <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setEditOpen(true)}>
-            <Pencil className="h-4 w-4 me-2" /> {language === 'ar' ? 'تعديل الملف' : 'Edit profile'}
-          </Button>
-          {user && (
-            <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => navigate(`/u/${user.id}`)}>
-              <ExternalLink className="h-4 w-4 me-2" /> {language === 'ar' ? 'عرض الملف العام' : 'View public'}
+        {/* Quick action: view public profile */}
+        {user && (
+          <div className="mb-4">
+            <Button variant="outline" className="w-full h-11 rounded-xl" onClick={() => navigate(`/u/${user.id}`)}>
+              <ExternalLink className="h-4 w-4 me-2" /> {language === 'ar' ? 'عرض الملف العام' : 'View public profile'}
             </Button>
-          )}
+          </div>
+        )}
+
+        {/* Independent optional profile sections — each is its own card, add only what you want */}
+        <div className="mb-4 space-y-2.5">
+          <ProfileSectionCard
+            field="bio" kind="text" icon={Sparkles}
+            labelAr="نبذة" labelEn="About"
+            placeholderAr="اكتب نبذة قصيرة عنك…" placeholderEn="Write a short bio…"
+            tint="from-violet-500/15 to-fuchsia-500/5"
+          />
+          <ProfileSectionCard
+            field="skills" kind="tags" icon={Wrench}
+            labelAr="المهارات" labelEn="Skills"
+            placeholderAr="أضف مهارة واضغط Enter" placeholderEn="Add a skill, press Enter"
+            tint="from-sky-500/15 to-blue-500/5"
+          />
+          <ProfileSectionCard
+            field="interests" kind="tags" icon={Heart}
+            labelAr="الاهتمامات" labelEn="Interests"
+            placeholderAr="أضف اهتمامًا واضغط Enter" placeholderEn="Add an interest, press Enter"
+            tint="from-rose-500/15 to-pink-500/5"
+          />
+          <ProfileSectionCard
+            field="hobbies" kind="tags" icon={Music}
+            labelAr="الهوايات" labelEn="Hobbies"
+            placeholderAr="أضف هواية واضغط Enter" placeholderEn="Add a hobby, press Enter"
+            tint="from-emerald-500/15 to-green-500/5"
+          />
+          <ProfileSectionCard
+            field="favorites" kind="tags" icon={Star}
+            labelAr="المفضلات" labelEn="Favorites"
+            placeholderAr="أضف عنصرًا مفضلاً واضغط Enter" placeholderEn="Add a favorite, press Enter"
+            tint="from-amber-500/15 to-yellow-500/5"
+          />
         </div>
 
-        {/* About / Skills / Interests / Hobbies / Favorites preview */}
-        {(() => {
-          const p: any = profile;
-          const anyItems = p.bio || (p.skills?.length ?? 0) || (p.interests?.length ?? 0) || (p.hobbies?.length ?? 0) || (p.favorites?.length ?? 0);
-          if (!anyItems) return null;
-          const sections = [
-            { key: 'skills', label: language === 'ar' ? 'المهارات' : 'Skills', items: p.skills, variant: 'secondary' as const },
-            { key: 'interests', label: language === 'ar' ? 'الاهتمامات' : 'Interests', items: p.interests, variant: 'outline' as const },
-            { key: 'hobbies', label: language === 'ar' ? 'الهوايات' : 'Hobbies', items: p.hobbies, variant: 'secondary' as const },
-            { key: 'favorites', label: language === 'ar' ? 'المفضلات' : 'Favorites', items: p.favorites, variant: 'outline' as const },
-          ];
-          return (
-            <div className="mb-3 rounded-2xl bg-card p-4 shadow-card space-y-3">
-              {p.bio && (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" /> {language === 'ar' ? 'نبذة' : 'About'}
-                  </p>
-                  <p className="text-sm whitespace-pre-wrap">{p.bio}</p>
-                </div>
-              )}
-              {sections.map((sec) => (sec.items?.length ?? 0) > 0 ? (
-                <div key={sec.key}>
-                  <p className="text-xs text-muted-foreground mb-1.5">{sec.label}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sec.items.map((s: string, i: number) => (
-                      <Badge key={i} variant={sec.variant} className="rounded-full">{s}</Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : null)}
-            </div>
-          );
-        })()}
 
         <div className="space-y-3">
           <div className="rounded-2xl bg-card p-4 shadow-card">
@@ -298,98 +247,7 @@ export default function ProfilePage({ role }: { role: 'doctor' | 'student' }) {
           <LogOut className="me-2 h-5 w-5" /> {t('common.signOut')}
         </Button>
       </div>
-
-      {/* Edit Profile Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{language === 'ar' ? 'تعديل الملف الشخصي' : 'Edit profile'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">{language === 'ar' ? 'نبذة' : 'About'}</label>
-              <Textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value.slice(0, 500))}
-                placeholder={language === 'ar' ? 'اكتب نبذة قصيرة عنك...' : 'Write a short bio...'}
-                className="min-h-[90px]"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">{bio.length}/500</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">{language === 'ar' ? 'المهارات' : 'Skills'}</label>
-              <div className="flex gap-2">
-                <Input
-                  value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(skills, setSkills, skillInput, setSkillInput); } }}
-                  placeholder={language === 'ar' ? 'أضف مهارة واضغط Enter' : 'Add a skill, press Enter'}
-                />
-                <Button type="button" variant="outline" onClick={() => addTag(skills, setSkills, skillInput, setSkillInput)}>+</Button>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {skills.map((s, i) => (
-                  <Badge key={i} variant="secondary" className="rounded-full gap-1">
-                    {s}
-                    <button onClick={() => setSkills(skills.filter((_, j) => j !== i))}><X className="h-3 w-3" /></button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">{language === 'ar' ? 'الاهتمامات' : 'Interests'}</label>
-              <div className="flex gap-2">
-                <Input
-                  value={interestInput}
-                  onChange={(e) => setInterestInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(interests, setInterests, interestInput, setInterestInput); } }}
-                  placeholder={language === 'ar' ? 'أضف اهتمامًا واضغط Enter' : 'Add an interest, press Enter'}
-                />
-                <Button type="button" variant="outline" onClick={() => addTag(interests, setInterests, interestInput, setInterestInput)}>+</Button>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {interests.map((s, i) => (
-                  <Badge key={i} variant="outline" className="rounded-full gap-1">
-                    {s}
-                    <button onClick={() => setInterests(interests.filter((_, j) => j !== i))}><X className="h-3 w-3" /></button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            {[
-              { key: 'hobbies', label: language === 'ar' ? 'الهوايات' : 'Hobbies', placeholder: language === 'ar' ? 'أضف هواية واضغط Enter' : 'Add a hobby, press Enter', list: hobbies, setList: setHobbies, input: hobbyInput, setInput: setHobbyInput, variant: 'secondary' as const },
-              { key: 'favorites', label: language === 'ar' ? 'المفضلات' : 'Favorites', placeholder: language === 'ar' ? 'أضف عنصرًا مفضلاً واضغط Enter' : 'Add a favorite, press Enter', list: favorites, setList: setFavorites, input: favoriteInput, setInput: setFavoriteInput, variant: 'outline' as const },
-            ].map((f) => (
-              <div key={f.key}>
-                <label className="text-sm font-medium mb-1.5 block">{f.label}</label>
-                <div className="flex gap-2">
-                  <Input
-                    value={f.input}
-                    onChange={(e) => f.setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(f.list, f.setList, f.input, f.setInput); } }}
-                    placeholder={f.placeholder}
-                  />
-                  <Button type="button" variant="outline" onClick={() => addTag(f.list, f.setList, f.input, f.setInput)}>+</Button>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {f.list.map((s, i) => (
-                    <Badge key={i} variant={f.variant} className="rounded-full gap-1">
-                      {s}
-                      <button onClick={() => f.setList(f.list.filter((_, j) => j !== i))}><X className="h-3 w-3" /></button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>{language === 'ar' ? 'إلغاء' : 'Cancel'}</Button>
-            <Button onClick={saveProfileMeta} disabled={saving}>
-              {saving ? (language === 'ar' ? 'يحفظ…' : 'Saving…') : (language === 'ar' ? 'حفظ' : 'Save')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </MobileLayout>
   );
 }
+
