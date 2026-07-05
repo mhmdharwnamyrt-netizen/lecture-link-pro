@@ -1378,9 +1378,96 @@ export type Database = {
         }
         Relationships: []
       }
+      training_applications: {
+        Row: {
+          answers: Json
+          applicant_id: string
+          created_at: string
+          id: string
+          status: string
+          training_id: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          applicant_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          training_id: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          applicant_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          training_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_applications_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_form_fields: {
+        Row: {
+          created_at: string
+          field_key: string
+          field_type: string
+          id: string
+          label: string
+          label_ar: string | null
+          options: Json | null
+          order_index: number
+          required: boolean
+          training_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          field_type: string
+          id?: string
+          label: string
+          label_ar?: string | null
+          options?: Json | null
+          order_index?: number
+          required?: boolean
+          training_id: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          field_type?: string
+          id?: string
+          label?: string
+          label_ar?: string | null
+          options?: Json | null
+          order_index?: number
+          required?: boolean
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_form_fields_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainings: {
         Row: {
-          apply_url: string
+          application_mode: string
+          applications_count: number
+          apply_url: string | null
           company_name: string | null
           created_at: string
           created_by: string | null
@@ -1390,13 +1477,16 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           location: string | null
+          max_applicants: number | null
           tags: string[] | null
           title: string
           type: string
           updated_at: string
         }
         Insert: {
-          apply_url: string
+          application_mode?: string
+          applications_count?: number
+          apply_url?: string | null
           company_name?: string | null
           created_at?: string
           created_by?: string | null
@@ -1406,13 +1496,16 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           location?: string | null
+          max_applicants?: number | null
           tags?: string[] | null
           title: string
           type: string
           updated_at?: string
         }
         Update: {
-          apply_url?: string
+          application_mode?: string
+          applications_count?: number
+          apply_url?: string | null
           company_name?: string | null
           created_at?: string
           created_by?: string | null
@@ -1422,6 +1515,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           location?: string | null
+          max_applicants?: number | null
           tags?: string[] | null
           title?: string
           type?: string
