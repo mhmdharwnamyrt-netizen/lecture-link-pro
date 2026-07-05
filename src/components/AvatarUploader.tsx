@@ -97,12 +97,12 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
         className="relative overflow-hidden rounded-full bg-card shadow-elevated"
         style={{ width: size, height: size }}
       >
-        {displaySrc ? (
+        {previewSrc || displaySrc ? (
           <img
-            src={displaySrc}
+            src={previewSrc || displaySrc!}
             alt=""
             className="h-full w-full object-cover"
-            onError={() => { setDisplaySrc(null); setLoadError(true); }}
+            onError={() => { if (!previewSrc) { setDisplaySrc(null); setLoadError(true); } }}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
