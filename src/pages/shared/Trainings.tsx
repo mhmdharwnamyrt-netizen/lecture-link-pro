@@ -72,7 +72,7 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
     <MobileLayout role={role}>
       <div className="px-4 pt-4 md:px-8 pb-8">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Briefcase className="h-6 w-6 text-primary" />
               {t('التدريبات والفرص', 'Trainings & Opportunities')}
@@ -81,6 +81,10 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
               {t('فرص تدريب من الجامعة والشركات الشريكة.', 'Internships from the university and partner companies.')}
             </p>
           </div>
+          <Button onClick={() => navigate(`/${role}/trainings/new`)} className="rounded-full shrink-0">
+            <Plus className="h-4 w-4 me-1" />
+            {t('إضافة', 'Add')}
+          </Button>
         </div>
 
         {/* Search + Filters */}
