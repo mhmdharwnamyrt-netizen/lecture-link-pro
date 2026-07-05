@@ -8,8 +8,9 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
-  Briefcase, Building2, GraduationCap, ExternalLink, MapPin, CalendarDays, Search, Filter, Sparkles
+  Briefcase, Building2, GraduationCap, ExternalLink, MapPin, CalendarDays, Search, Filter, Sparkles, Plus, Users, Lock, Settings
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
