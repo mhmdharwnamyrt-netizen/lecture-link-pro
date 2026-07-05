@@ -20,9 +20,13 @@ type Training = {
   id: string; title: string; description: string | null;
   type: 'university' | 'company' | string;
   company_name: string | null; location: string | null;
-  apply_url: string; deadline: string | null;
+  apply_url: string | null; deadline: string | null;
   tags: string[] | null; image_url: string | null;
   is_active: boolean; created_at: string;
+  created_by?: string | null;
+  application_mode?: 'external' | 'internal';
+  max_applicants?: number | null;
+  applications_count?: number | null;
 };
 
 export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) {
