@@ -36,6 +36,7 @@ export default function StudentDashboard() {
   const [hasFaceTemplate, setHasFaceTemplate] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
   const [trainings, setTrainings] = useState<any[]>([]);
+  const [trainingFilter, setTrainingFilter] = useState<'all' | 'university' | 'company'>('all');
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
 
   // Face verification state
