@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentPosition, checkWithinUniversity } from '@/lib/constants';
 import { isLectureCurrentlyActive, isLectureToday } from '@/lib/lectureUtils';
-import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell, Briefcase, ExternalLink, Building2, GraduationCap, MessageCircle, Heart, ArrowRight, Sparkles } from 'lucide-react';
+import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell, Briefcase, ExternalLink, Building2, GraduationCap, MessageCircle, Heart, ArrowRight, Sparkles, CalendarDays, Filter } from 'lucide-react';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
 import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
