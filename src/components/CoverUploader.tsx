@@ -30,6 +30,8 @@ export default function CoverUploader({ className = '' }: Props) {
   const coverValue = (profile as any)?.cover_url as string | undefined;
   const parsed = parseCoverValue(coverValue);
   const [signed, setSigned] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(
@@ -39,10 +41,20 @@ export default function CoverUploader({ className = '' }: Props) {
 
   useEffect(() => {
     let alive = true;
+    setLoadError(false);
     if (parsed?.kind === 'path') {
-      createSignedUrl('face-photos', parsed.path, 3600).then(u => { if (alive) setSigned(u); });
+      setResolving(true);
+      createSignedUrl('face-photos', parsed.path, 3600)
+        .then(u => {
+          if (!alive) return;
+          if (!u) { setSigned(null); setLoadError(true); }
+          else setSigned(u);
+        })
+        .catch(() => { if (alive) setLoadError(true); })
+        .finally(() => { if (alive) setResolving(false); });
     } else {
       setSigned(null);
+      setResolving(false);
     }
     return () => { alive = false; };
   }, [coverValue]);
