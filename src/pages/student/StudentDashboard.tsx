@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentPosition, checkWithinUniversity } from '@/lib/constants';
 import { isLectureCurrentlyActive, isLectureToday } from '@/lib/lectureUtils';
-import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell, Briefcase, ExternalLink, Building2, GraduationCap, MessageCircle, Heart, ArrowRight, Sparkles } from 'lucide-react';
+import { MapPin, CheckCircle2, Award, BookOpen, Clock, AlertTriangle, Loader2, QrCode, Shield, Bell, Briefcase, ExternalLink, Building2, GraduationCap, MessageCircle, Heart, ArrowRight, Sparkles, CalendarDays, Filter } from 'lucide-react';
 import ExcuseDialog from '@/components/student/ExcuseDialog';
 import QRScanner from '@/components/student/QRScanner';
 import ExportButtons from '@/components/shared/ExportButtons';
@@ -36,6 +36,7 @@ export default function StudentDashboard() {
   const [hasFaceTemplate, setHasFaceTemplate] = useState(false);
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
   const [trainings, setTrainings] = useState<any[]>([]);
+  const [trainingFilter, setTrainingFilter] = useState<'all' | 'university' | 'company'>('all');
   const [feedPosts, setFeedPosts] = useState<any[]>([]);
 
   // Face verification state
@@ -187,10 +188,10 @@ export default function StudentDashboard() {
       });
     }
 
-    // Trainings preview
+    // Trainings preview — richer list for break-mode filtering
     const { data: trs } = await supabase
-      .from('trainings').select('id,title,type,company_name,apply_url,deadline,tags')
-      .eq('is_active', true).order('created_at', { ascending: false }).limit(3);
+      .from('trainings').select('id,title,type,company_name,apply_url,deadline,tags,location')
+      .eq('is_active', true).order('created_at', { ascending: false }).limit(12);
     setTrainings(trs || []);
 
     // Community feed preview (shown always but especially useful during quiet weeks)
@@ -491,38 +492,131 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Trainings preview */}
-        {trainings.length > 0 && (
-          <div className="mb-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Briefcase className="h-5 w-5 text-primary" />
-                {language === 'ar' ? 'تدريبات وفرص' : 'Trainings & opportunities'}
-              </h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/student/trainings')}>
-                {language === 'ar' ? 'الكل' : 'See all'} <ArrowRight className={`h-4 w-4 ms-1 ${language === 'ar' ? 'rotate-180' : ''}`} />
-              </Button>
+        {/* Trainings preview — filter + sorted cards with deadline & apply CTA */}
+        {trainings.length > 0 && (() => {
+          const isRTL = language === 'ar';
+          const filtered = trainings.filter(tr => trainingFilter === 'all' || tr.type === trainingFilter);
+          // Sort: soonest upcoming deadlines first, then no-deadline, then already passed
+          const now = Date.now();
+          const sorted = [...filtered].sort((a, b) => {
+            const da = a.deadline ? new Date(a.deadline).getTime() : null;
+            const db = b.deadline ? new Date(b.deadline).getTime() : null;
+            const aUp = da !== null && da >= now;
+            const bUp = db !== null && db >= now;
+            if (aUp && bUp) return da! - db!;
+            if (aUp) return -1;
+            if (bUp) return 1;
+            if (da === null && db === null) return 0;
+            if (da === null) return -1;
+            return 1;
+          });
+          const visible = activeLectures.length === 0 ? sorted.slice(0, 6) : sorted.slice(0, 3);
+          const filters: Array<{ k: 'all' | 'university' | 'company'; label: string; Icon: any }> = [
+            { k: 'all', label: isRTL ? 'الكل' : 'All', Icon: Filter },
+            { k: 'university', label: isRTL ? 'جامعية' : 'University', Icon: GraduationCap },
+            { k: 'company', label: isRTL ? 'شركات' : 'Companies', Icon: Building2 },
+          ];
+          return (
+            <div className="mb-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" />
+                  {isRTL ? 'تدريبات وفرص' : 'Trainings & opportunities'}
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/student/trainings')}>
+                  {isRTL ? 'الكل' : 'See all'} <ArrowRight className={`h-4 w-4 ms-1 ${isRTL ? 'rotate-180' : ''}`} />
+                </Button>
+              </div>
+
+              {/* Type filter — scrollable chip row on mobile */}
+              <div className="mb-3 -mx-4 md:mx-0 overflow-x-auto scrollbar-none">
+                <div className="flex gap-2 px-4 md:px-0">
+                  {filters.map(f => (
+                    <button
+                      key={f.k}
+                      onClick={() => setTrainingFilter(f.k)}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                        trainingFilter === f.k
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      <f.Icon className="h-3.5 w-3.5" />
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {visible.length === 0 ? (
+                <div className="rounded-2xl bg-card p-6 text-center text-sm text-muted-foreground shadow-card">
+                  {isRTL ? 'لا توجد فرص ضمن هذا التصنيف حالياً.' : 'No opportunities in this category yet.'}
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {visible.map((tr) => {
+                    const dl = tr.deadline ? new Date(tr.deadline) : null;
+                    const daysLeft = dl ? Math.ceil((dl.getTime() - now) / 86400000) : null;
+                    const urgent = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7;
+                    const expired = daysLeft !== null && daysLeft < 0;
+                    return (
+                      <motion.div
+                        key={tr.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-2xl bg-card p-3.5 shadow-card"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                            {tr.type === 'university'
+                              ? <><GraduationCap className="h-3 w-3" /> {isRTL ? 'جامعي' : 'University'}</>
+                              : <><Building2 className="h-3 w-3" /> {tr.company_name || (isRTL ? 'شركة' : 'Company')}</>}
+                          </div>
+                          {dl && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              expired ? 'bg-muted text-muted-foreground line-through'
+                                : urgent ? 'bg-destructive/10 text-destructive'
+                                : 'bg-success/10 text-success'
+                            }`}>
+                              <CalendarDays className="h-3 w-3" />
+                              {expired
+                                ? (isRTL ? 'انتهى' : 'Ended')
+                                : daysLeft === 0
+                                  ? (isRTL ? 'اليوم' : 'Today')
+                                  : (isRTL ? `متبقّي ${daysLeft} يوم` : `${daysLeft}d left`)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-semibold text-sm leading-snug line-clamp-2">{tr.title}</p>
+                        {(tr.tags?.length ?? 0) > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {tr.tags!.slice(0, 4).map((tg: string, i: number) => (
+                              <span key={i} className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+                                #{tg}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-2.5 flex items-center justify-between gap-2">
+                          <span className="truncate text-[10px] text-muted-foreground">
+                            {dl ? `${isRTL ? 'آخر موعد:' : 'Deadline:'} ${dl.toLocaleDateString(isRTL ? 'ar-EG' : 'en-GB')}` : (isRTL ? 'مفتوح' : 'Open')}
+                          </span>
+                          <Button asChild size="sm" disabled={expired} className="h-8 rounded-full text-xs">
+                            <a href={tr.apply_url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3 w-3 me-1" />
+                              {isRTL ? 'التقديم' : 'Apply'}
+                            </a>
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              {trainings.map((tr) => (
-                <a key={tr.id} href={tr.apply_url} target="_blank" rel="noopener noreferrer"
-                  className="block rounded-2xl bg-card p-3 shadow-card hover:shadow-elevated transition">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
-                        {tr.type === 'university'
-                          ? <><GraduationCap className="h-3 w-3" /> {language === 'ar' ? 'جامعي' : 'University'}</>
-                          : <><Building2 className="h-3 w-3" /> {tr.company_name || (language === 'ar' ? 'شركة' : 'Company')}</>}
-                      </div>
-                      <p className="font-medium text-sm truncate">{tr.title}</p>
-                    </div>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+          );
+        })()}
+
 
         {/* Community highlights (during quiet weeks / always) */}
         {activeLectures.length === 0 && feedPosts.length > 0 && (
