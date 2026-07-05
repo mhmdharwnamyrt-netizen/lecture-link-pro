@@ -128,20 +128,31 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
           })}
 
           {/* More trigger */}
-          <button
+          <motion.button
             type="button"
             onClick={() => setMoreOpen(true)}
             aria-label={isAr ? 'المزيد' : 'More'}
+            whileTap={{ scale: 0.9 }}
             className="relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2"
           >
             {moreOpen && (
-              <span className="absolute inset-0 rounded-2xl bg-primary/12" />
+              <motion.span
+                layoutId="mobileNavActive"
+                transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                className="absolute inset-0 rounded-2xl bg-primary/12"
+              />
             )}
-            <MoreHorizontal
-              className={`relative h-[22px] w-[22px] transition-colors ${
-                moreOpen ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            />
+            <motion.span
+              animate={{ rotate: moreOpen ? 90 : 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="relative"
+            >
+              <MoreHorizontal
+                className={`h-[22px] w-[22px] transition-colors ${
+                  moreOpen ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              />
+            </motion.span>
             <span
               className={`relative text-[10px] font-medium leading-tight transition-colors ${
                 moreOpen ? 'text-primary' : 'text-muted-foreground'
@@ -149,7 +160,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
             >
               {isAr ? 'المزيد' : 'More'}
             </span>
-          </button>
+          </motion.button>
         </div>
       </nav>
 
@@ -157,14 +168,20 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent
           side="bottom"
-          className="rounded-t-3xl border-0 bg-card/95 p-0 backdrop-blur-xl max-h-[85vh] md:hidden"
+          className="rounded-t-[32px] border-0 bg-gradient-to-b from-card via-card to-card/95 p-0 backdrop-blur-2xl max-h-[85vh] md:hidden shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.35)]"
         >
+          {/* Decorative aurora */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-40 overflow-hidden rounded-t-[32px]">
+            <div className="absolute -top-20 left-1/4 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
+            <div className="absolute -top-10 right-1/4 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
+          </div>
+
           {/* Grabber */}
-          <div className="flex justify-center pt-3">
+          <div className="relative flex justify-center pt-3">
             <div className="h-1.5 w-12 rounded-full bg-muted-foreground/25" />
           </div>
 
-          <SheetHeader className="px-5 pb-3 pt-4 text-start">
+          <SheetHeader className="relative px-5 pb-2 pt-4 text-start">
             <SheetTitle className="flex items-center justify-between">
               <span className="text-base font-semibold">
                 {isAr ? 'المزيد من الأقسام' : 'More sections'}
@@ -172,7 +189,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
               <button
                 onClick={() => setMoreOpen(false)}
                 aria-label="Close"
-                className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
+                className="grid h-8 w-8 place-items-center rounded-full bg-muted text-muted-foreground transition hover:bg-muted/80 hover:scale-110 active:scale-95"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -182,46 +199,58 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
             )}
           </SheetHeader>
 
-          <div className="px-4 pb-6 pt-1">
-            <div className="grid grid-cols-3 gap-2.5">
-              <AnimatePresence>
-                {extras.map((item, i) => {
-                  const active = location.pathname === item.path;
-                  return (
-                    <motion.div
-                      key={item.path}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.025 }}
+          <div className="relative px-4 pb-6 pt-3">
+            <motion.div
+              className="grid grid-cols-3 gap-2.5"
+              initial="hidden"
+              animate="show"
+              variants={{
+                hidden: {},
+                show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } },
+              }}
+            >
+              {extras.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <motion.div
+                    key={item.path}
+                    variants={{
+                      hidden: { opacity: 0, y: 16, scale: 0.9 },
+                      show: {
+                        opacity: 1, y: 0, scale: 1,
+                        transition: { type: 'spring', stiffness: 320, damping: 24 },
+                      },
+                    }}
+                    whileTap={{ scale: 0.94 }}
+                  >
+                    <Link
+                      to={item.path}
+                      onClick={() => setMoreOpen(false)}
+                      className={`group relative flex h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border p-2 text-center transition-all ${
+                        active
+                          ? 'border-primary/50 shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.4)]'
+                          : 'border-border/50 hover:border-border hover:shadow-lg'
+                      }`}
                     >
-                      <Link
-                        to={item.path}
-                        onClick={() => setMoreOpen(false)}
-                        className={`flex h-24 flex-col items-center justify-center gap-2 rounded-2xl border p-2 text-center transition ${
-                          active
-                            ? 'border-primary/40 bg-primary/10'
-                            : 'border-border/60 bg-background hover:bg-muted/60'
-                        }`}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-90 transition-opacity group-hover:opacity-100`} />
+                      <div className="absolute inset-0 bg-card/60 backdrop-blur-sm" />
+                      <span
+                        className={`relative grid h-11 w-11 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/40 transition-transform group-hover:scale-110 group-active:scale-95 ${item.iconTint}`}
                       >
-                        <span
-                          className={`grid h-11 w-11 place-items-center rounded-xl ${
-                            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
-                          }`}
-                        >
-                          <item.icon className="h-5 w-5" />
-                        </span>
-                        <span className="text-[11px] font-medium leading-tight text-foreground line-clamp-2">
-                          {item.label}
-                        </span>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
+                        <item.icon className="h-5 w-5" />
+                      </span>
+                      <span className="relative text-[11px] font-semibold leading-tight text-foreground line-clamp-2">
+                        {item.label}
+                      </span>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
           </div>
         </SheetContent>
       </Sheet>
+
 
       {/* ============ Desktop sidebar ============ */}
       <aside
