@@ -90,6 +90,10 @@ const App = () => (
                   <Route path="/doctor/office-hours" element={<Guarded><OfficeHoursPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/community" element={<Guarded><CommunityPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/trainings" element={<Guarded><TrainingsPage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/new" element={<Guarded><TrainingCreate role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/:id" element={<Guarded><TrainingDetail role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/:id/edit" element={<Guarded><TrainingCreate role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/:id/manage" element={<Guarded><TrainingManage role="doctor" /></Guarded>} />
 
                   {/* Student Routes */}
                   <Route path="/student" element={<Guarded><StudentDashboard /></Guarded>} />
