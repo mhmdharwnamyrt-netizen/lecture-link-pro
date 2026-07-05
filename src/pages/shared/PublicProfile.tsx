@@ -41,6 +41,7 @@ export default function PublicProfilePage() {
   const [coverSrc, setCoverSrc] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
