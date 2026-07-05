@@ -44,6 +44,9 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
 const TrainingsPage = lazy(() => import("./pages/shared/Trainings"));
+const TrainingCreate = lazy(() => import("./pages/shared/TrainingCreate"));
+const TrainingDetail = lazy(() => import("./pages/shared/TrainingDetail"));
+const TrainingManage = lazy(() => import("./pages/shared/TrainingManage"));
 
 const queryClient = new QueryClient();
 
@@ -87,6 +90,10 @@ const App = () => (
                   <Route path="/doctor/office-hours" element={<Guarded><OfficeHoursPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/community" element={<Guarded><CommunityPage role="doctor" /></Guarded>} />
                   <Route path="/doctor/trainings" element={<Guarded><TrainingsPage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/new" element={<Guarded><TrainingCreate role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/:id" element={<Guarded><TrainingDetail role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/:id/edit" element={<Guarded><TrainingCreate role="doctor" /></Guarded>} />
+                  <Route path="/doctor/trainings/:id/manage" element={<Guarded><TrainingManage role="doctor" /></Guarded>} />
 
                   {/* Student Routes */}
                   <Route path="/student" element={<Guarded><StudentDashboard /></Guarded>} />
@@ -101,6 +108,10 @@ const App = () => (
                   <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
                   <Route path="/student/community" element={<Guarded><CommunityPage role="student" /></Guarded>} />
                   <Route path="/student/trainings" element={<Guarded><TrainingsPage role="student" /></Guarded>} />
+                  <Route path="/student/trainings/new" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
+                  <Route path="/student/trainings/:id" element={<Guarded><TrainingDetail role="student" /></Guarded>} />
+                  <Route path="/student/trainings/:id/edit" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
+                  <Route path="/student/trainings/:id/manage" element={<Guarded><TrainingManage role="student" /></Guarded>} />
 
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />

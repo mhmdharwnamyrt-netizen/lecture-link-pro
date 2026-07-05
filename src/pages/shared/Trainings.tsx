@@ -8,8 +8,9 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import {
-  Briefcase, Building2, GraduationCap, ExternalLink, MapPin, CalendarDays, Search, Filter, Sparkles
+  Briefcase, Building2, GraduationCap, ExternalLink, MapPin, CalendarDays, Search, Filter, Sparkles, Plus, Users, Lock, Settings
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
@@ -19,9 +20,13 @@ type Training = {
   id: string; title: string; description: string | null;
   type: 'university' | 'company' | string;
   company_name: string | null; location: string | null;
-  apply_url: string; deadline: string | null;
+  apply_url: string | null; deadline: string | null;
   tags: string[] | null; image_url: string | null;
   is_active: boolean; created_at: string;
+  created_by?: string | null;
+  application_mode?: 'external' | 'internal';
+  max_applicants?: number | null;
+  applications_count?: number | null;
 };
 
 export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) {
@@ -67,7 +72,7 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
     <MobileLayout role={role}>
       <div className="px-4 pt-4 md:px-8 pb-8">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Briefcase className="h-6 w-6 text-primary" />
               {t('التدريبات والفرص', 'Trainings & Opportunities')}
@@ -76,6 +81,10 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
               {t('فرص تدريب من الجامعة والشركات الشريكة.', 'Internships from the university and partner companies.')}
             </p>
           </div>
+          <Button onClick={() => navigate(`/${role}/trainings/new`)} className="rounded-full shrink-0">
+            <Plus className="h-4 w-4 me-1" />
+            {t('إضافة', 'Add')}
+          </Button>
         </div>
 
         {/* Search + Filters */}
@@ -173,16 +182,32 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
                   </div>
                 )}
 
+                {it.max_applicants ? (
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {t('المتقدمون', 'Applicants')}</span>
+                      <span className="font-semibold text-foreground">{it.applications_count || 0} / {it.max_applicants}</span>
+                    </div>
+                    <Progress value={Math.min(100, ((it.applications_count || 0) / it.max_applicants) * 100)} className="h-1" />
+                  </div>
+                ) : null}
+
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">
                     {formatDistanceToNow(new Date(it.created_at), { addSuffix: true, locale })}
                   </span>
-                  <Button asChild size="sm" className="rounded-full">
-                    <a href={it.apply_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3.5 w-3.5 me-1.5" />
-                      {t('التقديم الآن', 'Apply now')}
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    {profile?.user_id && it.created_by === profile.user_id && (
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/${role}/trainings/${it.id}/manage`)} className="rounded-full">
+                        <Settings className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button size="sm" className="rounded-full" onClick={() => navigate(`/${role}/trainings/${it.id}`)}>
+                      {it.application_mode === 'internal'
+                        ? <>{t('التفاصيل والتقديم', 'View & apply')}</>
+                        : <><ExternalLink className="h-3.5 w-3.5 me-1.5" />{t('التقديم الآن', 'Apply now')}</>}
+                    </Button>
+                  </div>
                 </div>
               </motion.article>
             ))}

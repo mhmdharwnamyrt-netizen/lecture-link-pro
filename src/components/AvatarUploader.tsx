@@ -21,6 +21,7 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
   const [displaySrc, setDisplaySrc] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   const avatarPath = (profile as any)?.avatar_url as string | undefined;
 
@@ -41,33 +42,46 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
     return () => { mounted = false; };
   }, [avatarPath]);
 
+  // Cleanup preview blob URL
+  useEffect(() => () => { if (previewSrc) URL.revokeObjectURL(previewSrc); }, [previewSrc]);
+
   const handlePick = () => inputRef.current?.click();
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !profile || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: language === 'ar' ? 'الرجاء اختيار صورة' : 'Please pick an image', variant: 'destructive' });
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: language === 'ar' ? 'الصورة كبيرة جداً (الحد 5MB)' : 'Image too large (max 5MB)', variant: 'destructive' });
       return;
     }
+
+    // Instant local preview
+    const blobUrl = URL.createObjectURL(file);
+    if (previewSrc) URL.revokeObjectURL(previewSrc);
+    setPreviewSrc(blobUrl);
     setUploading(true);
     try {
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      // Path must start with auth.uid() per storage RLS policy
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from('face-photos')
         .upload(path, file, { cacheControl: '3600', upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      // Store the bare object path (not a public URL) — bucket is private
       const { error: updErr } = await supabase
         .from('profiles')
         .update({ avatar_url: path } as any)
         .eq('id', profile.id);
       if (updErr) throw updErr;
       await refreshProfile();
-      toast({ title: language === 'ar' ? 'تم تحديث الصورة' : 'Profile picture updated' });
+      toast({ title: language === 'ar' ? 'تم تحديث الصورة ✓' : 'Profile picture updated ✓' });
     } catch (err: any) {
+      // Revert preview on failure
+      URL.revokeObjectURL(blobUrl);
+      setPreviewSrc(null);
       toast({ title: language === 'ar' ? 'فشل الرفع' : 'Upload failed', description: err.message, variant: 'destructive' });
     } finally {
       setUploading(false);
@@ -83,12 +97,12 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
         className="relative overflow-hidden rounded-full bg-card shadow-elevated"
         style={{ width: size, height: size }}
       >
-        {displaySrc ? (
+        {previewSrc || displaySrc ? (
           <img
-            src={displaySrc}
+            src={previewSrc || displaySrc!}
             alt=""
             className="h-full w-full object-cover"
-            onError={() => { setDisplaySrc(null); setLoadError(true); }}
+            onError={() => { if (!previewSrc) { setDisplaySrc(null); setLoadError(true); } }}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
