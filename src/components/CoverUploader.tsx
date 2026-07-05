@@ -104,7 +104,7 @@ export default function CoverUploader({ className = '' }: Props) {
   // Background style for the visible hero
   const heroStyle: React.CSSProperties =
     parsed?.kind === 'preset'
-      ? { background: parsed.preset.gradient }
+      ? { backgroundImage: `url(${parsed.preset.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }
       : signed
         ? { backgroundImage: `url(${signed})`, backgroundSize: 'cover', backgroundPosition: 'center' }
         : { background: 'linear-gradient(135deg,#0a1f44 0%, hsl(var(--primary)) 55%, hsl(var(--accent)) 100%)' };
@@ -136,7 +136,7 @@ export default function CoverUploader({ className = '' }: Props) {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5 text-primary" />
@@ -146,7 +146,7 @@ export default function CoverUploader({ className = '' }: Props) {
 
           <div className="space-y-4">
             <p className="text-xs text-muted-foreground">
-              {t('اختر من الخلفيات الجاهزة أو ارفع صورة مخصّصة.', 'Pick from curated backgrounds or upload your own.')}
+              {t('اختر من ٢٠ خلفية طبيعية ومعالم سياحية أو ارفع صورة مخصّصة.', 'Pick from 20 nature & landmark photos or upload your own.')}
             </p>
 
             <div className="grid grid-cols-3 gap-2.5">
@@ -157,15 +157,15 @@ export default function CoverUploader({ className = '' }: Props) {
                     key={p.id}
                     type="button"
                     onClick={() => setSelectedPreset(p.id)}
-                    className={`relative aspect-[16/9] overflow-hidden rounded-xl ring-2 transition ${active ? 'ring-primary' : 'ring-transparent hover:ring-border'}`}
-                    style={{ background: p.gradient }}
+                    className={`group relative aspect-[16/10] overflow-hidden rounded-xl ring-2 transition ${active ? 'ring-primary' : 'ring-transparent hover:ring-border'}`}
                     aria-label={language === 'ar' ? p.labelAr : p.label}
                   >
-                    <span className="absolute bottom-1 start-1.5 rounded-md bg-black/40 px-1.5 py-0.5 text-[9px] font-medium text-white backdrop-blur">
+                    <img src={p.thumb} alt="" loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" />
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 py-1 text-[10px] font-medium text-white text-start">
                       {language === 'ar' ? p.labelAr : p.label}
                     </span>
                     {active && (
-                      <span className="absolute top-1 end-1 grid h-5 w-5 place-items-center rounded-full bg-primary text-primary-foreground">
+                      <span className="absolute top-1 end-1 grid h-5 w-5 place-items-center rounded-full bg-primary text-primary-foreground ring-2 ring-white">
                         <Check className="h-3 w-3" />
                       </span>
                     )}
@@ -173,6 +173,7 @@ export default function CoverUploader({ className = '' }: Props) {
                 );
               })}
             </div>
+
 
             <div className="flex flex-wrap items-center gap-2 border-t pt-3">
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
