@@ -17,6 +17,7 @@ interface Profile {
   disabled_at?: string | null;
   disabled_reason?: string | null;
   avatar_url?: string | null;
+  is_ta?: boolean;
 }
 
 interface AuthContextType {
