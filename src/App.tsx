@@ -44,6 +44,9 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminTrainings = lazy(() => import("./pages/admin/AdminTrainings"));
 const TrainingsPage = lazy(() => import("./pages/shared/Trainings"));
+const TrainingCreate = lazy(() => import("./pages/shared/TrainingCreate"));
+const TrainingDetail = lazy(() => import("./pages/shared/TrainingDetail"));
+const TrainingManage = lazy(() => import("./pages/shared/TrainingManage"));
 
 const queryClient = new QueryClient();
 
