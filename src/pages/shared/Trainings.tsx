@@ -182,16 +182,32 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
                   </div>
                 )}
 
+                {it.max_applicants ? (
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {t('المتقدمون', 'Applicants')}</span>
+                      <span className="font-semibold text-foreground">{it.applications_count || 0} / {it.max_applicants}</span>
+                    </div>
+                    <Progress value={Math.min(100, ((it.applications_count || 0) / it.max_applicants) * 100)} className="h-1" />
+                  </div>
+                ) : null}
+
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <span className="text-[10px] text-muted-foreground">
                     {formatDistanceToNow(new Date(it.created_at), { addSuffix: true, locale })}
                   </span>
-                  <Button asChild size="sm" className="rounded-full">
-                    <a href={it.apply_url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3.5 w-3.5 me-1.5" />
-                      {t('التقديم الآن', 'Apply now')}
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    {profile?.user_id && it.created_by === profile.user_id && (
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/${role}/trainings/${it.id}/manage`)} className="rounded-full">
+                        <Settings className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button size="sm" className="rounded-full" onClick={() => navigate(`/${role}/trainings/${it.id}`)}>
+                      {it.application_mode === 'internal'
+                        ? <>{t('التفاصيل والتقديم', 'View & apply')}</>
+                        : <><ExternalLink className="h-3.5 w-3.5 me-1.5" />{t('التقديم الآن', 'Apply now')}</>}
+                    </Button>
+                  </div>
                 </div>
               </motion.article>
             ))}
