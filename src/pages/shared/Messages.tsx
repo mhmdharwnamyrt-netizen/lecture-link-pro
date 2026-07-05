@@ -474,7 +474,17 @@ export default function MessagesPage({ role }: { role: 'doctor' | 'student' }) {
   return (
     <MobileLayout role={role}>
       <div className="px-4 pt-6 md:px-8">
-        <h1 className="mb-4 text-2xl font-bold">{language === 'ar' ? 'الرسائل' : 'Messages'}</h1>
+        <div className="mb-4 flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{language === 'ar' ? 'الرسائل' : 'Messages'}</h1>
+          {(() => {
+            const total = conversations.reduce((s: number, c: any) => s + (c.unread || 0), 0);
+            return total > 0 ? (
+              <span className="inline-flex min-w-[24px] h-6 items-center justify-center rounded-full bg-destructive px-2 text-xs font-bold text-destructive-foreground shadow">
+                {total > 99 ? '99+' : total}
+              </span>
+            ) : null;
+          })()}
+        </div>
 
         {/* Search */}
         <div className="relative mb-4">
