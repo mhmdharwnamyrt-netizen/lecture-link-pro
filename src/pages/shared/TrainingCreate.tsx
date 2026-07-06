@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import {
   ArrowLeft, ArrowRight, Save, Plus, Trash2, GripVertical, Link as LinkIcon,
-  ListChecks, Building2, GraduationCap, Sparkles
+  ListChecks, Building2, GraduationCap, Sparkles, Wand2, Loader2, Lock
 } from 'lucide-react';
 
 type FieldType = 'short_text' | 'long_text' | 'number' | 'email' | 'phone' | 'select' | 'checkbox' | 'file';
