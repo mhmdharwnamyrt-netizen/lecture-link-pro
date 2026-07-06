@@ -1396,6 +1396,77 @@ export type Database = {
           },
         ]
       }
+      stories: {
+        Row: {
+          author_id: string
+          background: string | null
+          created_at: string
+          duration_seconds: number
+          expires_at: string
+          id: string
+          media_mime: string | null
+          media_path: string | null
+          media_type: string
+          text_content: string | null
+          views_count: number
+        }
+        Insert: {
+          author_id: string
+          background?: string | null
+          created_at?: string
+          duration_seconds?: number
+          expires_at?: string
+          id?: string
+          media_mime?: string | null
+          media_path?: string | null
+          media_type: string
+          text_content?: string | null
+          views_count?: number
+        }
+        Update: {
+          author_id?: string
+          background?: string | null
+          created_at?: string
+          duration_seconds?: number
+          expires_at?: string
+          id?: string
+          media_mime?: string | null
+          media_path?: string | null
+          media_type?: string
+          text_content?: string | null
+          views_count?: number
+        }
+        Relationships: []
+      }
+      story_views: {
+        Row: {
+          id: string
+          story_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          story_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          story_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           created_at: string
