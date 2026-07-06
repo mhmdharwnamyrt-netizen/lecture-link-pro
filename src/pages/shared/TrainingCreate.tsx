@@ -321,7 +321,7 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
+              <div className={canInternalForm ? 'grid grid-cols-2 gap-2' : ''}>
                 <button
                   type="button"
                   onClick={() => setMode('external')}
@@ -333,17 +333,24 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
                   <span className="font-medium">{t('رابط خارجي', 'External link')}</span>
                   <span className="text-[10px] text-muted-foreground">{t('Google Form وغيره', 'Google Form etc.')}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('internal')}
-                  className={`flex flex-col items-center gap-1 rounded-2xl border p-4 text-sm transition ${
-                    mode === 'internal' ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'
-                  }`}
-                >
-                  <ListChecks className="h-5 w-5" />
-                  <span className="font-medium">{t('نموذج داخلي', 'Internal form')}</span>
-                  <span className="text-[10px] text-muted-foreground">{t('اصنع الحقول واستقبل الردود', 'Build fields, collect answers')}</span>
-                </button>
+                {canInternalForm ? (
+                  <button
+                    type="button"
+                    onClick={() => setMode('internal')}
+                    className={`flex flex-col items-center gap-1 rounded-2xl border p-4 text-sm transition ${
+                      mode === 'internal' ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <ListChecks className="h-5 w-5" />
+                    <span className="font-medium">{t('نموذج داخلي', 'Internal form')}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('اصنع الحقول واستقبل الردود', 'Build fields, collect answers')}</span>
+                  </button>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border border-dashed p-3 text-[11px] text-muted-foreground">
+                    <Lock className="h-3.5 w-3.5" />
+                    {t('النموذج الداخلي متاح للدكاترة والمعيدين فقط.', 'Internal form is available to doctors & TAs only.')}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border bg-card p-4 shadow-card space-y-4">
