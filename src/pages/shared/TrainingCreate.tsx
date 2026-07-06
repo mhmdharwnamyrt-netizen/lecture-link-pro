@@ -70,6 +70,38 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
   const [applyUrl, setApplyUrl] = useState('');
   const [maxApplicants, setMaxApplicants] = useState<string>('');
   const [fields, setFields] = useState<FieldDraft[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const canInternalForm = role === 'doctor'; // includes TA (registered as doctor)
+
+  // Enforce external mode for students on mount
+  useEffect(() => { if (!canInternalForm) setMode('external'); }, [canInternalForm]);
+
+  const runAiAutofill = async () => {
+    const src = (description || title).trim();
+    if (src.length < 15) {
+      toast.error(t('اكتب وصفًا أو ألصق نص الإعلان أولاً (15 حرفًا على الأقل)', 'Write/paste at least 15 characters first'));
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('training-extract', { body: { text: src } });
+      if (error) throw error;
+      if (data?.title && !title) setTitle(data.title);
+      if (data?.company_name && !companyName) setCompanyName(data.company_name);
+      if (data?.location && !location) setLocation(data.location);
+      if (data?.deadline && !deadline) setDeadline(data.deadline);
+      if (Array.isArray(data?.tags) && data.tags.length && !tagsInput.trim()) {
+        setTagsInput(data.tags.join(', '));
+      }
+      toast.success(t('تم استخراج التفاصيل تلقائيًا', 'Details autofilled'));
+    } catch (e: any) {
+      const msg = e?.message || '';
+      if (msg.includes('429')) toast.error(t('تجاوزت حد الاستخدام، حاول لاحقًا', 'Rate limited, try later'));
+      else if (msg.includes('402')) toast.error(t('انتهت الأرصدة', 'AI credits exhausted'));
+      else toast.error(t('تعذر التحليل التلقائي', 'Auto-extract failed'));
+    } finally { setAiLoading(false); }
+  };
 
   useEffect(() => {
     if (!editId) return;
