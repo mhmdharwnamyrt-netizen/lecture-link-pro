@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import {
   ArrowLeft, ArrowRight, Save, Plus, Trash2, GripVertical, Link as LinkIcon,
-  ListChecks, Building2, GraduationCap, Sparkles
+  ListChecks, Building2, GraduationCap, Sparkles, Wand2, Loader2, Lock
 } from 'lucide-react';
 
 type FieldType = 'short_text' | 'long_text' | 'number' | 'email' | 'phone' | 'select' | 'checkbox' | 'file';
@@ -70,6 +70,38 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
   const [applyUrl, setApplyUrl] = useState('');
   const [maxApplicants, setMaxApplicants] = useState<string>('');
   const [fields, setFields] = useState<FieldDraft[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const canInternalForm = role === 'doctor'; // includes TA (registered as doctor)
+
+  // Enforce external mode for students on mount
+  useEffect(() => { if (!canInternalForm) setMode('external'); }, [canInternalForm]);
+
+  const runAiAutofill = async () => {
+    const src = (description || title).trim();
+    if (src.length < 15) {
+      toast.error(t('اكتب وصفًا أو ألصق نص الإعلان أولاً (15 حرفًا على الأقل)', 'Write/paste at least 15 characters first'));
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('training-extract', { body: { text: src } });
+      if (error) throw error;
+      if (data?.title && !title) setTitle(data.title);
+      if (data?.company_name && !companyName) setCompanyName(data.company_name);
+      if (data?.location && !location) setLocation(data.location);
+      if (data?.deadline && !deadline) setDeadline(data.deadline);
+      if (Array.isArray(data?.tags) && data.tags.length && !tagsInput.trim()) {
+        setTagsInput(data.tags.join(', '));
+      }
+      toast.success(t('تم استخراج التفاصيل تلقائيًا', 'Details autofilled'));
+    } catch (e: any) {
+      const msg = e?.message || '';
+      if (msg.includes('429')) toast.error(t('تجاوزت حد الاستخدام، حاول لاحقًا', 'Rate limited, try later'));
+      else if (msg.includes('402')) toast.error(t('انتهت الأرصدة', 'AI credits exhausted'));
+      else toast.error(t('تعذر التحليل التلقائي', 'Auto-extract failed'));
+    } finally { setAiLoading(false); }
+  };
 
   useEffect(() => {
     if (!editId) return;
@@ -245,9 +277,17 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
                 <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('مثلاً: تدريب صيفي Front-End', 'e.g. Summer Front-End Internship')} />
               </div>
               <div>
-                <Label>{t('الوصف', 'Description')}</Label>
+                <div className="flex items-center justify-between mb-1">
+                  <Label>{t('الوصف / ألصق نص الإعلان', 'Description / paste the ad text')}</Label>
+                  <Button type="button" size="sm" variant="ghost"
+                    onClick={runAiAutofill} disabled={aiLoading}
+                    className="h-7 rounded-full text-xs text-primary hover:bg-primary/10">
+                    {aiLoading ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 me-1" />}
+                    {t('استخراج تلقائي', 'Auto-extract')}
+                  </Button>
+                </div>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
-                          placeholder={t('نبذة عن التدريب والمتطلبات…', 'About the training and requirements…')} />
+                          placeholder={t('ألصق تفاصيل التدريب من أي مصدر وسنملأ الحقول تلقائيًا…', 'Paste the ad text and we\'ll autofill fields…')} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -281,7 +321,7 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
           {step === 2 && (
             <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
                         className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
+              <div className={canInternalForm ? 'grid grid-cols-2 gap-2' : ''}>
                 <button
                   type="button"
                   onClick={() => setMode('external')}
@@ -293,17 +333,24 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
                   <span className="font-medium">{t('رابط خارجي', 'External link')}</span>
                   <span className="text-[10px] text-muted-foreground">{t('Google Form وغيره', 'Google Form etc.')}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setMode('internal')}
-                  className={`flex flex-col items-center gap-1 rounded-2xl border p-4 text-sm transition ${
-                    mode === 'internal' ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'
-                  }`}
-                >
-                  <ListChecks className="h-5 w-5" />
-                  <span className="font-medium">{t('نموذج داخلي', 'Internal form')}</span>
-                  <span className="text-[10px] text-muted-foreground">{t('اصنع الحقول واستقبل الردود', 'Build fields, collect answers')}</span>
-                </button>
+                {canInternalForm ? (
+                  <button
+                    type="button"
+                    onClick={() => setMode('internal')}
+                    className={`flex flex-col items-center gap-1 rounded-2xl border p-4 text-sm transition ${
+                      mode === 'internal' ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'
+                    }`}
+                  >
+                    <ListChecks className="h-5 w-5" />
+                    <span className="font-medium">{t('نموذج داخلي', 'Internal form')}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('اصنع الحقول واستقبل الردود', 'Build fields, collect answers')}</span>
+                  </button>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border border-dashed p-3 text-[11px] text-muted-foreground">
+                    <Lock className="h-3.5 w-3.5" />
+                    {t('النموذج الداخلي متاح للدكاترة والمعيدين فقط.', 'Internal form is available to doctors & TAs only.')}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border bg-card p-4 shadow-card space-y-4">

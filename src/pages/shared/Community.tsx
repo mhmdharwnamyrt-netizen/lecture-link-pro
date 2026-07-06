@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import SmartAvatarImage from '@/components/SmartAvatarImage';
+import StoriesBar from '@/components/stories/StoriesBar';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -722,6 +723,10 @@ export default function Community({ role }: { role: Role }) {
             <Button variant="ghost" size="icon"><Settings className="h-4 w-4" /></Button>
           </Link>
         </div>
+
+        {/* Stories */}
+        <StoriesBar />
+
 
         {/* Search */}
         <div className="relative mb-3">

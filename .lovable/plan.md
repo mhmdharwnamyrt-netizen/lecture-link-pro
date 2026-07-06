@@ -1,88 +1,73 @@
 # خطة التنفيذ الشاملة
 
-## 1) صور أفاتار عشوائية تلقائيًا (بدون اختيار يدوي)
-
-- توسيع مكتبة الأفاتار من 20 إلى **40 صورة متنوعة** (أشكال، ألوان، أنماط مختلفة تمامًا — لا تكرار).
-- عند التسجيل: يتم تعيين واحدة **عشوائيًا** تلقائيًا لكل مستخدم جديد (trigger على `profiles`).
-- لكل مستخدم حالي بدون `avatar_url`: يتم تعيين واحدة عشوائيًا لمرة واحدة.
-- يقدر المستخدم يرفع صورته الشخصية لاحقًا لو حب — بس مش شرط.
-- الأفاتار الافتراضية تكون SVG/CDN URLs جاهزة (DiceBear notionists/adventurer style — 40 seed مختلفة).
-
-## 2) صفحة الملتقى (Community)
-
-- **إصلاح ظهور صورة اللوجو**: التأكد إن `avatar_url` في كل بطاقة post بيمر على `StorageImage` مع fallback صحيح، ومعالجة signed URLs بالكاش.
-- **تسريع تحميل المنشورات**: 
-  - إضافة `skeleton loader` أثناء التحميل.
-  - جلب صور الأفاتار عبر `Promise.all` بدلاً من تسلسلي.
-  - تقليل عدد الحقول المُختارة من `select('*')` إلى الأعمدة الضرورية.
-  - كاش signed URLs لمدة ساعة في `sessionStorage`.
-
-## 3) صفحة الـ Profile (بروفايل مستخدم آخر)
-
-- التأكد إن أزرار **المراسلة** و**المتابعة** ظاهرة **دائمًا** في `PublicProfile.tsx` (موجودين بالفعل — تأكيد المسار الصحيح والـ routing).
-- إضافة اختصار "زيارة البروفايل" من كل بطاقة منشور تفتح `/{role}/user/{userId}`.
-
-## 4) لوحة الطالب في وضع الإجازة الصيفية
-
-- إخفاء كل الكروت المتعلقة بالمحاضرات (اليوم/التالية/الحضور).
-- إظهار بدلاً منها:
-  - **بطاقات التدريبات** (المرتّبة بأقرب موعد).
-  - **آخر المنشورات من الملتقى** (feed مصغّر).
-  - **بطاقة إحصائيات الأداء التاريخي**: نسبة الحضور الكلية، إجمالي النقاط، ترتيب في اللوحة، عدد المنشورات والإعجابات.
-  - **اقتراحات للتطوير**: كورسات/مقالات (روابط ثابتة).
-
-## 5) نظام الأدوار: إضافة المعيد (TA) والإداري (Admin عبر دعوة)
-
-### أ) المعيد (Teaching Assistant)
-- إضافة قيمة `teaching_assistant` لـ enum `app_role` (أو استخدام حقل `role` في profiles).
-- **نفس صلاحيات الدكتور بالكامل**: محاضرات، حضور، تحليلات، إنذارات، ساعات مكتبية، تقييمات.
-- تسجيل جديد: اختيار "طالب / دكتور / معيد" — والمعيد يستخدم نفس مفتاح `BSUT2024`.
-- تحديث كل RLS policies اللي فيها `role='doctor'` لتشمل `role IN ('doctor','teaching_assistant')`.
-- تحديث كل `MobileLayout` و`App.tsx` routes: مسار `/ta/*` يعيد استخدام صفحات الدكتور.
-
-### ب) الإداري (Admin — بدعوة فقط)
-- جدول جديد `admin_invites`: `id, token, email, invited_by, expires_at, used_at, created_at`.
-- صفحة `/admin/invites` داخل AdminDashboard: زر "إنشاء رابط دعوة" → ينشئ token فريد → ينسخ الرابط `/invite/admin/{token}`.
-- صفحة عامة `/invite/admin/{token}`:
-  - تتحقق من صلاحية الـ token.
-  - تطلب من المستخدم تسجيل حساب (email/password) أو تسجيل دخول.
-  - عند النجاح: تُضيف صف في `user_roles` بدور `admin` + تعلّم الـ token كمستخدم.
-- Edge function `redeem-admin-invite` (SECURITY DEFINER) للتحقق واستهلاك الدعوة.
-
-## 6) التغييرات التقنية بالتفصيل
-
-### قاعدة البيانات (migration واحدة):
-```sql
--- 1. توسيع app_role
-ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'teaching_assistant';
-
--- 2. جدول admin_invites + RLS + GRANT + trigger for expiry
-CREATE TABLE public.admin_invites (...);
-
--- 3. Trigger على profiles: عند INSERT بدون avatar_url → assign random
-CREATE FUNCTION public.assign_random_avatar() ...
-CREATE TRIGGER on_profile_created_assign_avatar ...
-
--- 4. Backfill: للمستخدمين الحاليين بدون avatar
-UPDATE profiles SET avatar_url = ... WHERE avatar_url IS NULL;
-
--- 5. تحديث RLS policies اللي بتقيّد على 'doctor' لتشمل 'teaching_assistant'
-```
-
-### ملفات جديدة:
-- `src/lib/defaultAvatars.ts` — قائمة 40 URL.
-- `src/pages/admin/AdminInvites.tsx` — إدارة دعوات الإداري.
-- `src/pages/AdminInviteRedeem.tsx` — صفحة استهلاك الدعوة (عامة).
-- `supabase/functions/redeem-admin-invite/index.ts` — edge function.
-
-### ملفات معدّلة:
-- `src/pages/Register.tsx` — إضافة خيار "معيد" + assign avatar عشوائي.
-- `src/pages/student/StudentDashboard.tsx` — منطق الإجازة.
-- `src/pages/shared/Community.tsx` — تسريع + إصلاح صور.
-- `src/App.tsx` — routes للمعيد ودعوة الإداري.
-- `src/contexts/AuthContext.tsx` — دعم role الجديد.
-- `src/components/MobileLayout.tsx` — قوائم المعيد.
+طلبك يحتوي عدة أنظمة كبيرة. سأنفّذها على مراحل مرتبة بعد موافقتك، لأنها ضخمة ولا يمكن ضغطها في دفعة واحدة بجودة عالية.
 
 ---
 
-**بعد الموافقة** سأبدأ بالـ migration ثم الكود على التوازي.
+## المرحلة 1 — تحققات وإصلاحات سريعة (قبل أي بناء جديد)
+
+1. **وضع إجازة الصيف (Summer Mode)**
+   - التأكد أن `StudentDashboard` يخفي كروت المحاضرات ويعرض: التدريبات، آخر منشورات الملتقى، إحصائيات (الحضور، النقاط، الترتيب).
+   - إضافة نفس المنطق (Summer Mode) لـ `DoctorDashboard` و`TeachingAssistant` (نفس شاشة الدكتور).
+2. **أزرار المراسلة والمتابعة على الموبايل**
+   - فحص `PublicProfile.tsx` على viewport موبايل (Playwright) والتأكد أن الأزرار ظاهرة، sticky، وتشتغل.
+3. **Skeleton + Fallback لـ SmartAvatarImage**
+   - تعديل `SmartAvatarImage` لعرض `Skeleton` أثناء التحميل، و`AvatarFallback` عند الفشل، بدل إرجاع `null`.
+   - تطبيقه في `Community.tsx`.
+4. **مراجعة سياسات RLS للـ TA**
+   - قراءة كل السياسات التي تعتمد على `role = 'doctor'` وإضافة شرط `OR is_ta = true` إن لزم، أو الاعتماد على `has_role(auth.uid(), 'doctor')` (TA حاليًا يُسجَّل كـ doctor فيرث الصلاحيات — سنؤكد ذلك عبر `supabase--read_query`).
+5. **Build + tsgo** بعد التعديلات.
+
+---
+
+## المرحلة 2 — نظام Stories/الحالات (كامل)
+
+**قاعدة البيانات (Migration):**
+- `stories` (id, author_id, media_type: image|video|text, media_path, text_content, background, duration_seconds, views_count, created_at, expires_at = created_at + 24h)
+- `story_views` (id, story_id, viewer_id, viewed_at) — UNIQUE(story_id, viewer_id)
+- Trigger لزيادة `views_count` عند INSERT في `story_views`.
+- RLS: يقرأ الجميع القصص غير المنتهية؛ صاحب القصة فقط يرى قائمة المشاهدين؛ يحذف صاحبها أو Cron.
+- Bucket جديد `stories` (خاص، signed URLs).
+
+**الواجهة:**
+- `StoriesBar` أعلى صفحة الملتقى (شرائط دائرية بحواف gradient، تمييز غير مشاهَد).
+- `StoryViewer` (fullscreen، تقدم أوتوماتيكي، ضغطة يمين/يسار، سحب للإغلاق، Framer Motion).
+- `StoryCreator`: التقاط/رفع صورة، فيديو (قص تلقائي عند 60 ثانية عبر `ffmpeg.wasm` أو التحقق فقط ورفض >60s كخطوة أولى)، أو قصة نصية بخلفيات gradient.
+- شاشة "من شاهد قصتك" لصاحبها فقط (قائمة أفاتار + وقت).
+
+**الأداء:** Signed URL caching، Skeletons، Preload للصورة التالية.
+
+---
+
+## المرحلة 3 — إعادة تصميم Modern (Design System pass)
+
+- ترقية الألوان في `index.css` (طبقة gradients، shadows ناعمة، دعم Dark أفضل).
+- Motion موحّد (Framer): `AnimatePresence` لفتح/إغلاق البطاقات والحوارات، easing انسيابي.
+- بطاقات بحواف مدوّرة، خلفيات glassmorphism خفيفة، ميكرو-تفاعلات على الأزرار.
+- سيُطبَّق أولًا على: Community, Profile, Trainings, Dashboards (وأي مكوّن جديد نبنيه من الآن).
+
+---
+
+## المرحلة 4 — التدريبات: AI Autofill + صلاحيات الطلاب
+
+- **إضافة صلاحية الطالب لإنشاء تدريب** بوضع **رابط خارجي فقط** (لا نموذج داخلي). الدكتور/المعيد فقط يقدرون يعملوا Internal Form ويشوفوا الردود. (تعديل UI + RLS check).
+- **AI Autofill** في `TrainingCreate.tsx`:
+  - زر "استخراج تلقائي من نص" في الخطوة 1.
+  - Edge Function `training-extract` يستقبل النص، يستدعي Lovable AI (`google/gemini-3-flash-preview`) بمخطط JSON: `{title, company_name, location, deadline, tags[]}`، ويرجّع القيم.
+  - تعبئة الحقول تلقائيًا مع إشعار toast.
+
+---
+
+## المرحلة 5 — QA نهائي
+
+- تشغيل Playwright على: Community + Stories + Profile موبايل + Training create كطالب/دكتور.
+- `tsgo` + build check.
+- تقرير مختصر بالنتائج.
+
+---
+
+## ملاحظة مهمة حول الحجم
+
+هذه ~5 مراحل ضخمة (خصوصًا نظام Stories = يوم كامل من العمل عادةً). أقترح:
+- **الموافقة على الخطة كاملة** ثم أبدأ بالمرحلة 1 و2 في هذه الجولة، وأكمل 3-4-5 في الجولات التالية.
+- أو أخبرني أي مرحلة تريد **البدء بها الآن** إذا كانت الأولوية مختلفة.
