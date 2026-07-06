@@ -35,7 +35,7 @@ export default function StoriesBar() {
 
     if (!stories || stories.length === 0) { setGroups([]); setLoading(false); return; }
 
-    const authorIds = Array.from(new Set(stories.map((s: any) => s.author_id)));
+    const authorIds: string[] = Array.from(new Set((stories as any[]).map((s) => String(s.author_id))));
     const { data: profiles } = await supabase
       .from('profiles')
       .select('user_id, full_name, avatar_url')
