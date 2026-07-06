@@ -724,6 +724,10 @@ export default function Community({ role }: { role: Role }) {
           </Link>
         </div>
 
+        {/* Stories */}
+        <StoriesBar />
+
+
         {/* Search */}
         <div className="relative mb-3">
           <Search className={`pointer-events-none absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground ${isRTL ? 'right-3' : 'left-3'}`} />
