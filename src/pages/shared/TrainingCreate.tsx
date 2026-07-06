@@ -277,9 +277,17 @@ export default function TrainingCreate({ role }: { role: 'doctor' | 'student' })
                 <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('مثلاً: تدريب صيفي Front-End', 'e.g. Summer Front-End Internship')} />
               </div>
               <div>
-                <Label>{t('الوصف', 'Description')}</Label>
+                <div className="flex items-center justify-between mb-1">
+                  <Label>{t('الوصف / ألصق نص الإعلان', 'Description / paste the ad text')}</Label>
+                  <Button type="button" size="sm" variant="ghost"
+                    onClick={runAiAutofill} disabled={aiLoading}
+                    className="h-7 rounded-full text-xs text-primary hover:bg-primary/10">
+                    {aiLoading ? <Loader2 className="h-3.5 w-3.5 me-1 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 me-1" />}
+                    {t('استخراج تلقائي', 'Auto-extract')}
+                  </Button>
+                </div>
                 <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
-                          placeholder={t('نبذة عن التدريب والمتطلبات…', 'About the training and requirements…')} />
+                          placeholder={t('ألصق تفاصيل التدريب من أي مصدر وسنملأ الحقول تلقائيًا…', 'Paste the ad text and we\'ll autofill fields…')} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
