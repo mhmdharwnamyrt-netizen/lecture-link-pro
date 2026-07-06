@@ -45,11 +45,12 @@ export default function StoriesBar() {
     // Seen stories for current user
     let seen = new Set<string>();
     if (user) {
+      const storyIds: string[] = (stories as any[]).map((s) => String(s.id));
       const { data: views } = await supabase
         .from('story_views' as any)
         .select('story_id')
         .eq('viewer_id', user.id)
-        .in('story_id', stories.map((s: any) => s.id)) as any;
+        .in('story_id', storyIds) as any;
       seen = new Set((views || []).map((v: any) => v.story_id));
     }
     setSeenIds(seen);
