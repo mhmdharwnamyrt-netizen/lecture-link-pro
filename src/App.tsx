@@ -49,6 +49,11 @@ const TrainingsPage = lazy(() => import("./pages/shared/Trainings"));
 const TrainingCreate = lazy(() => import("./pages/shared/TrainingCreate"));
 const TrainingDetail = lazy(() => import("./pages/shared/TrainingDetail"));
 const TrainingManage = lazy(() => import("./pages/shared/TrainingManage"));
+const QuizList = lazy(() => import("./pages/shared/QuizList"));
+const QuizBuilder = lazy(() => import("./pages/shared/QuizBuilder"));
+const QuizTake = lazy(() => import("./pages/shared/QuizTake"));
+const QuizResult = lazy(() => import("./pages/shared/QuizResult"));
+const QuizResults = lazy(() => import("./pages/shared/QuizResults"));
 
 const queryClient = new QueryClient();
 
@@ -96,6 +101,12 @@ const App = () => (
                   <Route path="/doctor/trainings/:id" element={<Guarded><TrainingDetail role="doctor" /></Guarded>} />
                   <Route path="/doctor/trainings/:id/edit" element={<Guarded><TrainingCreate role="doctor" /></Guarded>} />
                   <Route path="/doctor/trainings/:id/manage" element={<Guarded><TrainingManage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/quizzes" element={<Guarded><QuizList role="doctor" /></Guarded>} />
+                  <Route path="/doctor/quizzes/new" element={<Guarded><QuizBuilder role="doctor" /></Guarded>} />
+                  <Route path="/doctor/quizzes/:id/edit" element={<Guarded><QuizBuilder role="doctor" /></Guarded>} />
+                  <Route path="/doctor/quizzes/:id/results" element={<Guarded><QuizResults role="doctor" /></Guarded>} />
+                  <Route path="/doctor/quizzes/:id/take" element={<Guarded><QuizTake role="doctor" /></Guarded>} />
+                  <Route path="/doctor/quizzes/:id/result/:attemptId" element={<Guarded><QuizResult role="doctor" /></Guarded>} />
 
                   {/* Student Routes */}
                   <Route path="/student" element={<Guarded><StudentDashboard /></Guarded>} />
@@ -114,6 +125,9 @@ const App = () => (
                   <Route path="/student/trainings/:id" element={<Guarded><TrainingDetail role="student" /></Guarded>} />
                   <Route path="/student/trainings/:id/edit" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
                   <Route path="/student/trainings/:id/manage" element={<Guarded><TrainingManage role="student" /></Guarded>} />
+                  <Route path="/student/quizzes" element={<Guarded><QuizList role="student" /></Guarded>} />
+                  <Route path="/student/quizzes/:id/take" element={<Guarded><QuizTake role="student" /></Guarded>} />
+                  <Route path="/student/quizzes/:id/result/:attemptId" element={<Guarded><QuizResult role="student" /></Guarded>} />
 
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />

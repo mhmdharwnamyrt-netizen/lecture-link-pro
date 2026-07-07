@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar,
   MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users, MoreHorizontal,
-  Briefcase, X,
+  Briefcase, X, GraduationCap,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -51,6 +51,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/doctor/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours', gradient: 'from-cyan-500/25 to-teal-500/10',     iconTint: 'text-cyan-500' },
     { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community',     gradient: 'from-fuchsia-500/25 to-purple-500/10', iconTint: 'text-fuchsia-500' },
     { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings',    gradient: 'from-emerald-500/25 to-green-500/10', iconTint: 'text-emerald-500' },
+    { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes',    gradient: 'from-indigo-500/25 to-blue-500/10',   iconTint: 'text-indigo-500' },
   ];
 
   const studentExtra: ExtraItem[] = [
@@ -60,6 +61,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/student/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours', gradient: 'from-cyan-500/25 to-teal-500/10',     iconTint: 'text-cyan-500' },
     { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community',     gradient: 'from-fuchsia-500/25 to-purple-500/10', iconTint: 'text-fuchsia-500' },
     { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings',           gradient: 'from-emerald-500/25 to-green-500/10', iconTint: 'text-emerald-500' },
+    { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes',           gradient: 'from-indigo-500/25 to-blue-500/10',   iconTint: 'text-indigo-500' },
     { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue',  gradient: 'from-slate-500/25 to-zinc-500/10',    iconTint: 'text-slate-500' },
   ];
 
