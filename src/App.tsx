@@ -125,6 +125,9 @@ const App = () => (
                   <Route path="/student/trainings/:id" element={<Guarded><TrainingDetail role="student" /></Guarded>} />
                   <Route path="/student/trainings/:id/edit" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
                   <Route path="/student/trainings/:id/manage" element={<Guarded><TrainingManage role="student" /></Guarded>} />
+                  <Route path="/student/quizzes" element={<Guarded><QuizList role="student" /></Guarded>} />
+                  <Route path="/student/quizzes/:id/take" element={<Guarded><QuizTake role="student" /></Guarded>} />
+                  <Route path="/student/quizzes/:id/result/:attemptId" element={<Guarded><QuizResult role="student" /></Guarded>} />
 
                   <Route path="/admin" element={<Guarded><AdminDashboard /></Guarded>} />
                   <Route path="/admin/logs" element={<Guarded><AdminLogs /></Guarded>} />
