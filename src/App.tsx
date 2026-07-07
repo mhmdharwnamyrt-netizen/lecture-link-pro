@@ -49,6 +49,11 @@ const TrainingsPage = lazy(() => import("./pages/shared/Trainings"));
 const TrainingCreate = lazy(() => import("./pages/shared/TrainingCreate"));
 const TrainingDetail = lazy(() => import("./pages/shared/TrainingDetail"));
 const TrainingManage = lazy(() => import("./pages/shared/TrainingManage"));
+const QuizList = lazy(() => import("./pages/shared/QuizList"));
+const QuizBuilder = lazy(() => import("./pages/shared/QuizBuilder"));
+const QuizTake = lazy(() => import("./pages/shared/QuizTake"));
+const QuizResult = lazy(() => import("./pages/shared/QuizResult"));
+const QuizResults = lazy(() => import("./pages/shared/QuizResults"));
 
 const queryClient = new QueryClient();
 
