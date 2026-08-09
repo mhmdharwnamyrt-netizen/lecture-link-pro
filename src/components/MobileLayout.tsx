@@ -41,37 +41,38 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   const primary = role === 'doctor' ? doctorPrimary : studentPrimary;
 
-  // Each extra tile gets a distinct gradient so the drawer feels vivid, not gray
-  type ExtraItem = NavItem & { gradient: string; iconTint: string };
+  // Calm, professional tiles — single accent, no rainbow
+  type ExtraItem = NavItem;
   const doctorExtra: ExtraItem[] = [
-    { path: '/doctor/analytics',     icon: BarChart3,     label: t('nav.analytics'),        gradient: 'from-sky-500/25 to-blue-500/10',      iconTint: 'text-sky-500' },
-    { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings'),         gradient: 'from-amber-500/25 to-orange-500/10',  iconTint: 'text-amber-500' },
-    { path: '/doctor/notifications', icon: Bell,          label: t('nav.alerts'),           gradient: 'from-rose-500/25 to-pink-500/10',     iconTint: 'text-rose-500' },
-    { path: '/doctor/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages',      gradient: 'from-violet-500/25 to-indigo-500/10', iconTint: 'text-violet-500' },
-    { path: '/doctor/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours', gradient: 'from-cyan-500/25 to-teal-500/10',     iconTint: 'text-cyan-500' },
-    { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community',     gradient: 'from-fuchsia-500/25 to-purple-500/10', iconTint: 'text-fuchsia-500' },
-    { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings',    gradient: 'from-emerald-500/25 to-green-500/10', iconTint: 'text-emerald-500' },
-    { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes',    gradient: 'from-indigo-500/25 to-blue-500/10',   iconTint: 'text-indigo-500' },
+    { path: '/doctor/analytics',     icon: BarChart3,     label: t('nav.analytics') },
+    { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
+    { path: '/doctor/notifications', icon: Bell,          label: t('nav.alerts') },
+    { path: '/doctor/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages' },
+    { path: '/doctor/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
+    { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
   ];
 
   const studentExtra: ExtraItem[] = [
-    { path: '/student/schedule-ai',   icon: Bot,           label: t('nav.mySchedule'),                        gradient: 'from-violet-500/25 to-indigo-500/10', iconTint: 'text-violet-500' },
-    { path: '/student/calendar',      icon: Calendar,      label: t('nav.calendar'),                          gradient: 'from-sky-500/25 to-blue-500/10',      iconTint: 'text-sky-500' },
-    { path: '/student/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages',              gradient: 'from-rose-500/25 to-pink-500/10',     iconTint: 'text-rose-500' },
-    { path: '/student/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours', gradient: 'from-cyan-500/25 to-teal-500/10',     iconTint: 'text-cyan-500' },
-    { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community',     gradient: 'from-fuchsia-500/25 to-purple-500/10', iconTint: 'text-fuchsia-500' },
-    { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings',           gradient: 'from-emerald-500/25 to-green-500/10', iconTint: 'text-emerald-500' },
-    { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes',           gradient: 'from-indigo-500/25 to-blue-500/10',   iconTint: 'text-indigo-500' },
-    { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue',  gradient: 'from-slate-500/25 to-zinc-500/10',    iconTint: 'text-slate-500' },
+    { path: '/student/schedule-ai',   icon: Bot,           label: t('nav.mySchedule') },
+    { path: '/student/calendar',      icon: Calendar,      label: t('nav.calendar') },
+    { path: '/student/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages' },
+    { path: '/student/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
+    { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
+    { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue' },
   ];
 
   const extras: ExtraItem[] = [
     ...(role === 'doctor' ? doctorExtra : studentExtra),
-    { path: '/leaderboard', icon: Trophy, label: isAr ? 'لوحة الصدارة' : 'Leaderboard', gradient: 'from-amber-500/25 to-yellow-500/10', iconTint: 'text-amber-500' },
+    { path: '/leaderboard', icon: Trophy, label: isAr ? 'لوحة الصدارة' : 'Leaderboard' },
   ];
   if (isAdmin) {
-    extras.push({ path: '/admin', icon: Shield, label: isAr ? 'لوحة الإدارة' : 'Admin Dashboard', gradient: 'from-red-500/25 to-rose-500/10', iconTint: 'text-red-500' });
+    extras.push({ path: '/admin', icon: Shield, label: isAr ? 'لوحة الإدارة' : 'Admin Dashboard' });
   }
+
 
   // Desktop sidebar shows every route in one column
   const sidebarAll = [...primary, ...extras];
