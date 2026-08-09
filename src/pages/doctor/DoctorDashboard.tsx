@@ -95,48 +95,69 @@ export default function DoctorDashboard() {
           />
         </div>
 
-        {/* Stats Grid — vivid, gradient-tinted cards with glow */}
+        {/* Stats Grid — calm, single-accent cards */}
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
-            { label: t('doctor.totalLectures'), value: stats.totalLectures, icon: BookOpen, gradient: 'from-sky-500/20 via-blue-500/10 to-transparent', iconBg: 'bg-sky-500/15 text-sky-500', ring: 'ring-sky-500/20' },
-            { label: t('doctor.students'),      value: stats.totalStudents, icon: Users,     gradient: 'from-violet-500/20 via-fuchsia-500/10 to-transparent', iconBg: 'bg-violet-500/15 text-violet-500', ring: 'ring-violet-500/20' },
-            { label: t('doctor.avgAttendance'), value: stats.avgAttendance, icon: TrendingUp, gradient: 'from-amber-500/20 via-orange-500/10 to-transparent', iconBg: 'bg-amber-500/15 text-amber-500', ring: 'ring-amber-500/20' },
-            { label: t('common.active'),        value: lectures.filter(l => l.is_active).length, icon: Clock, gradient: 'from-emerald-500/20 via-green-500/10 to-transparent', iconBg: 'bg-emerald-500/15 text-emerald-500', ring: 'ring-emerald-500/20' },
+            { label: t('doctor.totalLectures'), value: stats.totalLectures, icon: BookOpen },
+            { label: t('doctor.students'),      value: stats.totalStudents, icon: Users },
+            { label: t('doctor.avgAttendance'), value: stats.avgAttendance, icon: TrendingUp },
+            { label: t('common.active'),        value: lectures.filter(l => l.is_active).length, icon: Clock },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 16, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 24 }}
-              whileHover={{ y: -3, transition: { type: 'spring', stiffness: 400, damping: 20 } }}
-              whileTap={{ scale: 0.97 }}
-              className={`group relative overflow-hidden rounded-2xl bg-card p-4 shadow-card ring-1 ${stat.ring} transition-shadow hover:shadow-elevated`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, type: 'spring', stiffness: 280, damping: 24 }}
+              whileHover={{ y: -2 }}
+              className="rounded-2xl border border-border/60 bg-card p-4 shadow-card transition-shadow hover:shadow-elevated"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-70 transition-opacity group-hover:opacity-100`} />
-              <div className="relative">
-                <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl ${stat.iconBg}`}>
-                  <stat.icon className="h-4.5 w-4.5" />
-                </div>
-                <p className="text-2xl font-bold tabular-nums tracking-tight">{stat.value}</p>
-                <p className="mt-0.5 text-xs font-medium text-muted-foreground">{stat.label}</p>
+              <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <stat.icon className="h-4 w-4" />
               </div>
+              <p className="text-2xl font-bold tabular-nums tracking-tight">{stat.value}</p>
+              <p className="mt-0.5 text-xs font-medium text-muted-foreground">{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
         {/* Quick Actions */}
         <div className="mb-6 grid grid-cols-2 gap-3">
-          <motion.div whileTap={{ scale: 0.97 }} whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300 }}>
-            <Button onClick={() => setShowAddLecture(true)} className="h-14 w-full rounded-2xl text-base shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.6)]">
-              <Plus className="mr-2 h-5 w-5" /> {t('doctor.addLecture')}
+          <motion.div whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 300 }}>
+            <Button onClick={() => setShowAddLecture(true)} className="h-12 w-full rounded-2xl px-3 text-sm">
+              <Plus className="me-1.5 h-4 w-4 shrink-0" />
+              <span className="truncate">{t('doctor.addLecture')}</span>
             </Button>
           </motion.div>
-          <motion.div whileTap={{ scale: 0.97 }} whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300 }}>
-            <Button onClick={() => navigate('/doctor/schedule-parser')} variant="outline" className="h-14 w-full rounded-2xl text-base gap-2 border-2">
-              <Bot className="h-5 w-5" /> {t('nav.schedule')}
+          <motion.div whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 300 }}>
+            <Button onClick={() => navigate('/doctor/schedule-parser')} variant="outline" className="h-12 w-full rounded-2xl px-3 text-sm">
+              <Bot className="me-1.5 h-4 w-4 shrink-0" />
+              <span className="truncate">{t('nav.schedule')}</span>
             </Button>
           </motion.div>
         </div>
+
+        {/* Highlights: featured post / training */}
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => navigate('/doctor/community')}
+            className="rounded-2xl border border-border/60 bg-card p-4 text-start shadow-card transition hover:shadow-elevated"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {language === 'ar' ? 'الملتقى الطلابي' : 'Community'}
+            </p>
+            <p className="mt-1 font-semibold">{language === 'ar' ? 'أحدث المنشورات والنقاشات' : 'Latest posts & discussions'}</p>
+          </button>
+          <button
+            onClick={() => navigate('/doctor/trainings')}
+            className="rounded-2xl border border-border/60 bg-card p-4 text-start shadow-card transition hover:shadow-elevated"
+          >
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {language === 'ar' ? 'التدريبات' : 'Trainings'}
+            </p>
+            <p className="mt-1 font-semibold">{language === 'ar' ? 'أضف فرصة تدريب لطلابك' : 'Publish an opportunity'}</p>
+          </button>
+        </div>
+
 
         {/* Early Warning Banner */}
         {warningCount > 0 && (
