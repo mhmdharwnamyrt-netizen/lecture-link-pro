@@ -246,8 +246,6 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
                         {item.label}
                       </span>
                     </Link>
-
-                    </Link>
                   </motion.div>
                 );
               })}
