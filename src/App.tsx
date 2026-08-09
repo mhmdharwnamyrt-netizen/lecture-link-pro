@@ -65,6 +65,16 @@ const Guarded = ({ children }: { children: React.ReactNode }) => (
   <AccountStatusGuard>{children}</AccountStatusGuard>
 );
 
+const RootRedirect = () => {
+  const { user, profile, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (profile?.role === 'doctor') return <Navigate to="/doctor" replace />;
+  if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
+  return <Navigate to="/student" replace />;
+};
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={false}>
