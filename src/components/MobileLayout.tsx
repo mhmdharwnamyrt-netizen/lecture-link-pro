@@ -229,22 +229,24 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
                     <Link
                       to={item.path}
                       onClick={() => setMoreOpen(false)}
-                      className={`group relative flex h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border p-2 text-center transition-all ${
+                      className={`group relative flex h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border bg-secondary/60 p-2 text-center transition-all ${
                         active
-                          ? 'border-primary/50 shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.4)]'
-                          : 'border-border/50 hover:border-border hover:shadow-lg'
+                          ? 'border-primary/50 bg-primary/[0.07]'
+                          : 'border-border/60 hover:border-border hover:bg-secondary'
                       }`}
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-90 transition-opacity group-hover:opacity-100`} />
-                      <div className="absolute inset-0 bg-card/60 backdrop-blur-sm" />
                       <span
-                        className={`relative grid h-11 w-11 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/40 transition-transform group-hover:scale-110 group-active:scale-95 ${item.iconTint}`}
+                        className={`relative grid h-11 w-11 place-items-center rounded-xl bg-background shadow-sm ring-1 ring-border/50 transition-transform group-hover:scale-105 group-active:scale-95 ${
+                          active ? 'text-primary' : 'text-muted-foreground'
+                        }`}
                       >
                         <item.icon className="h-5 w-5" />
                       </span>
                       <span className="relative text-[11px] font-semibold leading-tight text-foreground line-clamp-2">
                         {item.label}
                       </span>
+                    </Link>
+
                     </Link>
                   </motion.div>
                 );
