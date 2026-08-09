@@ -69,7 +69,7 @@ const RootRedirect = () => {
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   if (profile?.role === 'doctor') return <Navigate to="/doctor" replace />;
-  if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
+  if ((profile?.role as string) === 'admin') return <Navigate to="/admin" replace />;
   return <Navigate to="/student" replace />;
 };
 
