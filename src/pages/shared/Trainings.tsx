@@ -81,10 +81,12 @@ export default function TrainingsPage({ role }: { role: 'doctor' | 'student' }) 
               {t('فرص تدريب من الجامعة والشركات الشريكة.', 'Internships from the university and partner companies.')}
             </p>
           </div>
-          <Button onClick={() => navigate(`/${role}/trainings/new`)} className="rounded-full shrink-0">
-            <Plus className="h-4 w-4 me-1" />
-            {t('إضافة', 'Add')}
-          </Button>
+          {role === 'doctor' && (
+            <Button onClick={() => navigate(`/${role}/trainings/new`)} className="rounded-full shrink-0">
+              <Plus className="h-4 w-4 me-1" />
+              {t('إضافة', 'Add')}
+            </Button>
+          )}
         </div>
 
         {/* Search + Filters */}

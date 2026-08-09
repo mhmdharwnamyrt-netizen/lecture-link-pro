@@ -9,6 +9,8 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import AppHeader from '@/components/AppHeader';
+
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -41,46 +43,49 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   const primary = role === 'doctor' ? doctorPrimary : studentPrimary;
 
-  // Each extra tile gets a distinct gradient so the drawer feels vivid, not gray
-  type ExtraItem = NavItem & { gradient: string; iconTint: string };
+  // Calm, professional tiles — single accent, no rainbow
+  type ExtraItem = NavItem;
   const doctorExtra: ExtraItem[] = [
-    { path: '/doctor/analytics',     icon: BarChart3,     label: t('nav.analytics'),        gradient: 'from-sky-500/25 to-blue-500/10',      iconTint: 'text-sky-500' },
-    { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings'),         gradient: 'from-amber-500/25 to-orange-500/10',  iconTint: 'text-amber-500' },
-    { path: '/doctor/notifications', icon: Bell,          label: t('nav.alerts'),           gradient: 'from-rose-500/25 to-pink-500/10',     iconTint: 'text-rose-500' },
-    { path: '/doctor/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages',      gradient: 'from-violet-500/25 to-indigo-500/10', iconTint: 'text-violet-500' },
-    { path: '/doctor/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours', gradient: 'from-cyan-500/25 to-teal-500/10',     iconTint: 'text-cyan-500' },
-    { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community',     gradient: 'from-fuchsia-500/25 to-purple-500/10', iconTint: 'text-fuchsia-500' },
-    { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings',    gradient: 'from-emerald-500/25 to-green-500/10', iconTint: 'text-emerald-500' },
-    { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes',    gradient: 'from-indigo-500/25 to-blue-500/10',   iconTint: 'text-indigo-500' },
+    { path: '/doctor/analytics',     icon: BarChart3,     label: t('nav.analytics') },
+    { path: '/doctor/early-warning', icon: AlertTriangle, label: t('nav.warnings') },
+    { path: '/doctor/notifications', icon: Bell,          label: t('nav.alerts') },
+    { path: '/doctor/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages' },
+    { path: '/doctor/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
+    { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
   ];
 
   const studentExtra: ExtraItem[] = [
-    { path: '/student/schedule-ai',   icon: Bot,           label: t('nav.mySchedule'),                        gradient: 'from-violet-500/25 to-indigo-500/10', iconTint: 'text-violet-500' },
-    { path: '/student/calendar',      icon: Calendar,      label: t('nav.calendar'),                          gradient: 'from-sky-500/25 to-blue-500/10',      iconTint: 'text-sky-500' },
-    { path: '/student/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages',              gradient: 'from-rose-500/25 to-pink-500/10',     iconTint: 'text-rose-500' },
-    { path: '/student/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours', gradient: 'from-cyan-500/25 to-teal-500/10',     iconTint: 'text-cyan-500' },
-    { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community',     gradient: 'from-fuchsia-500/25 to-purple-500/10', iconTint: 'text-fuchsia-500' },
-    { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings',           gradient: 'from-emerald-500/25 to-green-500/10', iconTint: 'text-emerald-500' },
-    { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes',           gradient: 'from-indigo-500/25 to-blue-500/10',   iconTint: 'text-indigo-500' },
-    { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue',  gradient: 'from-slate-500/25 to-zinc-500/10',    iconTint: 'text-slate-500' },
+    { path: '/student/schedule-ai',   icon: Bot,           label: t('nav.mySchedule') },
+    { path: '/student/calendar',      icon: Calendar,      label: t('nav.calendar') },
+    { path: '/student/messages',      icon: MessageCircle, label: isAr ? 'الرسائل' : 'Messages' },
+    { path: '/student/office-hours',  icon: Clock,         label: isAr ? 'الساعات المكتبية' : 'Office Hours' },
+    { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
+    { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
+    { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
+    { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue' },
   ];
 
   const extras: ExtraItem[] = [
     ...(role === 'doctor' ? doctorExtra : studentExtra),
-    { path: '/leaderboard', icon: Trophy, label: isAr ? 'لوحة الصدارة' : 'Leaderboard', gradient: 'from-amber-500/25 to-yellow-500/10', iconTint: 'text-amber-500' },
+    { path: '/leaderboard', icon: Trophy, label: isAr ? 'لوحة الصدارة' : 'Leaderboard' },
   ];
   if (isAdmin) {
-    extras.push({ path: '/admin', icon: Shield, label: isAr ? 'لوحة الإدارة' : 'Admin Dashboard', gradient: 'from-red-500/25 to-rose-500/10', iconTint: 'text-red-500' });
+    extras.push({ path: '/admin', icon: Shield, label: isAr ? 'لوحة الإدارة' : 'Admin Dashboard' });
   }
+
 
   // Desktop sidebar shows every route in one column
   const sidebarAll = [...primary, ...extras];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <AppHeader role={role} />
       <main className={`flex-1 pb-24 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
         {children}
       </main>
+
 
       {/* Floating search FAB (hidden on messaging routes to avoid overlapping the send button) */}
       {!location.pathname.includes('/messages') && (
@@ -172,11 +177,11 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
           side="bottom"
           className="rounded-t-[32px] border-0 bg-gradient-to-b from-card via-card to-card/95 p-0 backdrop-blur-2xl max-h-[85vh] md:hidden shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.35)]"
         >
-          {/* Decorative aurora */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-40 overflow-hidden rounded-t-[32px]">
-            <div className="absolute -top-20 left-1/4 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
-            <div className="absolute -top-10 right-1/4 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
+          {/* Subtle top wash */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 overflow-hidden rounded-t-[32px]">
+            <div className="absolute -top-16 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
           </div>
+
 
           {/* Grabber */}
           <div className="relative flex justify-center pt-3">
@@ -228,16 +233,16 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
                     <Link
                       to={item.path}
                       onClick={() => setMoreOpen(false)}
-                      className={`group relative flex h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border p-2 text-center transition-all ${
+                      className={`group relative flex h-24 flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border bg-secondary/60 p-2 text-center transition-all ${
                         active
-                          ? 'border-primary/50 shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.4)]'
-                          : 'border-border/50 hover:border-border hover:shadow-lg'
+                          ? 'border-primary/50 bg-primary/[0.07]'
+                          : 'border-border/60 hover:border-border hover:bg-secondary'
                       }`}
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-90 transition-opacity group-hover:opacity-100`} />
-                      <div className="absolute inset-0 bg-card/60 backdrop-blur-sm" />
                       <span
-                        className={`relative grid h-11 w-11 place-items-center rounded-xl bg-background/80 shadow-sm ring-1 ring-border/40 transition-transform group-hover:scale-110 group-active:scale-95 ${item.iconTint}`}
+                        className={`relative grid h-11 w-11 place-items-center rounded-xl bg-background shadow-sm ring-1 ring-border/50 transition-transform group-hover:scale-105 group-active:scale-95 ${
+                          active ? 'text-primary' : 'text-muted-foreground'
+                        }`}
                       >
                         <item.icon className="h-5 w-5" />
                       </span>

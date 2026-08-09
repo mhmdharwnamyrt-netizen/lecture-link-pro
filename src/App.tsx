@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccountStatusGuard from "@/components/AccountStatusGuard";
 import OfflineBanner from "@/components/OfflineBanner";
@@ -14,7 +14,6 @@ import GlobalCommandPalette from "@/components/GlobalCommandPalette";
 import CinematicLoader from "@/components/CinematicLoader";
 
 // Lazy loaded pages
-const Landing = lazy(() => import("./pages/Landing"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const LoginPage = lazy(() => import("./pages/Login"));
 const RegisterPage = lazy(() => import("./pages/Register"));
@@ -65,6 +64,16 @@ const Guarded = ({ children }: { children: React.ReactNode }) => (
   <AccountStatusGuard>{children}</AccountStatusGuard>
 );
 
+const RootRedirect = () => {
+  const { user, profile, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (profile?.role === 'doctor') return <Navigate to="/doctor" replace />;
+  if ((profile?.role as string) === 'admin') return <Navigate to="/admin" replace />;
+  return <Navigate to="/student" replace />;
+};
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={false}>
@@ -78,7 +87,7 @@ const App = () => (
               <GlobalCommandPalette />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/" element={<Landing />} />
+                  <Route path="/" element={<RootRedirect />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/leaderboard" element={<Guarded><Leaderboard /></Guarded>} />
@@ -121,9 +130,9 @@ const App = () => (
                   <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
                   <Route path="/student/community" element={<Guarded><CommunityPage role="student" /></Guarded>} />
                   <Route path="/student/trainings" element={<Guarded><TrainingsPage role="student" /></Guarded>} />
-                  <Route path="/student/trainings/new" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
+                  <Route path="/student/trainings/new" element={<Navigate to="/student/trainings" replace />} />
                   <Route path="/student/trainings/:id" element={<Guarded><TrainingDetail role="student" /></Guarded>} />
-                  <Route path="/student/trainings/:id/edit" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
+                  <Route path="/student/trainings/:id/edit" element={<Navigate to="/student/trainings" replace />} />
                   <Route path="/student/trainings/:id/manage" element={<Guarded><TrainingManage role="student" /></Guarded>} />
                   <Route path="/student/quizzes" element={<Guarded><QuizList role="student" /></Guarded>} />
                   <Route path="/student/quizzes/:id/take" element={<Guarded><QuizTake role="student" /></Guarded>} />

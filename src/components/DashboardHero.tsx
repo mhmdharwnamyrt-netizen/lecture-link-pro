@@ -39,18 +39,14 @@ export default function DashboardHero({ name, subtitle, nextLecture }: Dashboard
       transition={{ duration: 0.5 }}
       className="relative mb-6 overflow-hidden rounded-3xl p-5 shadow-elevated"
     >
-      {/* Animated mesh gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1f44] via-primary to-accent" />
+      {/* Calm navy gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0b1e3a] via-[#12294d] to-primary" />
       <motion.div
-        className="absolute -top-16 -left-16 h-56 w-56 rounded-full bg-white/20 blur-3xl"
-        animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -top-16 -left-16 h-56 w-56 rounded-full bg-white/10 blur-3xl"
+        animate={{ x: [0, 24, 0], y: [0, 16, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
       />
-      <motion.div
-        className="absolute -bottom-20 -right-12 h-64 w-64 rounded-full bg-accent/40 blur-3xl"
-        animate={{ x: [0, -25, 0], y: [0, -15, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-      />
+
 
       {/* Glass card */}
       <div className="relative z-10">
