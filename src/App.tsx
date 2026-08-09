@@ -130,9 +130,9 @@ const App = () => (
                   <Route path="/student/office-hours" element={<Guarded><OfficeHoursPage role="student" /></Guarded>} />
                   <Route path="/student/community" element={<Guarded><CommunityPage role="student" /></Guarded>} />
                   <Route path="/student/trainings" element={<Guarded><TrainingsPage role="student" /></Guarded>} />
-                  <Route path="/student/trainings/new" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
+                  <Route path="/student/trainings/new" element={<Navigate to="/student/trainings" replace />} />
                   <Route path="/student/trainings/:id" element={<Guarded><TrainingDetail role="student" /></Guarded>} />
-                  <Route path="/student/trainings/:id/edit" element={<Guarded><TrainingCreate role="student" /></Guarded>} />
+                  <Route path="/student/trainings/:id/edit" element={<Navigate to="/student/trainings" replace />} />
                   <Route path="/student/trainings/:id/manage" element={<Guarded><TrainingManage role="student" /></Guarded>} />
                   <Route path="/student/quizzes" element={<Guarded><QuizList role="student" /></Guarded>} />
                   <Route path="/student/quizzes/:id/take" element={<Guarded><QuizTake role="student" /></Guarded>} />
