@@ -173,11 +173,11 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
           side="bottom"
           className="rounded-t-[32px] border-0 bg-gradient-to-b from-card via-card to-card/95 p-0 backdrop-blur-2xl max-h-[85vh] md:hidden shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.35)]"
         >
-          {/* Decorative aurora */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-40 overflow-hidden rounded-t-[32px]">
-            <div className="absolute -top-20 left-1/4 h-56 w-56 rounded-full bg-primary/20 blur-3xl" />
-            <div className="absolute -top-10 right-1/4 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
+          {/* Subtle top wash */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 overflow-hidden rounded-t-[32px]">
+            <div className="absolute -top-16 left-1/2 h-40 w-72 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
           </div>
+
 
           {/* Grabber */}
           <div className="relative flex justify-center pt-3">
