@@ -79,9 +79,11 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <AppHeader role={role} />
       <main className={`flex-1 pb-24 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
         {children}
       </main>
+
 
       {/* Floating search FAB (hidden on messaging routes to avoid overlapping the send button) */}
       {!location.pathname.includes('/messages') && (
