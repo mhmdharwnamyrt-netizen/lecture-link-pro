@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import AccountStatusGuard from "@/components/AccountStatusGuard";
 import OfflineBanner from "@/components/OfflineBanner";
@@ -14,7 +14,6 @@ import GlobalCommandPalette from "@/components/GlobalCommandPalette";
 import CinematicLoader from "@/components/CinematicLoader";
 
 // Lazy loaded pages
-const Landing = lazy(() => import("./pages/Landing"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const LoginPage = lazy(() => import("./pages/Login"));
 const RegisterPage = lazy(() => import("./pages/Register"));
@@ -88,7 +87,7 @@ const App = () => (
               <GlobalCommandPalette />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/" element={<Landing />} />
+                  <Route path="/" element={<RootRedirect />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/leaderboard" element={<Guarded><Leaderboard /></Guarded>} />
