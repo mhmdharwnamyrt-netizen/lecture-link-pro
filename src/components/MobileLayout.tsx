@@ -9,6 +9,8 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import AppHeader from '@/components/AppHeader';
+
 
 interface MobileLayoutProps {
   children: ReactNode;
