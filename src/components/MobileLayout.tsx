@@ -1,15 +1,17 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar,
   MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users, MoreHorizontal,
-  Briefcase, X, GraduationCap,
+  Briefcase, X, GraduationCap, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppHeader from '@/components/AppHeader';
+
 
 
 interface MobileLayoutProps {
