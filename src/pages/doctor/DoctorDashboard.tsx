@@ -193,6 +193,58 @@ export default function DoctorDashboard() {
           </motion.div>
         )}
 
+        {/* Summer break: community highlights fill the space of lectures */}
+        {isSummer && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight">
+                {language === 'ar' ? 'الأكثر تفاعلاً في الملتقى' : 'Trending in the community'}
+              </h2>
+              <button
+                onClick={() => navigate('/doctor/community')}
+                className="text-xs font-medium text-primary"
+              >
+                {language === 'ar' ? 'عرض الكل' : 'View all'}
+              </button>
+            </div>
+            {feedPosts.length === 0 ? (
+              <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+                <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {language === 'ar' ? 'لا توجد منشورات بعد — كن أول من يشارك' : 'No posts yet — be the first to share'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {feedPosts.map((post, i) => (
+                  <motion.button
+                    key={post.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, type: 'spring', stiffness: 260, damping: 22 }}
+                    onClick={() => navigate('/doctor/community')}
+                    className="w-full rounded-2xl border border-border/60 bg-card p-4 text-start shadow-card transition hover:shadow-elevated"
+                  >
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        {post.category}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {post.profiles?.full_name}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 text-sm">{post.content}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {post.likes_count} {language === 'ar' ? 'إعجاب' : 'likes'} • {post.comments_count}{' '}
+                      {language === 'ar' ? 'تعليق' : 'comments'}
+                    </p>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Recent Lectures — hidden during the summer break */}
         <div className={`mb-6 ${isSummer ? 'hidden' : ''}`}>
           <h2 className="mb-3 text-lg font-semibold tracking-tight">{t('doctor.recentLectures')}</h2>
