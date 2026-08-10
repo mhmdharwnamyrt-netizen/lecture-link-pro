@@ -8,6 +8,8 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Loader2, RefreshCw, Shield, UserX, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { localizeServerText, riskLabel } from '@/lib/localizeText';
+
 
 interface Alert {
   student_id: string;
