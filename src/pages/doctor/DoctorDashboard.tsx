@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Users, BookOpen, Clock, TrendingUp, Bot, AlertTriangle } from 'lucide-react';
 import AddLectureDialog from '@/components/doctor/AddLectureDialog';
 import DashboardHero from '@/components/DashboardHero';
+import BrandLoader from '@/components/BrandLoader';
 
 export default function DoctorDashboard() {
   const { profile, loading, user } = useAuth();
@@ -19,6 +20,12 @@ export default function DoctorDashboard() {
   const [showAddLecture, setShowAddLecture] = useState(false);
   const [recentLectures, setRecentLectures] = useState<any[]>([]);
   const [warningCount, setWarningCount] = useState(0);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+
+  // Summer break (July → September): no lectures are running, so the home
+  // screen switches to community + trainings content instead of empty cards.
+  const month = new Date().getMonth() + 1;
+  const isSummer = month >= 7 && month <= 9;
 
   const DAY_AR: Record<string, string> = {
     Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء',
@@ -72,15 +79,20 @@ export default function DoctorDashboard() {
       .eq('doctor_id', profile.id)
       .eq('is_resolved', false) as any;
     setWarningCount(count || 0);
+
+    const { data: posts } = await supabase
+      .from('community_posts')
+      .select('id, content, category, likes_count, comments_count, created_at, profiles:author_id(full_name)')
+      .eq('is_hidden', false)
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(5) as any;
+    setFeedPosts(posts || []);
   };
 
   if (loading || !profile) {
     return (
-      <MobileLayout role="doctor">
-        <div className="flex h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
-      </MobileLayout>
+      <BrandLoader />
     );
   }
 
@@ -181,8 +193,8 @@ export default function DoctorDashboard() {
           </motion.div>
         )}
 
-        {/* Recent Lectures */}
-        <div className="mb-6">
+        {/* Recent Lectures — hidden during the summer break */}
+        <div className={`mb-6 ${isSummer ? 'hidden' : ''}`}>
           <h2 className="mb-3 text-lg font-semibold tracking-tight">{t('doctor.recentLectures')}</h2>
           {recentLectures.length === 0 ? (
             <div className="rounded-2xl bg-card p-8 text-center shadow-card">
