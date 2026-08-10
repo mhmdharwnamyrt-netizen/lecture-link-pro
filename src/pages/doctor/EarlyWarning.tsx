@@ -8,6 +8,8 @@ import MobileLayout from '@/components/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, Loader2, RefreshCw, Shield, UserX, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { localizeServerText, riskLabel } from '@/lib/localizeText';
+
 
 interface Alert {
   student_id: string;
@@ -59,7 +61,7 @@ export default function EarlyWarning() {
       setAlerts(data?.alerts || []);
       setSummary(data?.summary || '');
       await loadSavedAlerts();
-      toast({ title: t('warning.analysisComplete'), description: data?.summary });
+      toast({ title: t('warning.analysisComplete'), description: localizeServerText(data?.summary, language === 'ar') });
     } catch (err: any) {
       toast({ title: t('common.error'), description: err.message, variant: 'destructive' });
     } finally {
@@ -71,6 +73,22 @@ export default function EarlyWarning() {
     await supabase.from('warning_alerts' as any).update({ is_resolved: true } as any).eq('id', alertId);
     loadSavedAlerts();
     toast({ title: t('warning.resolved') });
+  };
+
+  const isAr = language === 'ar';
+
+  /** Prefer rebuilding the sentence from structured data (fully bilingual),
+   *  fall back to translating the stored English message. */
+  const alertText = (a: any) => {
+    const name = a.profiles?.full_name;
+    const num = a.profiles?.student_id;
+    if (name && typeof a.total_lectures === 'number' && a.total_lectures > 0) {
+      const rate = Math.round(((a.total_lectures - (a.absence_count || 0)) / a.total_lectures) * 100);
+      return isAr
+        ? `${name}${num ? ` (${num})` : ''} — نسبة الحضور ${rate}% (${a.absence_count} غياب من أصل ${a.total_lectures} محاضرة). مستوى الخطورة: ${riskLabel(a.risk_level, true)}.`
+        : `${name}${num ? ` (${num})` : ''} — ${rate}% attendance (${a.absence_count} absences out of ${a.total_lectures} lectures). Risk: ${a.risk_level}.`;
+    }
+    return localizeServerText(a.message, isAr);
   };
 
   const getRiskColor = (level: string) => {
@@ -120,7 +138,7 @@ export default function EarlyWarning() {
 
           {summary && (
             <div className="mb-4 rounded-2xl bg-card p-4 shadow-card">
-              <p className="text-sm text-muted-foreground">{summary}</p>
+              <p className="text-sm text-muted-foreground">{localizeServerText(summary, isAr)}</p>
             </div>
           )}
 
@@ -144,10 +162,10 @@ export default function EarlyWarning() {
                         <div className="flex items-center justify-between">
                           <p className="font-semibold">{alert.student_name}</p>
                           <span className={`rounded-xl px-2 py-0.5 text-xs font-bold uppercase ${getRiskColor(alert.risk_level)}`}>
-                            {alert.risk_level}
+                            {riskLabel(alert.risk_level, isAr)}
                           </span>
                         </div>
-                        <p className="text-xs mt-0.5">ID: {alert.student_number}</p>
+                        <p className="text-xs mt-0.5">{isAr ? 'الرقم الجامعي' : 'ID'}: {alert.student_number}</p>
                         <p className="text-xs mt-1">{t('warning.attendanceRate')}: {alert.attendance_rate}% • {alert.absence_count}/{alert.total_lectures} {t('warning.absences')}</p>
                       </div>
                     </div>
@@ -168,7 +186,7 @@ export default function EarlyWarning() {
                       <div className="flex items-start gap-3 flex-1">
                         {getRiskIcon(alert.risk_level)}
                         <div>
-                          <p className="font-medium text-sm">{alert.message}</p>
+                          <p className="font-medium text-sm">{alertText(alert)}</p>
                           <p className="text-xs mt-1">{new Date(alert.created_at).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium' })}</p>
                         </div>
                       </div>

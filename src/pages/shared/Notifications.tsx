@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileLayout from '@/components/MobileLayout';
+import BrandLoader from '@/components/BrandLoader';
 import {
   Bell, CheckCircle2, AlertTriangle, Info, Heart, MessageCircle, Pin,
-  Users, Settings2, CheckCheck, Trash2, Loader2,
+  Users, Settings2, CheckCheck, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { formatDistanceToNow } from 'date-fns';
 import { ar, enUS } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { localizeServerText } from '@/lib/localizeText';
 
 type Notification = {
   id: string; title: string; message: string; type: string;
@@ -44,6 +46,8 @@ export default function NotificationsPage({ role }: { role: 'doctor' | 'student'
   const { language, isRTL } = useLanguage();
   const t = (a: string, e: string) => (language === 'ar' ? a : e);
   const locale = language === 'ar' ? ar : enUS;
+  const isAr = language === 'ar';
+  const L = (s: string) => localizeServerText(s, isAr);
 
   const [items, setItems] = useState<Notification[]>([]);
   const [busy, setBusy] = useState(true);
@@ -116,10 +120,11 @@ export default function NotificationsPage({ role }: { role: 'doctor' | 'student'
 
   const getIcon = (n: Notification) => {
     if (n.type === 'community') {
-      if (n.title.includes('إعجاب')) return <Heart className="h-5 w-5 text-rose-500" />;
-      if (n.title.includes('تعليق')) return <MessageCircle className="h-5 w-5 text-primary" />;
-      if (n.title.includes('رد')) return <MessageCircle className="h-5 w-5 text-primary" />;
-      if (n.title.includes('تثبيت')) return <Pin className="h-5 w-5 text-primary" />;
+      const ttl = n.title.toLowerCase();
+      if (n.title.includes('إعجاب') || ttl.includes('like')) return <Heart className="h-5 w-5 text-rose-500" />;
+      if (n.title.includes('تعليق') || ttl.includes('comment')) return <MessageCircle className="h-5 w-5 text-primary" />;
+      if (n.title.includes('رد') || ttl.includes('reply')) return <MessageCircle className="h-5 w-5 text-primary" />;
+      if (n.title.includes('تثبيت') || ttl.includes('pin')) return <Pin className="h-5 w-5 text-primary" />;
       return <Users className="h-5 w-5 text-primary" />;
     }
     switch (n.type) {
@@ -188,7 +193,7 @@ export default function NotificationsPage({ role }: { role: 'doctor' | 'student'
         </div>
 
         {busy ? (
-          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          <BrandLoader inline />
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl bg-card p-8 text-center shadow-card">
             <Bell className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
@@ -205,8 +210,8 @@ export default function NotificationsPage({ role }: { role: 'doctor' | 'student'
                   <div className="flex items-start gap-3">
                     {getIcon(n)}
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => !n.read && markAsRead(n.id)}>
-                      <p className="font-medium">{n.title}</p>
-                      <p className="text-sm text-muted-foreground break-words">{n.message}</p>
+                      <p className="font-medium">{L(n.title)}</p>
+                      <p className="text-sm text-muted-foreground break-words">{L(n.message)}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale })}
                       </p>

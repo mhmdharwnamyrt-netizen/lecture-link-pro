@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Users, BookOpen, Clock, TrendingUp, Bot, AlertTriangle } from 'lucide-react';
 import AddLectureDialog from '@/components/doctor/AddLectureDialog';
 import DashboardHero from '@/components/DashboardHero';
+import BrandLoader from '@/components/BrandLoader';
 
 export default function DoctorDashboard() {
   const { profile, loading, user } = useAuth();
@@ -19,6 +20,12 @@ export default function DoctorDashboard() {
   const [showAddLecture, setShowAddLecture] = useState(false);
   const [recentLectures, setRecentLectures] = useState<any[]>([]);
   const [warningCount, setWarningCount] = useState(0);
+  const [feedPosts, setFeedPosts] = useState<any[]>([]);
+
+  // Summer break (July → September): no lectures are running, so the home
+  // screen switches to community + trainings content instead of empty cards.
+  const month = new Date().getMonth() + 1;
+  const isSummer = month >= 7 && month <= 9;
 
   const DAY_AR: Record<string, string> = {
     Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء',
@@ -72,15 +79,20 @@ export default function DoctorDashboard() {
       .eq('doctor_id', profile.id)
       .eq('is_resolved', false) as any;
     setWarningCount(count || 0);
+
+    const { data: posts } = await supabase
+      .from('community_posts')
+      .select('id, content, category, likes_count, comments_count, created_at, profiles:author_id(full_name)')
+      .eq('is_hidden', false)
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(5) as any;
+    setFeedPosts(posts || []);
   };
 
   if (loading || !profile) {
     return (
-      <MobileLayout role="doctor">
-        <div className="flex h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        </div>
-      </MobileLayout>
+      <BrandLoader />
     );
   }
 
@@ -181,8 +193,60 @@ export default function DoctorDashboard() {
           </motion.div>
         )}
 
-        {/* Recent Lectures */}
-        <div className="mb-6">
+        {/* Summer break: community highlights fill the space of lectures */}
+        {isSummer && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight">
+                {language === 'ar' ? 'الأكثر تفاعلاً في الملتقى' : 'Trending in the community'}
+              </h2>
+              <button
+                onClick={() => navigate('/doctor/community')}
+                className="text-xs font-medium text-primary"
+              >
+                {language === 'ar' ? 'عرض الكل' : 'View all'}
+              </button>
+            </div>
+            {feedPosts.length === 0 ? (
+              <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-card">
+                <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {language === 'ar' ? 'لا توجد منشورات بعد — كن أول من يشارك' : 'No posts yet — be the first to share'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {feedPosts.map((post, i) => (
+                  <motion.button
+                    key={post.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, type: 'spring', stiffness: 260, damping: 22 }}
+                    onClick={() => navigate('/doctor/community')}
+                    className="w-full rounded-2xl border border-border/60 bg-card p-4 text-start shadow-card transition hover:shadow-elevated"
+                  >
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        {post.category}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {post.profiles?.full_name}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 text-sm">{post.content}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {post.likes_count} {language === 'ar' ? 'إعجاب' : 'likes'} • {post.comments_count}{' '}
+                      {language === 'ar' ? 'تعليق' : 'comments'}
+                    </p>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Recent Lectures — hidden during the summer break */}
+        <div className={`mb-6 ${isSummer ? 'hidden' : ''}`}>
           <h2 className="mb-3 text-lg font-semibold tracking-tight">{t('doctor.recentLectures')}</h2>
           {recentLectures.length === 0 ? (
             <div className="rounded-2xl bg-card p-8 text-center shadow-card">
