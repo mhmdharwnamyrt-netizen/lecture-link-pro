@@ -90,7 +90,12 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader role={role} />
-      <main className={`flex-1 pb-24 md:pb-4 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
+      <main
+        className={`flex-1 pb-24 transition-[margin] duration-300 ease-out md:pb-4 ${
+          isRTL ? (collapsed ? 'md:mr-[76px]' : 'md:mr-64') : collapsed ? 'md:ml-[76px]' : 'md:ml-64'
+        }`}
+      >
+
         {children}
       </main>
 
