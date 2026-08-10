@@ -26,7 +26,13 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
   const { t, isRTL, language } = useLanguage();
   const { profile, isAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem('bsut_sidebar_collapsed') === '1');
   const isAr = language === 'ar';
+
+  useEffect(() => {
+    localStorage.setItem('bsut_sidebar_collapsed', collapsed ? '1' : '0');
+  }, [collapsed]);
+
 
   // 4 primary + a persistent "More" button (5 slots total)
   const doctorPrimary: NavItem[] = [
