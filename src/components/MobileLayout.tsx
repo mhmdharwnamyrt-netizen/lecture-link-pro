@@ -273,40 +273,76 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
 
 
       {/* ============ Desktop sidebar ============ */}
-      <aside
-        className={`fixed top-0 hidden h-full w-64 border-border bg-card p-4 md:block ${
-          isRTL ? 'right-0 border-l' : 'left-0 border-r'
-        }`}
-      >
-        <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-            <BookOpen className="h-5 w-5 text-primary" />
+      <TooltipProvider delayDuration={150}>
+        <aside
+          className={`fixed top-0 hidden h-full flex-col border-border/70 bg-card/95 backdrop-blur-xl transition-[width] duration-300 ease-out md:flex ${
+            collapsed ? 'w-[76px] px-2 py-4' : 'w-64 p-4'
+          } ${isRTL ? 'right-0 border-l' : 'left-0 border-r'}`}
+        >
+          {/* Brand */}
+          <div className={`mb-6 flex items-center gap-3 ${collapsed ? 'justify-center px-0' : 'px-2'}`}>
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">BSUT Attendance</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {role === 'doctor' ? t('common.doctor') : t('common.student')} {t('common.portal')}
+                </p>
+              </div>
+            )}
           </div>
-          <div>
-            <p className="text-sm font-semibold">BSUT Attendance</p>
-            <p className="text-xs text-muted-foreground">
-              {role === 'doctor' ? t('common.doctor') : t('common.student')} {t('common.portal')}
-            </p>
-          </div>
-        </div>
-        <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-6rem)] pr-1">
-          {sidebarAll.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </aside>
+
+          {/* Collapse toggle */}
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? (isAr ? 'توسيع القائمة' : 'Expand menu') : isAr ? 'طي القائمة' : 'Collapse menu'}
+            className={`mb-3 flex h-9 items-center gap-2 rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${
+              collapsed ? 'w-full justify-center' : 'w-full px-3'
+            }`}
+          >
+            {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
+            {!collapsed && <span className="text-xs font-medium">{isAr ? 'طي القائمة' : 'Collapse'}</span>}
+          </button>
+
+          <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto overscroll-contain pb-4">
+            {sidebarAll.map((item) => {
+              const isActive = location.pathname === item.path;
+              const link = (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  aria-label={item.label}
+                  className={`group relative flex items-center rounded-xl text-sm font-medium transition-colors ${
+                    collapsed ? 'h-11 w-full justify-center' : 'gap-3 px-3 py-2.5'
+                  } ${isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+                >
+                  {isActive && (
+                    <span
+                      className={`absolute inset-y-1.5 w-[3px] rounded-full bg-primary ${isRTL ? 'right-0' : 'left-0'} ${
+                        collapsed ? 'opacity-100' : 'opacity-100'
+                      }`}
+                    />
+                  )}
+                  <item.icon className="h-5 w-5 shrink-0" />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              );
+
+              if (!collapsed) return link;
+              return (
+                <Tooltip key={item.path}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  <TooltipContent side={isRTL ? 'left' : 'right'}>{item.label}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </nav>
+        </aside>
+      </TooltipProvider>
+
     </div>
   );
 }
