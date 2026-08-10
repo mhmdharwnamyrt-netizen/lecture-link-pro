@@ -7,7 +7,7 @@ import MobileLayout from '@/components/MobileLayout';
 import BrandLoader from '@/components/BrandLoader';
 import {
   Bell, CheckCircle2, AlertTriangle, Info, Heart, MessageCircle, Pin,
-  Users, Settings2, CheckCheck, Trash2, Loader2,
+  Users, Settings2, CheckCheck, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
