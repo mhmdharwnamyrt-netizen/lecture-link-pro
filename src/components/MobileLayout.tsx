@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar,
   MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users, MoreHorizontal,
-  Briefcase, X, GraduationCap, PanelLeftClose, PanelLeftOpen,
+  Briefcase, X, GraduationCap, PanelLeftClose, PanelLeftOpen, Library,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -63,6 +63,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/doctor/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
     { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
     { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
+    { path: '/doctor/materials',     icon: Library,       label: isAr ? 'مواد المحاضرات' : 'Materials' },
   ];
 
   const studentExtra: ExtraItem[] = [
@@ -73,6 +74,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/student/community',     icon: Users,         label: isAr ? 'الملتقى الطلابي' : 'Community' },
     { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
     { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
+    { path: '/student/materials',     icon: Library,       label: isAr ? 'مواد المحاضرات' : 'Materials' },
     { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue' },
   ];
 
