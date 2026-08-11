@@ -10,15 +10,14 @@ interface BrandLoaderProps {
 
 /**
  * The single, app-wide loading experience.
- * Quiet, professional, brand-led: a soft ambient field, a glass medallion with
- * the university logo, one slow orbiting arc and a slim breathing progress line.
- * No secondary spinners anywhere else — this is the only loader.
+ * Dark, quiet and classic: a deep midnight field, the bare university logo,
+ * one slim arc tracing around it, and a thin line beneath that fills then resets.
  */
 export default function BrandLoader({ fullscreen = true, message, inline = false }: BrandLoaderProps) {
   if (inline) {
     return (
       <div className="flex w-full items-center justify-center py-10">
-        <Medallion size={56} />
+        <Mark size={48} />
       </div>
     );
   }
@@ -32,125 +31,95 @@ export default function BrandLoader({ fullscreen = true, message, inline = false
       }
       style={{
         background:
-          'linear-gradient(165deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 45%, hsl(var(--primary) / 0.10) 100%)',
+          'radial-gradient(120% 100% at 50% 35%, hsl(217 55% 14%) 0%, hsl(220 60% 8%) 45%, hsl(222 65% 4%) 100%)',
       }}
     >
-      {/* Ambient field */}
+      {/* Ambient depth */}
       <div className="pointer-events-none absolute inset-0">
-        {/* Soft aurora blobs */}
         <motion.div
-          className="absolute -left-24 top-[-10%] h-[34rem] w-[34rem] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.22), transparent 68%)' }}
-          animate={{ x: [0, 40, 0], y: [0, 26, 0], opacity: [0.55, 0.85, 0.55] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute left-1/2 top-1/2 h-[42rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(circle, hsl(210 100% 60% / 0.10), transparent 65%)' }}
+          animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.06, 1] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <motion.div
-          className="absolute -right-28 bottom-[-12%] h-[32rem] w-[32rem] rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, hsl(var(--accent) / 0.16), transparent 68%)' }}
-          animate={{ x: [0, -34, 0], y: [0, -20, 0], opacity: [0.45, 0.75, 0.45] }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        {/* Fine grid texture */}
-        <div
-          className="absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage:
-              'linear-gradient(hsl(var(--border) / 0.55) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.55) 1px, transparent 1px)',
-            backgroundSize: '54px 54px',
-            maskImage: 'radial-gradient(circle at 50% 45%, black, transparent 72%)',
-            WebkitMaskImage: 'radial-gradient(circle at 50% 45%, black, transparent 72%)',
-          }}
-        />
-        {/* Center glow */}
-        <motion.div
-          className="absolute left-1/2 top-1/2 h-[38rem] w-[38rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.10), transparent 62%)' }}
-          animate={{ scale: [1, 1.05, 1], opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        {/* Vignette */}
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(120% 90% at 50% 40%, transparent 45%, hsl(var(--foreground) / 0.07) 100%)' }}
+          style={{ background: 'radial-gradient(110% 85% at 50% 40%, transparent 40%, hsl(222 70% 2% / 0.85) 100%)' }}
         />
       </div>
 
-
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="relative flex flex-col items-center"
       >
-        <Medallion size={96} />
+        <Mark size={92} />
+
+        {/* Thin line beneath: fills, then resets */}
+        <div className="mt-9 h-px w-40 overflow-hidden bg-white/10">
+          <motion.div
+            className="h-full origin-left"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, hsl(210 100% 72%), hsl(210 100% 88%), transparent)',
+            }}
+            animate={{ scaleX: [0, 1, 1, 0], opacity: [0.4, 1, 1, 0] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: [0.4, 0, 0.2, 1], times: [0, 0.55, 0.8, 1] }}
+          />
+        </div>
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.25, duration: 0.5 }}
-          className="mt-7 text-[13px] font-medium tracking-tight text-foreground/80"
+          transition={{ delay: 0.4, duration: 0.8 }}
+          className="mt-6 text-[12px] font-medium tracking-[0.18em] text-white/55"
         >
           {message || 'جامعة بني سويف التكنولوجية'}
         </motion.p>
-
-        {/* Slim breathing line */}
-        <div className="mt-4 h-[3px] w-32 overflow-hidden rounded-full bg-border/70">
-          <motion.div
-            className="h-full w-1/3 rounded-full bg-primary"
-            animate={{ x: ['-110%', '330%'] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: [0.65, 0, 0.35, 1] }}
-          />
-        </div>
       </motion.div>
     </div>
   );
 }
 
-function Medallion({ size }: { size: number }) {
-  const ring = size + 26;
+function Mark({ size }: { size: number }) {
+  const box = size + 34;
   return (
-    <div className="relative grid place-items-center" style={{ height: ring, width: ring }}>
-      {/* Soft halo */}
-      <motion.div
-        className="absolute inset-0 rounded-full"
-        style={{ boxShadow: '0 0 60px -18px hsl(var(--primary) / 0.55)' }}
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      {/* Static hairline track */}
-      <div className="absolute inset-0 rounded-full border border-border/70" />
-      {/* Orbiting arc */}
+    <div className="relative grid place-items-center" style={{ height: box, width: box }}>
+      {/* Single slim arc tracing around the logo */}
       <motion.svg
         className="absolute inset-0"
         viewBox="0 0 100 100"
         animate={{ rotate: 360 }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: 'linear' }}
       >
+        <defs>
+          <linearGradient id="bl-arc" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="hsl(210 100% 78%)" stopOpacity="0" />
+            <stop offset="100%" stopColor="hsl(210 100% 82%)" stopOpacity="1" />
+          </linearGradient>
+        </defs>
         <circle
           cx="50"
           cy="50"
-          r="48"
+          r="47"
           fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth="2"
+          stroke="url(#bl-arc)"
+          strokeWidth="1.2"
           strokeLinecap="round"
-          strokeDasharray="46 256"
+          strokeDasharray="70 225"
         />
       </motion.svg>
-      {/* Glass medallion */}
-      <div
-        className="relative grid place-items-center rounded-full border border-border/60 bg-card shadow-card"
-        style={{ height: size, width: size }}
-      >
-        <motion.img
-          src={logoAsset.url}
-          alt=""
-          className="rounded-full object-contain"
-          style={{ height: size * 0.66, width: size * 0.66 }}
-          animate={{ scale: [1, 1.04, 1] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
+
+      {/* Bare logo — no plate, no white circle */}
+      <motion.img
+        src={logoAsset.url}
+        alt=""
+        className="relative object-contain"
+        style={{ height: size * 0.78, width: size * 0.78, filter: 'drop-shadow(0 0 22px hsl(210 100% 60% / 0.35))' }}
+        animate={{ opacity: [0.85, 1, 0.85], scale: [1, 1.03, 1] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+      />
     </div>
   );
 }
