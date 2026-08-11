@@ -280,32 +280,38 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
           } ${isRTL ? 'right-0 border-l' : 'left-0 border-r'}`}
         >
           {/* Brand */}
-          <div className={`mb-6 flex items-center gap-3 ${collapsed ? 'justify-center px-0' : 'px-2'}`}>
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
+          <div className={`mb-4 flex items-center gap-3 ${collapsed ? 'justify-center px-0' : 'px-2'}`}>
+            <img
+              src={logoAsset.url}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-full border border-border/60 bg-background object-contain p-1"
+            />
             {!collapsed && (
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">BSUT Attendance</p>
+                <p className="truncate text-sm font-semibold leading-tight">
+                  {isAr ? 'جامعة بني سويف التكنولوجية' : 'Beni Suef Technological University'}
+                </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {role === 'doctor' ? t('common.doctor') : t('common.student')} {t('common.portal')}
+                  {role === 'doctor'
+                    ? isAr ? 'بوابة أعضاء هيئة التدريس' : 'Faculty Portal'
+                    : isAr ? 'بوابة الطلاب' : 'Student Portal'}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Collapse toggle */}
-          <button
-            type="button"
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? (isAr ? 'توسيع القائمة' : 'Expand menu') : isAr ? 'طي القائمة' : 'Collapse menu'}
-            className={`mb-3 flex h-9 items-center gap-2 rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${
-              collapsed ? 'w-full justify-center' : 'w-full px-3'
-            }`}
-          >
-            {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
-            {!collapsed && <span className="text-xs font-medium">{isAr ? 'طي القائمة' : 'Collapse'}</span>}
-          </button>
+          {/* Collapse toggle — small icon only */}
+          <div className={`mb-3 flex ${collapsed ? 'justify-center' : isRTL ? 'justify-start' : 'justify-end'}`}>
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? (isAr ? 'توسيع القائمة' : 'Expand menu') : isAr ? 'طي القائمة' : 'Collapse menu'}
+              className="grid h-7 w-7 place-items-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {collapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+
 
           <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto overscroll-contain pb-4">
             {sidebarAll.map((item) => {
