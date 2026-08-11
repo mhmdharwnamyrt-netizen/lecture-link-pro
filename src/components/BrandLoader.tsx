@@ -17,7 +17,7 @@ export default function BrandLoader({ fullscreen = true, message, inline = false
   if (inline) {
     return (
       <div className="flex w-full items-center justify-center py-10">
-        <Mark size={48} />
+        <Mark size={64} />
       </div>
     );
   }
@@ -31,20 +31,20 @@ export default function BrandLoader({ fullscreen = true, message, inline = false
       }
       style={{
         background:
-          'radial-gradient(120% 100% at 50% 35%, hsl(217 55% 14%) 0%, hsl(220 60% 8%) 45%, hsl(222 65% 4%) 100%)',
+          'radial-gradient(120% 100% at 50% 35%, hsl(215 40% 30%) 0%, hsl(217 45% 20%) 48%, hsl(220 48% 14%) 100%)',
       }}
     >
       {/* Ambient depth */}
       <div className="pointer-events-none absolute inset-0">
         <motion.div
           className="absolute left-1/2 top-1/2 h-[42rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, hsl(210 100% 60% / 0.10), transparent 65%)' }}
+          style={{ background: 'radial-gradient(circle, hsl(205 100% 70% / 0.16), transparent 65%)' }}
           animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.06, 1] }}
           transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
         />
         <div
           className="absolute inset-0"
-          style={{ background: 'radial-gradient(110% 85% at 50% 40%, transparent 40%, hsl(222 70% 2% / 0.85) 100%)' }}
+          style={{ background: 'radial-gradient(110% 85% at 50% 40%, transparent 40%, hsl(220 50% 12% / 0.6) 100%)' }}
         />
       </div>
 
@@ -54,7 +54,7 @@ export default function BrandLoader({ fullscreen = true, message, inline = false
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         className="relative flex flex-col items-center"
       >
-        <Mark size={92} />
+        <Mark size={132} />
 
         {/* Thin line beneath: fills, then resets */}
         <div className="mt-9 h-px w-40 overflow-hidden bg-white/10">
@@ -111,15 +111,20 @@ function Mark({ size }: { size: number }) {
         />
       </motion.svg>
 
-      {/* Bare logo — no plate, no white circle */}
-      <motion.img
-        src={logoAsset.url}
-        alt=""
-        className="relative object-contain"
-        style={{ height: size * 0.78, width: size * 0.78, filter: 'drop-shadow(0 0 22px hsl(210 100% 60% / 0.35))' }}
-        animate={{ opacity: [0.85, 1, 0.85], scale: [1, 1.03, 1] }}
+      {/* Circular logo framed */}
+      <motion.div
+        className="relative overflow-hidden rounded-full border border-white/15"
+        style={{
+          height: size,
+          width: size,
+          background: 'hsl(0 0% 100% / 0.06)',
+          boxShadow: '0 0 40px -10px hsl(205 100% 70% / 0.45), inset 0 0 0 1px hsl(0 0% 100% / 0.06)',
+        }}
+        animate={{ opacity: [0.9, 1, 0.9], scale: [1, 1.03, 1] }}
         transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      >
+        <img src={logoAsset.url} alt="" className="h-full w-full rounded-full object-cover" />
+      </motion.div>
     </div>
   );
 }
