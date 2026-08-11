@@ -27,26 +27,54 @@ export default function BrandLoader({ fullscreen = true, message, inline = false
     <div
       className={
         fullscreen
-          ? 'fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-background'
-          : 'relative grid min-h-screen place-items-center overflow-hidden bg-background'
+          ? 'fixed inset-0 z-[100] grid place-items-center overflow-hidden'
+          : 'relative grid min-h-screen place-items-center overflow-hidden'
       }
+      style={{
+        background:
+          'linear-gradient(165deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 45%, hsl(var(--primary) / 0.10) 100%)',
+      }}
     >
       {/* Ambient field */}
       <div className="pointer-events-none absolute inset-0">
+        {/* Soft aurora blobs */}
         <motion.div
-          className="absolute left-1/2 top-1/2 h-[46rem] w-[46rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.10), transparent 62%)' }}
-          animate={{ scale: [1, 1.06, 1], opacity: [0.75, 1, 0.75] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -left-24 top-[-10%] h-[34rem] w-[34rem] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.22), transparent 68%)' }}
+          animate={{ x: [0, 40, 0], y: [0, 26, 0], opacity: [0.55, 0.85, 0.55] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
         />
+        <motion.div
+          className="absolute -right-28 bottom-[-12%] h-[32rem] w-[32rem] rounded-full blur-3xl"
+          style={{ background: 'radial-gradient(circle, hsl(var(--accent) / 0.16), transparent 68%)' }}
+          animate={{ x: [0, -34, 0], y: [0, -20, 0], opacity: [0.45, 0.75, 0.45] }}
+          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {/* Fine grid texture */}
         <div
-          className="absolute inset-0 opacity-[0.55]"
+          className="absolute inset-0 opacity-[0.35]"
           style={{
-            background:
-              'linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary) / 0.55) 55%, hsl(var(--background)) 100%)',
+            backgroundImage:
+              'linear-gradient(hsl(var(--border) / 0.55) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / 0.55) 1px, transparent 1px)',
+            backgroundSize: '54px 54px',
+            maskImage: 'radial-gradient(circle at 50% 45%, black, transparent 72%)',
+            WebkitMaskImage: 'radial-gradient(circle at 50% 45%, black, transparent 72%)',
           }}
         />
+        {/* Center glow */}
+        <motion.div
+          className="absolute left-1/2 top-1/2 h-[38rem] w-[38rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.10), transparent 62%)' }}
+          animate={{ scale: [1, 1.05, 1], opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {/* Vignette */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'radial-gradient(120% 90% at 50% 40%, transparent 45%, hsl(var(--foreground) / 0.07) 100%)' }}
+        />
       </div>
+
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
