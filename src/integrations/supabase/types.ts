@@ -610,6 +610,110 @@ export type Database = {
           },
         ]
       }
+      course_material_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          id: string
+          material_id: string
+          mime_type: string | null
+          order_index: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          material_id: string
+          mime_type?: string | null
+          order_index?: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          material_id?: string
+          mime_type?: string | null
+          order_index?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_material_files_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "course_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_materials: {
+        Row: {
+          created_at: string
+          created_by: string
+          department_id: string | null
+          description: string | null
+          downloads_count: number
+          id: string
+          is_published: boolean
+          level: number | null
+          subject_id: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          views_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          department_id?: string | null
+          description?: string | null
+          downloads_count?: number
+          id?: string
+          is_published?: boolean
+          level?: number | null
+          subject_id?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          views_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          department_id?: string | null
+          description?: string | null
+          downloads_count?: number
+          id?: string
+          is_published?: boolean
+          level?: number | null
+          subject_id?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_materials_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_materials_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -965,6 +1069,80 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_downloads: {
+        Row: {
+          downloaded_at: string
+          file_id: string | null
+          id: string
+          material_id: string
+          user_id: string
+        }
+        Insert: {
+          downloaded_at?: string
+          file_id?: string | null
+          id?: string
+          material_id: string
+          user_id: string
+        }
+        Update: {
+          downloaded_at?: string
+          file_id?: string | null
+          id?: string
+          material_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_downloads_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "course_material_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_downloads_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "course_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_views: {
+        Row: {
+          first_viewed_at: string
+          id: string
+          last_viewed_at: string
+          material_id: string
+          user_id: string
+          view_count: number
+        }
+        Insert: {
+          first_viewed_at?: string
+          id?: string
+          last_viewed_at?: string
+          material_id: string
+          user_id: string
+          view_count?: number
+        }
+        Update: {
+          first_viewed_at?: string
+          id?: string
+          last_viewed_at?: string
+          material_id?: string
+          user_id?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_views_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "course_materials"
             referencedColumns: ["id"]
           },
         ]
@@ -2052,6 +2230,11 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_material_path: { Args: { _path: string }; Returns: boolean }
+      can_view_material: {
+        Args: { _material: string; _uid: string }
+        Returns: boolean
+      }
       community_leaderboard: {
         Args: { days?: number; lim?: number }
         Returns: {
@@ -2067,6 +2250,7 @@ export type Database = {
       }
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
+      is_material_creator_role: { Args: { _uid: string }; Returns: boolean }
       is_quiz_owner: { Args: { _quiz: string; _uid: string }; Returns: boolean }
       rebuild_statistics: { Args: never; Returns: string }
       redeem_admin_invite: { Args: { p_token: string }; Returns: Json }
