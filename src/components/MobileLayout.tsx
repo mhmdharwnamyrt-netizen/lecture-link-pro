@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppHeader from '@/components/AppHeader';
+import logoAsset from '@/assets/bsut-logo.png.asset.json';
 
 
 
