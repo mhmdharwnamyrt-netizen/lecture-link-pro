@@ -120,10 +120,11 @@ export default function MaterialEditor({ role }: Props) {
         const { error } = await supabase.from('course_materials' as any).update(payload).eq('id', id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from('course_materials' as any)
-          .insert({ ...payload, created_by: user.id }).select('id').single();
+        const newId = crypto.randomUUID();
+        const { error } = await supabase.from('course_materials' as any)
+          .insert({ ...payload, id: newId, created_by: user.id });
         if (error) throw error;
-        materialId = (data as any).id;
+        materialId = newId;
       }
 
       for (let i = 0; i < pending.length; i++) {
