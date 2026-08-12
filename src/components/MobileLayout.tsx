@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   Home, BookOpen, Bell, User, BarChart3, Bot, AlertTriangle, Calendar,
   MessageCircle, Clock, Shield, CloudOff, Trophy, Search, Users, MoreHorizontal,
-  Briefcase, X, GraduationCap, PanelLeftClose, PanelLeftOpen, Library,
+  Briefcase, X, GraduationCap, PanelLeftClose, PanelLeftOpen, Library, MessagesSquare,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -64,6 +64,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/doctor/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
     { path: '/doctor/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
     { path: '/doctor/materials',     icon: Library,       label: isAr ? 'مواد المحاضرات' : 'Materials' },
+    { path: '/doctor/groups',        icon: MessagesSquare, label: isAr ? 'المجموعات الدراسية' : 'Study Groups' },
   ];
 
   const studentExtra: ExtraItem[] = [
@@ -75,6 +76,7 @@ export default function MobileLayout({ children, role }: MobileLayoutProps) {
     { path: '/student/trainings',     icon: Briefcase,     label: isAr ? 'التدريبات' : 'Trainings' },
     { path: '/student/quizzes',       icon: GraduationCap, label: isAr ? 'الاختبارات' : 'Quizzes' },
     { path: '/student/materials',     icon: Library,       label: isAr ? 'مواد المحاضرات' : 'Materials' },
+    { path: '/student/groups',        icon: MessagesSquare, label: isAr ? 'المجموعات الدراسية' : 'Study Groups' },
     { path: '/student/offline-queue', icon: CloudOff,      label: isAr ? 'قائمة الانتظار' : 'Offline Queue' },
   ];
 
