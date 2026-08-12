@@ -54,6 +54,8 @@ const QuizTake = lazy(() => import("./pages/shared/QuizTake"));
 const QuizResult = lazy(() => import("./pages/shared/QuizResult"));
 const QuizResults = lazy(() => import("./pages/shared/QuizResults"));
 const Materials = lazy(() => import("./pages/shared/Materials"));
+const StudyGroups = lazy(() => import("./pages/shared/StudyGroups"));
+const StudyGroupChat = lazy(() => import("./pages/shared/StudyGroupChat"));
 const MaterialEditor = lazy(() => import("./pages/shared/MaterialEditor"));
 const MaterialDetail = lazy(() => import("./pages/shared/MaterialDetail"));
 const MaterialStats = lazy(() => import("./pages/shared/MaterialStats"));
@@ -114,6 +116,8 @@ const App = () => (
                   <Route path="/doctor/trainings/:id" element={<Guarded><TrainingDetail role="doctor" /></Guarded>} />
                   <Route path="/doctor/trainings/:id/edit" element={<Guarded><TrainingCreate role="doctor" /></Guarded>} />
                   <Route path="/doctor/trainings/:id/manage" element={<Guarded><TrainingManage role="doctor" /></Guarded>} />
+                  <Route path="/doctor/groups" element={<Guarded><StudyGroups role="doctor" /></Guarded>} />
+                  <Route path="/doctor/groups/:id" element={<Guarded><StudyGroupChat role="doctor" /></Guarded>} />
                   <Route path="/doctor/materials" element={<Guarded><Materials role="doctor" /></Guarded>} />
                   <Route path="/doctor/materials/new" element={<Guarded><MaterialEditor role="doctor" /></Guarded>} />
                   <Route path="/doctor/materials/:id" element={<Guarded><MaterialDetail role="doctor" /></Guarded>} />
@@ -143,6 +147,8 @@ const App = () => (
                   <Route path="/student/trainings/:id" element={<Guarded><TrainingDetail role="student" /></Guarded>} />
                   <Route path="/student/trainings/:id/edit" element={<Navigate to="/student/trainings" replace />} />
                   <Route path="/student/trainings/:id/manage" element={<Guarded><TrainingManage role="student" /></Guarded>} />
+                  <Route path="/student/groups" element={<Guarded><StudyGroups role="student" /></Guarded>} />
+                  <Route path="/student/groups/:id" element={<Guarded><StudyGroupChat role="student" /></Guarded>} />
                   <Route path="/student/materials" element={<Guarded><Materials role="student" /></Guarded>} />
                   <Route path="/student/materials/:id" element={<Guarded><MaterialDetail role="student" /></Guarded>} />
                   <Route path="/student/quizzes" element={<Guarded><QuizList role="student" /></Guarded>} />
