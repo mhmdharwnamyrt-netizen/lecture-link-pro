@@ -1909,6 +1909,180 @@ export type Database = {
           },
         ]
       }
+      study_group_messages: {
+        Row: {
+          content: string
+          created_at: string
+          duration_seconds: number | null
+          edited_at: string | null
+          group_id: string
+          id: string
+          is_deleted: boolean
+          likes_count: number
+          media_mime: string | null
+          media_name: string | null
+          media_path: string | null
+          media_size: number | null
+          media_type: string | null
+          reply_to_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          duration_seconds?: number | null
+          edited_at?: string | null
+          group_id: string
+          id?: string
+          is_deleted?: boolean
+          likes_count?: number
+          media_mime?: string | null
+          media_name?: string | null
+          media_path?: string | null
+          media_size?: number | null
+          media_type?: string | null
+          reply_to_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          duration_seconds?: number | null
+          edited_at?: string | null
+          group_id?: string
+          id?: string
+          is_deleted?: boolean
+          likes_count?: number
+          media_mime?: string | null
+          media_name?: string | null
+          media_path?: string | null
+          media_size?: number | null
+          media_type?: string | null
+          reply_to_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_group_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "study_group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          reaction: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          reaction?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          reaction?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "study_group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_group_reads: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "study_group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          created_at: string
+          department_id: string
+          description: string | null
+          id: string
+          is_active: boolean
+          level: number
+          name: string
+          name_ar: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          level: number
+          name: string
+          name_ar?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          level?: number
+          name?: string
+          name_ar?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_groups_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           created_at: string
@@ -2250,6 +2424,10 @@ export type Database = {
       }
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
+      is_group_member: {
+        Args: { _group: string; _uid: string }
+        Returns: boolean
+      }
       is_material_creator_role: { Args: { _uid: string }; Returns: boolean }
       is_quiz_owner: { Args: { _quiz: string; _uid: string }; Returns: boolean }
       rebuild_statistics: { Args: never; Returns: string }
@@ -2260,6 +2438,16 @@ export type Database = {
       student_can_access_quiz: {
         Args: { _quiz: string; _uid: string }
         Returns: boolean
+      }
+      study_group_members: {
+        Args: { _group: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          is_ta: boolean
+          role: string
+          user_id: string
+        }[]
       }
       submit_quiz_attempt: { Args: { p_attempt_id: string }; Returns: Json }
     }
