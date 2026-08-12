@@ -54,6 +54,8 @@ const QuizTake = lazy(() => import("./pages/shared/QuizTake"));
 const QuizResult = lazy(() => import("./pages/shared/QuizResult"));
 const QuizResults = lazy(() => import("./pages/shared/QuizResults"));
 const Materials = lazy(() => import("./pages/shared/Materials"));
+const StudyGroups = lazy(() => import("./pages/shared/StudyGroups"));
+const StudyGroupChat = lazy(() => import("./pages/shared/StudyGroupChat"));
 const MaterialEditor = lazy(() => import("./pages/shared/MaterialEditor"));
 const MaterialDetail = lazy(() => import("./pages/shared/MaterialDetail"));
 const MaterialStats = lazy(() => import("./pages/shared/MaterialStats"));
