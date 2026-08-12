@@ -2404,6 +2404,7 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_group_media: { Args: { _path: string }; Returns: boolean }
       can_access_material_path: { Args: { _path: string }; Returns: boolean }
       can_view_material: {
         Args: { _material: string; _uid: string }
