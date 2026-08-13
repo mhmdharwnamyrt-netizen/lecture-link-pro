@@ -25,6 +25,9 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
   const [hallNumber, setHallNumber] = useState<number>(0);
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
+  const [dayOfWeek, setDayOfWeek] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   const [doctorDepts, setDoctorDepts] = useState<any[]>([]);
@@ -76,6 +79,9 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
         hall_number: hallNumber || null,
         description: description || null,
         notes: notes || null,
+        day_of_week: dayOfWeek || null,
+        start_time: startTime || null,
+        end_time: endTime || null,
       });
       if (error) throw error;
 
@@ -93,12 +99,18 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
   const resetForm = () => {
     setTitle(''); setType('lecture'); setSubjectId(''); setDepartmentId('');
     setLevel(0); setHallNumber(0); setDescription(''); setNotes('');
+    setDayOfWeek(''); setStartTime(''); setEndTime('');
   };
 
   if (!open) return null;
 
   const halls = type === 'lecture' ? LECTURE_HALLS : SECTION_HALLS;
   const uniqueDeptIds = [...new Set(doctorDepts.map(d => d.department_id))];
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const DAYS_AR: Record<string, string> = {
+    Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء',
+    Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت',
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/20 backdrop-blur-sm md:items-center" onClick={onClose}>
@@ -194,6 +206,45 @@ export default function AddLectureDialog({ open, onClose, profileId, onCreated }
           <div>
             <Label>{t('common.notes')} ({t('common.optional')})</Label>
             <Input value={notes} onChange={e => setNotes(e.target.value)} className="mt-1 h-12 rounded-xl" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 rounded-2xl bg-muted/50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t('nav.schedule')}
+            </p>
+            <div>
+              <Label>{t('common.day')}</Label>
+              <select 
+                value={dayOfWeek} 
+                onChange={e => setDayOfWeek(e.target.value)}
+                className="mt-1 h-12 w-full rounded-xl border border-input bg-background px-3 text-sm"
+              >
+                <option value="">{t('common.selectDay') || 'Select Day'}</option>
+                {DAYS.map(d => (
+                  <option key={d} value={d}>{useLanguage().language === 'ar' ? DAYS_AR[d] : d}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>{t('common.startTime') || 'Start Time'}</Label>
+                <Input 
+                  type="time" 
+                  value={startTime} 
+                  onChange={e => setStartTime(e.target.value)} 
+                  className="mt-1 h-12 rounded-xl" 
+                />
+              </div>
+              <div>
+                <Label>{t('common.endTime') || 'End Time'}</Label>
+                <Input 
+                  type="time" 
+                  value={endTime} 
+                  onChange={e => setEndTime(e.target.value)} 
+                  className="mt-1 h-12 rounded-xl" 
+                />
+              </div>
+            </div>
           </div>
 
           <div className="sticky bottom-0 bg-card pt-2">
