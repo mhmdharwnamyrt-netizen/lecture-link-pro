@@ -102,7 +102,13 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
             src={previewSrc || displaySrc!}
             alt=""
             className="h-full w-full object-cover"
-            onError={() => { if (!previewSrc) { setDisplaySrc(null); setLoadError(true); } }}
+            onError={() => { 
+              if (!previewSrc) { 
+                setDisplaySrc(null); 
+                // Only set load error if we actually have a path that failed
+                if (avatarPath) setLoadError(true); 
+              } 
+            }}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">

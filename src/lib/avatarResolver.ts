@@ -12,7 +12,7 @@ const pending = new Map<string, Promise<string | null>>();
 const TTL_MS = 55 * 60 * 1000; // just under signed-url TTL
 
 const isFullUrl = (v: string) =>
-  v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:') || v.startsWith('blob:');
+  v.startsWith('http://') || v.startsWith('https://') || v.startsWith('data:') || v.startsWith('blob:') || v.startsWith('https://dicebear.com') || v.includes('dicebear.com');
 
 export async function resolveAvatarUrl(raw?: string | null): Promise<string | null> {
   if (!raw) return null;

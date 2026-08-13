@@ -20,7 +20,7 @@ export default function SmartAvatarImage({ src, alt, className }: Props) {
   useEffect(() => {
     let mounted = true;
     setFailed(false);
-    if (!src) { setResolved(null); return; }
+    if (!src) { setResolved(null); setFailed(false); return; }
     resolveAvatarUrl(src)
       .then((u) => { if (mounted) setResolved(u); })
       .catch(() => { if (mounted) setFailed(true); });

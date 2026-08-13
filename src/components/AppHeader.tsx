@@ -1,11 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, Search, Moon, Sun, Languages } from 'lucide-react';
+import { Bell, Search, Moon, Sun, Languages, User as UserIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import logoAsset from '@/assets/bsut-logo.png.asset.json';
+import SmartAvatarImage from './SmartAvatarImage';
+import { Avatar, AvatarFallback } from './ui/avatar';
 
 interface AppHeaderProps {
   role: 'doctor' | 'student';
@@ -13,7 +15,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ role }: AppHeaderProps) {
   const { language, setLanguage } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [unread, setUnread] = useState(0);
@@ -49,6 +51,18 @@ export default function AppHeader({ role }: AppHeaderProps) {
         </Link>
 
         <div className="ms-auto flex items-center gap-1">
+          <Link
+            to={`/${role}/profile`}
+            className="group flex items-center gap-2 rounded-xl p-1 transition hover:bg-muted"
+          >
+            <Avatar className="h-8 w-8 ring-2 ring-background transition group-hover:ring-primary/20">
+              <SmartAvatarImage src={profile?.avatar_url} />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                <UserIcon className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+
           <button
             type="button"
             onClick={() => setLanguage(isAr ? 'en' : 'ar')}
