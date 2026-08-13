@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useToast } from '@/hooks/use-toast';
 import { useTx } from '@/lib/i18nModules';
 import { ReactionPicker, type ReactionType } from '@/components/shared/ReactionPicker';
+import ChatBackground from '@/components/shared/ChatBackground';
 import {
   fetchGroup, fetchGroupMembers, fetchMessages, groupMediaUrl, mediaKindOf,
   initialsOf, colorOf, GROUP_BUCKET, MAX_GROUP_FILE_MB,
