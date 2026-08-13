@@ -369,9 +369,11 @@ export default function StudyGroupChat({ role }: Props) {
 
   return (
     <MobileLayout role={role}>
-      <div className="mx-auto flex h-[calc(100vh-12rem)] max-w-3xl flex-col px-3 py-3 md:h-[calc(100vh-8rem)] md:px-4">
+      <div className="relative mx-auto flex h-[calc(100vh-12rem)] max-w-3xl flex-col px-3 py-3 md:h-[calc(100vh-8rem)] md:px-4">
+        <ChatBackground departmentName={group.departments?.name || group.departments?.name_ar} />
+
         {/* Header */}
-        <Card className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border-border/50 p-3">
+        <Card className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border-border/50 bg-card/80 p-3 backdrop-blur-md shadow-sm">
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/${role}/groups`)}>
             <Back className="h-5 w-5" />
           </Button>
@@ -425,18 +427,20 @@ export default function StudyGroupChat({ role }: Props) {
                   </div>
 
                   <div className={`rounded-2xl border px-3 py-2 text-sm shadow-sm ${
-                    mine ? 'border-primary/30 bg-primary/10' : 'border-border/50 bg-card'
+                    mine 
+                      ? 'border-primary/20 bg-primary/90 text-primary-foreground shadow-md dark:bg-primary/80' 
+                      : 'border-border/50 bg-card/90 backdrop-blur-sm shadow-sm dark:bg-card/80'
                   }`}>
                     {m.is_deleted ? (
                       <p className="italic text-muted-foreground">{tx('g.deletedMsg')}</p>
                     ) : (
                       <div className="space-y-2">
                         {parent && (
-                          <div className="rounded-xl border-s-2 border-primary/50 bg-muted/50 px-2 py-1">
-                            <p className="text-[11px] font-semibold text-primary">
+                          <div className={`rounded-xl border-s-2 px-2 py-1 mb-2 ${mine ? 'border-white/40 bg-white/10' : 'border-primary/50 bg-muted/50'}`}>
+                            <p className={`text-[11px] font-semibold ${mine ? 'text-white' : 'text-primary'}`}>
                               {memberMap[parent.sender_id]?.full_name || tx('m.s.user')}
                             </p>
-                            <p className="line-clamp-2 text-[11px] text-muted-foreground">
+                            <p className={`line-clamp-2 text-[11px] ${mine ? 'text-white/80' : 'text-muted-foreground'}`}>
                               {parent.content || parent.media_name || tx('g.voice')}
                             </p>
                           </div>
@@ -450,7 +454,7 @@ export default function StudyGroupChat({ role }: Props) {
                         {long && (
                           <button onClick={() => setExpanded((p) => {
                             const s = new Set(p); s.has(m.id) ? s.delete(m.id) : s.add(m.id); return s;
-                          })} className="text-[11px] font-semibold text-primary">
+                          })} className={`text-[11px] font-semibold ${mine ? 'text-white/90 underline' : 'text-primary'}`}>
                             {open ? tx('g.showLess') : tx('g.showMore')}
                           </button>
                         )}
@@ -518,7 +522,7 @@ export default function StudyGroupChat({ role }: Props) {
         </div>
 
         {/* Composer */}
-        <Card className="mt-2 shrink-0 space-y-2 rounded-2xl border-border/50 p-2.5">
+        <Card className="mt-2 shrink-0 space-y-2 rounded-2xl border-border/50 bg-card/80 p-2.5 backdrop-blur-md shadow-lg">
           <AnimatePresence>
             {(replyTo || editing) && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
