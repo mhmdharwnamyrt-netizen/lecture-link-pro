@@ -110,6 +110,7 @@ function DoctorRegistration({ onBack, isTA = false }: { onBack: () => void; isTA
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [academicTitle, setAcademicTitle] = useState('');
   const [selectedDepts, setSelectedDepts] = useState<{ dept: Department; levels: number[] }[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([]);
@@ -209,6 +210,7 @@ function DoctorRegistration({ onBack, isTA = false }: { onBack: () => void; isTA
         full_name: fullName,
         phone,
         role: 'doctor',
+        gender,
         is_ta: isTA,
         academic_title: isTA ? (academicTitle || 'Teaching Assistant') : academicTitle,
       } as any).select().single();
@@ -319,6 +321,27 @@ function DoctorRegistration({ onBack, isTA = false }: { onBack: () => void; isTA
             <div>
               <Label>Password *</Label>
               <Input type="password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 h-12 rounded-xl" placeholder="Min 6 characters" />
+            </div>
+            <div>
+              <Label>Gender *</Label>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => setGender('male')}
+                  className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-colors ${
+                    gender === 'male' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  Male / ذكر
+                </button>
+                <button
+                  onClick={() => setGender('female')}
+                  className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-colors ${
+                    gender === 'female' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  Female / أنثى
+                </button>
+              </div>
             </div>
             <div>
               <Label>Academic Title</Label>
@@ -436,6 +459,7 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [studentIdNum, setStudentIdNum] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [departmentId, setDepartmentId] = useState('');
   const [level, setLevel] = useState<number>(0);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -477,6 +501,7 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
         full_name: fullName,
         phone,
         role: 'student',
+        gender,
         student_id: studentIdNum,
         department_id: departmentId,
         level,
@@ -525,6 +550,27 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       <div>
         <Label>Password *</Label>
         <Input type="password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 h-12 rounded-xl" placeholder="Min 6 characters" />
+      </div>
+      <div>
+        <Label>Gender *</Label>
+        <div className="mt-2 flex gap-2">
+          <button
+            onClick={() => setGender('male')}
+            className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-colors ${
+              gender === 'male' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            Male / ذكر
+          </button>
+          <button
+            onClick={() => setGender('female')}
+            className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-colors ${
+              gender === 'female' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            Female / أنثى
+          </button>
+        </div>
       </div>
       <div>
         <Label>Department *</Label>
