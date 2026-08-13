@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ACCEPTED_TYPES, MATERIALS_BUCKET, MAX_FILE_MB, formatBytes, type MaterialFile,
 } from '@/lib/materials';
+import { useTx } from '@/lib/i18nModules';
 
 interface Props { role: 'doctor' | 'student' }
 
@@ -23,6 +24,7 @@ export default function MaterialEditor({ role }: Props) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { tx, isRTL, locale, pickName } = useTx();
   const base = `/${role}`;
   const editing = !!id;
 
@@ -86,7 +88,7 @@ export default function MaterialEditor({ role }: Props) {
     const ok: File[] = [];
     Array.from(list).forEach((f) => {
       if (f.size > MAX_FILE_MB * 1024 * 1024) {
-        toast({ title: `الملف ${f.name} أكبر من ${MAX_FILE_MB} ميجابايت`, variant: 'destructive' });
+        toast({ title: tx('m.ed.tooBig', { name: f.name, n: MAX_FILE_MB }), variant: 'destructive' });
       } else ok.push(f);
     });
     setPending((p) => [...p, ...ok]);
@@ -100,8 +102,8 @@ export default function MaterialEditor({ role }: Props) {
 
   const save = async () => {
     if (!user) return;
-    if (!title.trim()) { toast({ title: 'اكتب عنوان المحاضرة', variant: 'destructive' }); return; }
-    if (!editing && pending.length === 0) { toast({ title: 'أضف ملفًا واحدًا على الأقل', variant: 'destructive' }); return; }
+    if (!title.trim()) { toast({ title: tx('m.ed.needTitle'), variant: 'destructive' }); return; }
+    if (!editing && pending.length === 0) { toast({ title: tx('m.ed.needFile'), variant: 'destructive' }); return; }
 
     setSaving(true);
     try {
@@ -129,7 +131,7 @@ export default function MaterialEditor({ role }: Props) {
 
       for (let i = 0; i < pending.length; i++) {
         const file = pending[i];
-        setProgress(`جارٍ رفع ${i + 1} من ${pending.length}...`);
+        setProgress(tx('m.ed.uploading', { i: i + 1, n: pending.length }));
         const safe = file.name.replace(/[^\w.\-\u0600-\u06FF]+/g, '_');
         const path = `${user.id}/${materialId}/${Date.now()}-${safe}`;
         const { error: upErr } = await supabase.storage.from(MATERIALS_BUCKET)
@@ -146,7 +148,7 @@ export default function MaterialEditor({ role }: Props) {
         if (rowErr) throw rowErr;
       }
 
-      toast({ title: editing ? 'تم تحديث المحاضرة' : 'تم رفع المحاضرة بنجاح' });
+      toast({ title: editing ? tx('m.ed.updated') : tx('m.ed.created') });
       navigate(`${base}/materials/${materialId}`);
     } catch (err: any) {
       toast({ title: 'حدث خطأ', description: err.message, variant: 'destructive' });
@@ -162,28 +164,28 @@ export default function MaterialEditor({ role }: Props) {
     <MobileLayout role={role}>
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)} className={isRTL ? 'rotate-180' : ''}>
             <ArrowRight className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold">{editing ? 'تعديل المحاضرة' : 'رفع محاضرة جديدة'}</h1>
+          <h1 className="text-xl font-bold">{editing ? tx('m.ed.edit') : tx('m.ed.new')}</h1>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="space-y-4 rounded-3xl p-5">
             <div>
-              <Label>عنوان المحاضرة *</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-12 rounded-xl"
-                placeholder="مثال: المحاضرة الأولى — مقدمة في الشبكات" />
+              <Label>{tx('m.ed.title')}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-12 rounded-xl text-start"
+                placeholder={tx('m.ed.titlePh')} />
             </div>
             <div>
-              <Label>الوصف (اختياري)</Label>
+              <Label>{tx('m.ed.desc')}</Label>
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                className="mt-1 min-h-24 rounded-xl" placeholder="نبذة قصيرة عن محتوى المحاضرة..." />
+                className="mt-1 min-h-24 rounded-xl text-start" placeholder={tx('m.ed.descPh')} />
             </div>
 
             {uniqueDeptIds.length > 0 && (
               <div>
-                <Label>القسم</Label>
+                <Label>{tx('m.ed.dept')}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {uniqueDeptIds.map((dId) => {
                     const d = depts.find((x: any) => x.department_id === dId);
@@ -193,7 +195,7 @@ export default function MaterialEditor({ role }: Props) {
                         className={`rounded-xl px-3 py-2 text-sm transition-colors ${
                           departmentId === dId ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                         }`}>
-                        {d?.departments?.name_ar || d?.departments?.name}
+                        {pickName(d?.departments)}
                       </button>
                     );
                   })}
@@ -203,14 +205,14 @@ export default function MaterialEditor({ role }: Props) {
 
             {levels.length > 0 && (
               <div>
-                <Label>الفرقة</Label>
+                <Label>{tx('m.ed.level')}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {levels.map((l) => (
                     <button key={l} type="button" onClick={() => setLevel(l)}
                       className={`rounded-xl px-4 py-2 text-sm transition-colors ${
                         level === l ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                       }`}>
-                      الفرقة {l}
+                      {tx('m.year', { n: l })}
                     </button>
                   ))}
                 </div>
@@ -219,7 +221,7 @@ export default function MaterialEditor({ role }: Props) {
 
             {subjects.length > 0 && (
               <div>
-                <Label>المادة</Label>
+                <Label>{tx('m.ed.subject')}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {subjects.map((s: any) => (
                     <button key={s.subject_id} type="button"
@@ -235,15 +237,15 @@ export default function MaterialEditor({ role }: Props) {
             )}
 
             <div>
-              <Label>وسوم (اختياري)</Label>
-              <Input value={tags} onChange={(e) => setTags(e.target.value)} className="mt-1 h-12 rounded-xl"
-                placeholder="شبكات، الفصل الأول" />
+              <Label>{tx('m.ed.tags')}</Label>
+              <Input value={tags} onChange={(e) => setTags(e.target.value)} className="mt-1 h-12 rounded-xl text-start"
+                placeholder={tx('m.ed.tagsPh')} />
             </div>
 
             <div className="flex items-center justify-between rounded-2xl bg-muted/50 p-3">
               <div>
-                <p className="text-sm font-medium">نشر للطلاب</p>
-                <p className="text-xs text-muted-foreground">عند الإيقاف تبقى المحاضرة مسودة لديك فقط.</p>
+                <p className="text-sm font-medium">{tx('m.ed.publish')}</p>
+                <p className="text-xs text-muted-foreground">{tx('m.ed.publishHint')}</p>
               </div>
               <Switch checked={published} onCheckedChange={setPublished} />
             </div>
@@ -252,7 +254,7 @@ export default function MaterialEditor({ role }: Props) {
 
         {/* Files */}
         <Card className="space-y-3 rounded-3xl p-5">
-          <Label>ملفات المحاضرة</Label>
+          <Label>{tx('m.ed.files')}</Label>
 
           {existing.map((f) => (
             <div key={f.id} className="flex items-center gap-2 rounded-2xl border border-border/50 p-3">
@@ -278,16 +280,16 @@ export default function MaterialEditor({ role }: Props) {
 
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/70 p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
             <Upload className="h-6 w-6 text-primary" />
-            <span className="text-sm font-medium">اضغط لاختيار الملفات</span>
-            <span className="text-xs text-muted-foreground">PDF, Word, Excel, PowerPoint, صور — حتى {MAX_FILE_MB}MB للملف</span>
+            <span className="text-sm font-medium">{tx('m.ed.pick')}</span>
+            <span className="text-xs text-muted-foreground">{tx('m.ed.pickHint', { n: MAX_FILE_MB })}</span>
             <input type="file" multiple accept={ACCEPTED_TYPES} className="hidden"
               onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ''; }} />
           </label>
         </Card>
 
         <Button onClick={save} disabled={saving} className="h-14 w-full rounded-2xl text-base">
-          {saving ? (<><Loader2 className="me-2 h-4 w-4 animate-spin" /> {progress || 'جارٍ الحفظ...'}</>)
-            : (<><Save className="me-2 h-4 w-4" /> {editing ? 'حفظ التعديلات' : 'رفع ونشر'}</>)}
+          {saving ? (<><Loader2 className="me-2 h-4 w-4 animate-spin" /> {progress || tx('m.ed.saving')}</>)
+            : (<><Save className="me-2 h-4 w-4" /> {editing ? tx('m.ed.save') : tx('m.ed.create')}</>)}
         </Button>
       </div>
     </MobileLayout>
