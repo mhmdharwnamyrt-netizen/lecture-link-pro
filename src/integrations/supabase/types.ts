@@ -2428,6 +2428,7 @@ export type Database = {
       }
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
+      deactivate_expired_lectures: { Args: never; Returns: undefined }
       get_default_avatar_url: {
         Args: { p_gender: string; p_is_ta?: boolean; p_role: string }
         Returns: string

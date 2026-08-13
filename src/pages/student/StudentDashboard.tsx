@@ -151,9 +151,16 @@ export default function StudentDashboard() {
 
     if (lectures) {
       const relevantLectures = lectures.filter(l => {
-        if (isLectureCurrentlyActive(l)) return true;
+        const active = isLectureCurrentlyActive(l);
+        // Automatically hide or show based on schedule
+        if (active) return true;
+        
+        // Show today's lectures that are manually active but maybe not started yet
         if (isLectureToday(l) && l.is_active) return true;
+        
+        // Fallback for lectures without a day (manual legacy/AI)
         if (!l.day_of_week && l.is_active) return true;
+        
         return false;
       });
       const { data: attended } = await supabase
