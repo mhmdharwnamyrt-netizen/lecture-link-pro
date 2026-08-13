@@ -133,7 +133,7 @@ export default function MaterialDetail({ role }: Props) {
     return (
       <MobileLayout role={role}>
         <div className="mx-auto max-w-2xl px-4 py-16 text-center text-muted-foreground">
-          المحاضرة غير متاحة.
+          {tx('m.d.notFound')}
         </div>
       </MobileLayout>
     );

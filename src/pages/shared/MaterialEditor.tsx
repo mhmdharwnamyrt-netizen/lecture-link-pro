@@ -165,20 +165,20 @@ export default function MaterialEditor({ role }: Props) {
           <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)}>
             <ArrowRight className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold">{editing ? 'تعديل المحاضرة' : 'رفع محاضرة جديدة'}</h1>
+          <h1 className="text-xl font-bold">{editing ? tx('m.ed.edit') : tx('m.ed.new')}</h1>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="space-y-4 rounded-3xl p-5">
             <div>
-              <Label>عنوان المحاضرة *</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-12 rounded-xl"
-                placeholder="مثال: المحاضرة الأولى — مقدمة في الشبكات" />
+              <Label>{tx('m.ed.title')}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-12 rounded-xl text-start"
+                placeholder={tx('m.ed.titlePh')} />
             </div>
             <div>
-              <Label>الوصف (اختياري)</Label>
+              <Label>{tx('m.ed.desc')}</Label>
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                className="mt-1 min-h-24 rounded-xl" placeholder="نبذة قصيرة عن محتوى المحاضرة..." />
+                className="mt-1 min-h-24 rounded-xl text-start" placeholder={tx('m.ed.descPh')} />
             </div>
 
             {uniqueDeptIds.length > 0 && (

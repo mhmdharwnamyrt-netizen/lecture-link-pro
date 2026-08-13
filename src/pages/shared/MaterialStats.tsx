@@ -117,7 +117,7 @@ export default function MaterialStats({ role }: Props) {
           <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials/${id}`)}>
             <ArrowRight className="h-5 w-5" />
           </Button>
-          <h1 className="truncate text-xl font-bold">إحصائيات المحاضرة</h1>
+          <h1 className="truncate text-xl font-bold">{tx('m.s.title')}</h1>
         </div>
 
         {loading ? (
