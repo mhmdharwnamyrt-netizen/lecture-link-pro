@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Users, Send, Paperclip, Image as ImageIcon, Mic, Square,
   Heart, CornerUpLeft, Pencil, Trash2, X, Loader2, FileText, Eye, Download,
+  ThumbsUp, Smile, ThumbsDown, Frown, Angry
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { useTx } from '@/lib/i18nModules';
+import { ReactionPicker, type ReactionType } from '@/components/shared/ReactionPicker';
 import {
   fetchGroup, fetchGroupMembers, fetchMessages, groupMediaUrl, mediaKindOf,
   initialsOf, colorOf, GROUP_BUCKET, MAX_GROUP_FILE_MB,
@@ -90,7 +92,8 @@ export default function StudyGroupChat({ role }: Props) {
   const [group, setGroup] = useState<StudyGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [messages, setMessages] = useState<GroupMessage[]>([]);
-  const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
+  const [myLikes, setMyLikes] = useState<Record<string, string>>(new Set() as any); // Modified to store reaction type
+  const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
   const [reads, setReads] = useState<Record<string, string[]>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -147,12 +150,14 @@ export default function StudyGroupChat({ role }: Props) {
       const [ms, msgs, likes] = await Promise.all([
         fetchGroupMembers(id).catch(() => []),
         fetchMessages(id),
-        supabase.from('study_group_reactions' as any).select('message_id').eq('user_id', user.id),
+        supabase.from('study_group_reactions' as any).select('message_id, reaction_type').eq('user_id', user.id),
       ]);
       if (!alive) return;
       setMembers(ms);
       setMessages(msgs);
-      setMyLikes(new Set(((likes.data || []) as any[]).map((r) => r.message_id)));
+      const reactionsMap: Record<string, string> = {};
+      (likes.data || []).forEach((r: any) => { reactionsMap[r.message_id] = r.reaction_type || 'like'; });
+      setMyLikes(reactionsMap as any);
       setLoading(false);
       loadReads(msgs);
       markRead(msgs);
@@ -216,42 +221,88 @@ export default function StudyGroupChat({ role }: Props) {
     const body = text.trim();
     if (!body && !file) return;
     setSending(true);
+    
+    // Optimistic insert to solve the "message doesn't appear immediately" issue
+    const tempId = 'temp-' + Date.now();
+    const optimisticMsg: any = {
+      id: tempId,
+      group_id: id,
+      sender_id: user.id,
+      content: body,
+      created_at: new Date().toISOString(),
+      is_deleted: false,
+      likes_count: 0,
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
     try {
       if (editing) {
         const { error } = await supabase.from('study_group_messages' as any)
-          .update({ content: body }).eq('id', editing.id);
+          .update({ content: body, edited_at: new Date().toISOString() }).eq('id', editing.id);
         if (error) throw error;
+        
+        // Update optimistically
+        setMessages(prev => prev.map(m => m.id === editing.id ? { ...m, content: body, edited_at: new Date().toISOString() } : m));
         setEditing(null); setText('');
         return;
       }
       let media: any = {};
       if (file) {
         const up = await uploadMedia(file, duration);
-        if (!up) return;
+        if (!up) {
+          setMessages(prev => prev.filter(m => m.id !== tempId));
+          return;
+        }
         media = up;
       }
-      const { error } = await supabase.from('study_group_messages' as any).insert({
+      const { data, error } = await supabase.from('study_group_messages' as any).insert({
         group_id: id, sender_id: user.id, content: body,
         reply_to_id: replyTo?.id ?? null, ...media,
-      });
+      }).select().single();
+      
       if (error) throw error;
+      
+      // Replace optimistic message with real one
+      if (data) {
+        setMessages(prev => prev.map(m => m.id === tempId ? (data as unknown as GroupMessage) : m));
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+      }
       setText(''); setReplyTo(null);
     } catch (e: any) {
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       toast({ title: tx('g.sendFailed'), description: e.message, variant: 'destructive' });
     } finally { setSending(false); }
   };
 
-  const toggleLike = async (m: GroupMessage) => {
+  const handleReaction = async (m: GroupMessage, type: ReactionType) => {
     if (!user) return;
-    const liked = myLikes.has(m.id);
-    setMyLikes((prev) => { const s = new Set(prev); liked ? s.delete(m.id) : s.add(m.id); return s; });
+    const currentReaction = (myLikes as any)[m.id];
+    const isRemoving = currentReaction === type;
+
+    setMyLikes((prev: any) => {
+      const next = { ...prev };
+      if (isRemoving) delete next[m.id];
+      else next[m.id] = type;
+      return next;
+    });
+
     setMessages((prev) => prev.map((x) => x.id === m.id
-      ? { ...x, likes_count: Math.max(0, x.likes_count + (liked ? -1 : 1)) } : x));
-    if (liked) {
+      ? { ...x, likes_count: Math.max(0, x.likes_count + (isRemoving ? -1 : currentReaction ? 0 : 1)) } : x));
+
+    if (isRemoving) {
       await supabase.from('study_group_reactions' as any).delete().eq('message_id', m.id).eq('user_id', user.id);
     } else {
-      await supabase.from('study_group_reactions' as any).insert({ message_id: m.id, user_id: user.id });
+      await supabase.from('study_group_reactions' as any).upsert({ 
+        message_id: m.id, 
+        user_id: user.id,
+        reaction_type: type
+      }, { onConflict: 'message_id,user_id' });
     }
+  };
+
+  const toggleLike = async (m: GroupMessage) => {
+    handleReaction(m, 'like');
   };
 
   const removeMessage = async (m: GroupMessage) => {
@@ -314,7 +365,7 @@ export default function StudyGroupChat({ role }: Props) {
 
   return (
     <MobileLayout role={role}>
-      <div className="mx-auto flex h-[calc(100vh-9rem)] max-w-3xl flex-col px-3 py-3 md:h-[calc(100vh-5rem)] md:px-4">
+      <div className="mx-auto flex h-[calc(100vh-12rem)] max-w-3xl flex-col px-3 py-3 md:h-[calc(100vh-8rem)] md:px-4">
         {/* Header */}
         <Card className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border-border/50 p-3">
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/${role}/groups`)}>
@@ -344,6 +395,19 @@ export default function StudyGroupChat({ role }: Props) {
             const long = m.content.length > LONG_TEXT;
             const open = expanded.has(m.id);
             const seenCount = (reads[m.id] || []).length;
+            const myReaction = (myLikes as any)[m.id];
+            
+            const getReactionIcon = (type?: string) => {
+              switch(type) {
+                case 'like': return <ThumbsUp className="h-3.5 w-3.5 fill-current" />;
+                case 'love': return <Heart className="h-3.5 w-3.5 fill-current" />;
+                case 'haha': return <Smile className="h-3.5 w-3.5 fill-current" />;
+                case 'dislike': return <ThumbsDown className="h-3.5 w-3.5 fill-current" />;
+                case 'sad': return <Frown className="h-3.5 w-3.5 fill-current" />;
+                case 'angry': return <Angry className="h-3.5 w-3.5 fill-current" />;
+                default: return <Heart className="h-3.5 w-3.5" />;
+              }
+            };
 
             return (
               <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -392,13 +456,32 @@ export default function StudyGroupChat({ role }: Props) {
 
                   {!m.is_deleted && (
                     <div className={`flex items-center gap-1 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
-                      <button onClick={() => toggleLike(m)}
-                        className={`inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] transition-colors ${
-                          myLikes.has(m.id) ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'
-                        }`}>
-                        <Heart className={`h-3.5 w-3.5 ${myLikes.has(m.id) ? 'fill-current' : ''}`} />
-                        {m.likes_count > 0 && m.likes_count}
-                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={() => toggleLike(m)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setActiveReactionPicker(m.id);
+                          }}
+                          onMouseDown={(e) => {
+                            // For mobile long press simulation
+                            const timer = setTimeout(() => setActiveReactionPicker(m.id), 500);
+                            const cancel = () => { clearTimeout(timer); document.removeEventListener('mouseup', cancel); };
+                            document.addEventListener('mouseup', cancel);
+                          }}
+                          className={`inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] transition-colors ${
+                            myReaction ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'
+                          }`}>
+                          {getReactionIcon(myReaction)}
+                          {m.likes_count > 0 && m.likes_count}
+                        </button>
+                        
+                        <ReactionPicker 
+                          isOpen={activeReactionPicker === m.id}
+                          onClose={() => setActiveReactionPicker(null)}
+                          onSelect={(type) => handleReaction(m, type)}
+                        />
+                      </div>
                       <button onClick={() => { setReplyTo(m); setEditing(null); }}
                         className="rounded-lg px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground">
                         <CornerUpLeft className="h-3.5 w-3.5" />
