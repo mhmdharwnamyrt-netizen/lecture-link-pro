@@ -17,6 +17,7 @@ import {
   downloadMaterialFile, fileKind, formatBytes, officeViewerUrl, recordMaterialView,
   signedUrlFor, type CourseMaterial, type MaterialFile,
 } from '@/lib/materials';
+import { useTx } from '@/lib/i18nModules';
 
 interface Props { role: 'doctor' | 'student' }
 
@@ -30,6 +31,7 @@ export default function MaterialDetail({ role }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { tx, isRTL, locale, pickName } = useTx();
   const base = `/${role}`;
 
   const [loading, setLoading] = useState(true);

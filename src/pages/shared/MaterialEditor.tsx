@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   ACCEPTED_TYPES, MATERIALS_BUCKET, MAX_FILE_MB, formatBytes, type MaterialFile,
 } from '@/lib/materials';
+import { useTx } from '@/lib/i18nModules';
 
 interface Props { role: 'doctor' | 'student' }
 
@@ -23,6 +24,7 @@ export default function MaterialEditor({ role }: Props) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { tx, isRTL, locale, pickName } = useTx();
   const base = `/${role}`;
   const editing = !!id;
 
@@ -86,7 +88,7 @@ export default function MaterialEditor({ role }: Props) {
     const ok: File[] = [];
     Array.from(list).forEach((f) => {
       if (f.size > MAX_FILE_MB * 1024 * 1024) {
-        toast({ title: `الملف ${f.name} أكبر من ${MAX_FILE_MB} ميجابايت`, variant: 'destructive' });
+        toast({ title: tx('m.ed.tooBig', { name: f.name, n: MAX_FILE_MB }), variant: 'destructive' });
       } else ok.push(f);
     });
     setPending((p) => [...p, ...ok]);
@@ -100,8 +102,8 @@ export default function MaterialEditor({ role }: Props) {
 
   const save = async () => {
     if (!user) return;
-    if (!title.trim()) { toast({ title: 'اكتب عنوان المحاضرة', variant: 'destructive' }); return; }
-    if (!editing && pending.length === 0) { toast({ title: 'أضف ملفًا واحدًا على الأقل', variant: 'destructive' }); return; }
+    if (!title.trim()) { toast({ title: tx('m.ed.needTitle'), variant: 'destructive' }); return; }
+    if (!editing && pending.length === 0) { toast({ title: tx('m.ed.needFile'), variant: 'destructive' }); return; }
 
     setSaving(true);
     try {
@@ -129,7 +131,7 @@ export default function MaterialEditor({ role }: Props) {
 
       for (let i = 0; i < pending.length; i++) {
         const file = pending[i];
-        setProgress(`جارٍ رفع ${i + 1} من ${pending.length}...`);
+        setProgress(tx('m.ed.uploading', { i: i + 1, n: pending.length }));
         const safe = file.name.replace(/[^\w.\-\u0600-\u06FF]+/g, '_');
         const path = `${user.id}/${materialId}/${Date.now()}-${safe}`;
         const { error: upErr } = await supabase.storage.from(MATERIALS_BUCKET)
@@ -146,7 +148,7 @@ export default function MaterialEditor({ role }: Props) {
         if (rowErr) throw rowErr;
       }
 
-      toast({ title: editing ? 'تم تحديث المحاضرة' : 'تم رفع المحاضرة بنجاح' });
+      toast({ title: editing ? tx('m.ed.updated') : tx('m.ed.created') });
       navigate(`${base}/materials/${materialId}`);
     } catch (err: any) {
       toast({ title: 'حدث خطأ', description: err.message, variant: 'destructive' });

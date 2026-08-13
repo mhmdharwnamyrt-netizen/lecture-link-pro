@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import type { CourseMaterial } from '@/lib/materials';
+import { useTx } from '@/lib/i18nModules';
 
 interface Props { role: 'doctor' | 'student' }
 
@@ -29,6 +30,7 @@ export default function MaterialStats({ role }: Props) {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { tx, isRTL, locale, pickName } = useTx();
   const base = `/${role}`;
 
   const [loading, setLoading] = useState(true);
