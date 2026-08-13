@@ -46,22 +46,43 @@ function MemberAvatar({ member, id, size = 36 }: { member?: GroupMember; id: str
 }
 
 /* ---------------- Media renderer ---------------- */
-function MessageMedia({ msg }: { msg: GroupMessage }) {
+function MessageMedia({ msg, onZoom }: { msg: GroupMessage; onZoom?: (url: string, name?: string | null) => void }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    if (msg.media_path) groupMediaUrl(msg.media_path).then((u) => alive && setUrl(u));
+    setUrl(null); setFailed(false);
+    if (!msg.media_path) return;
+    let tries = 0;
+    const load = () => {
+      groupMediaUrl(msg.media_path!)
+        .then((u) => {
+          if (!alive) return;
+          if (u) setUrl(u);
+          else if (tries++ < 3) setTimeout(load, 600);
+          else setFailed(true);
+        })
+        .catch(() => { if (alive && tries++ >= 3) setFailed(true); else if (alive) setTimeout(load, 600); });
+    };
+    load();
     return () => { alive = false; };
   }, [msg.media_path]);
 
   if (!msg.media_path) return null;
-  if (!url) return <div className="h-32 w-56 animate-pulse rounded-xl bg-muted/60" />;
+  if (!url) {
+    return failed
+      ? <div className="rounded-xl border border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">{msg.media_name || '—'}</div>
+      : <div className="h-32 w-56 animate-pulse rounded-xl bg-muted/60" />;
+  }
 
   if (msg.media_type === 'image') {
     return (
-      <a href={url} target="_blank" rel="noopener noreferrer">
-        <img src={url} alt={msg.media_name || ''} className="max-h-72 w-full rounded-xl border border-border/40 object-cover" />
-      </a>
+      <button type="button" onClick={() => onZoom?.(url, msg.media_name)} className="group relative block w-full overflow-hidden rounded-xl">
+        <img src={url} alt={msg.media_name || ''} className="max-h-72 w-full rounded-xl border border-border/40 object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+        <span className="absolute bottom-2 end-2 grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+          <Maximize2 className="h-4 w-4" />
+        </span>
+      </button>
     );
   }
   if (msg.media_type === 'video') {
@@ -80,6 +101,43 @@ function MessageMedia({ msg }: { msg: GroupMessage }) {
     </a>
   );
 }
+
+/* ---------------- Image lightbox ---------------- */
+function ImageLightbox({ src, name, onClose }: { src: string; name?: string | null; onClose: () => void }) {
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [onClose]);
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.img
+        key={zoom}
+        src={src}
+        alt={name || ''}
+        initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        style={{ transform: `scale(${zoom})` }}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl transition-transform"
+      />
+      <div className="absolute bottom-6 flex items-center gap-2 rounded-full bg-white/10 p-1.5 backdrop-blur" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))} className="grid h-9 w-9 place-items-center rounded-full text-white hover:bg-white/15"><ZoomOut className="h-4 w-4" /></button>
+        <span className="min-w-12 text-center text-xs font-semibold text-white">{Math.round(zoom * 100)}%</span>
+        <button onClick={() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))} className="grid h-9 w-9 place-items-center rounded-full text-white hover:bg-white/15"><ZoomIn className="h-4 w-4" /></button>
+        <a href={src} target="_blank" rel="noopener noreferrer" className="grid h-9 w-9 place-items-center rounded-full text-white hover:bg-white/15"><Download className="h-4 w-4" /></a>
+      </div>
+      <button onClick={onClose} className="absolute top-5 end-5 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20">
+        <X className="h-5 w-5" />
+      </button>
+    </motion.div>
+  );
+}
+
 
 /* ---------------- Page ---------------- */
 export default function StudyGroupChat({ role }: Props) {
