@@ -121,7 +121,7 @@ export default function CoverUploader({ className = '' }: Props) {
             </span>
           </div>
         )}
-        {loadError && !resolving && (
+        {loadError && !resolving && parsed?.kind === 'path' && (
           <div className="absolute inset-x-3 bottom-3 rounded-full bg-destructive/85 px-3 py-1 text-center text-[11px] font-medium text-destructive-foreground backdrop-blur">
             {t('تعذّر تحميل صورة الغلاف — جرّب إعادة الرفع', 'Cover failed to load — try re-uploading')}
           </div>

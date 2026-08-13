@@ -20,14 +20,27 @@ export default function SmartAvatarImage({ src, alt, className }: Props) {
   useEffect(() => {
     let mounted = true;
     setFailed(false);
-    if (!src) { setResolved(null); return; }
+    if (!src) { setResolved(null); setFailed(false); return; }
     resolveAvatarUrl(src)
       .then((u) => { if (mounted) setResolved(u); })
       .catch(() => { if (mounted) setFailed(true); });
     return () => { mounted = false; };
   }, [src]);
 
-  if (!resolved || failed) return null;
+  if (failed) return null;
+  if (!resolved && src && (src.startsWith('http') || src.includes('dicebear.com'))) {
+    return (
+      <AvatarImage
+        src={src}
+        alt={alt}
+        className={className}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  if (!resolved) return null;
   return (
     <AvatarImage
       src={resolved}
