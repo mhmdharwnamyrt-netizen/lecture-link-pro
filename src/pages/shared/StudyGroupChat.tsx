@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Users, Send, Paperclip, Image as ImageIcon, Mic, Square,
   Heart, CornerUpLeft, Pencil, Trash2, X, Loader2, FileText, Eye, Download,
-  ThumbsUp, Smile, ThumbsDown, Frown, Angry
+  ThumbsUp, Smile, ThumbsDown, Frown, Angry, Maximize2, ZoomIn, ZoomOut
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,22 +46,43 @@ function MemberAvatar({ member, id, size = 36 }: { member?: GroupMember; id: str
 }
 
 /* ---------------- Media renderer ---------------- */
-function MessageMedia({ msg }: { msg: GroupMessage }) {
+function MessageMedia({ msg, onZoom }: { msg: GroupMessage; onZoom?: (url: string, name?: string | null) => void }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let alive = true;
-    if (msg.media_path) groupMediaUrl(msg.media_path).then((u) => alive && setUrl(u));
+    setUrl(null); setFailed(false);
+    if (!msg.media_path) return;
+    let tries = 0;
+    const load = () => {
+      groupMediaUrl(msg.media_path!)
+        .then((u) => {
+          if (!alive) return;
+          if (u) setUrl(u);
+          else if (tries++ < 3) setTimeout(load, 600);
+          else setFailed(true);
+        })
+        .catch(() => { if (alive && tries++ >= 3) setFailed(true); else if (alive) setTimeout(load, 600); });
+    };
+    load();
     return () => { alive = false; };
   }, [msg.media_path]);
 
   if (!msg.media_path) return null;
-  if (!url) return <div className="h-32 w-56 animate-pulse rounded-xl bg-muted/60" />;
+  if (!url) {
+    return failed
+      ? <div className="rounded-xl border border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">{msg.media_name || '—'}</div>
+      : <div className="h-32 w-56 animate-pulse rounded-xl bg-muted/60" />;
+  }
 
   if (msg.media_type === 'image') {
     return (
-      <a href={url} target="_blank" rel="noopener noreferrer">
-        <img src={url} alt={msg.media_name || ''} className="max-h-72 w-full rounded-xl border border-border/40 object-cover" />
-      </a>
+      <button type="button" onClick={() => onZoom?.(url, msg.media_name)} className="group relative block w-full overflow-hidden rounded-xl">
+        <img src={url} alt={msg.media_name || ''} className="max-h-72 w-full rounded-xl border border-border/40 object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+        <span className="absolute bottom-2 end-2 grid h-8 w-8 place-items-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
+          <Maximize2 className="h-4 w-4" />
+        </span>
+      </button>
     );
   }
   if (msg.media_type === 'video') {
@@ -80,6 +101,43 @@ function MessageMedia({ msg }: { msg: GroupMessage }) {
     </a>
   );
 }
+
+/* ---------------- Image lightbox ---------------- */
+function ImageLightbox({ src, name, onClose }: { src: string; name?: string | null; onClose: () => void }) {
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [onClose]);
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] grid place-items-center bg-black/85 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.img
+        key={zoom}
+        src={src}
+        alt={name || ''}
+        initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        style={{ transform: `scale(${zoom})` }}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl transition-transform"
+      />
+      <div className="absolute bottom-6 flex items-center gap-2 rounded-full bg-white/10 p-1.5 backdrop-blur" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))} className="grid h-9 w-9 place-items-center rounded-full text-white hover:bg-white/15"><ZoomOut className="h-4 w-4" /></button>
+        <span className="min-w-12 text-center text-xs font-semibold text-white">{Math.round(zoom * 100)}%</span>
+        <button onClick={() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))} className="grid h-9 w-9 place-items-center rounded-full text-white hover:bg-white/15"><ZoomIn className="h-4 w-4" /></button>
+        <a href={src} target="_blank" rel="noopener noreferrer" className="grid h-9 w-9 place-items-center rounded-full text-white hover:bg-white/15"><Download className="h-4 w-4" /></a>
+      </div>
+      <button onClick={onClose} className="absolute top-5 end-5 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20">
+        <X className="h-5 w-5" />
+      </button>
+    </motion.div>
+  );
+}
+
 
 /* ---------------- Page ---------------- */
 export default function StudyGroupChat({ role }: Props) {
@@ -106,6 +164,7 @@ export default function StudyGroupChat({ role }: Props) {
   const [recSecs, setRecSecs] = useState(0);
   const [membersOpen, setMembersOpen] = useState(false);
   const [seenFor, setSeenFor] = useState<GroupMessage | null>(null);
+  const [lightbox, setLightbox] = useState<{ url: string; name?: string | null } | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const recRef = useRef<MediaRecorder | null>(null);
@@ -369,8 +428,8 @@ export default function StudyGroupChat({ role }: Props) {
 
   return (
     <MobileLayout role={role}>
-      <div className="relative mx-auto flex h-[calc(100vh-12rem)] max-w-3xl flex-col px-3 py-3 md:h-[calc(100vh-8rem)] md:px-4">
-        <ChatBackground departmentName={group.departments?.name || group.departments?.name_ar} />
+      <div className="relative mx-auto flex h-[calc(100dvh-10.5rem)] max-w-3xl flex-col overflow-hidden rounded-3xl px-3 py-3 md:h-[calc(100dvh-5.5rem)] md:px-4">
+        <ChatBackground departmentName={group.departments?.name} departmentNameAr={group.departments?.name_ar} />
 
         {/* Header */}
         <Card className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border-border/50 bg-card/80 p-3 backdrop-blur-md shadow-sm">
@@ -445,7 +504,7 @@ export default function StudyGroupChat({ role }: Props) {
                             </p>
                           </div>
                         )}
-                        {m.media_path && <MessageMedia msg={m} />}
+                        {m.media_path && <MessageMedia msg={m} onZoom={(url, name) => setLightbox({ url, name })} />}
                         {m.content && (
                           <p className="whitespace-pre-wrap break-words leading-relaxed">
                             {long && !open ? `${m.content.slice(0, LONG_TEXT)}…` : m.content}
@@ -464,28 +523,32 @@ export default function StudyGroupChat({ role }: Props) {
 
                   {!m.is_deleted && (
                     <div className={`flex items-center gap-1 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
-                      <div className="relative">
-                        <button 
+                      <div
+                        className="relative"
+                        onMouseEnter={() => { if (window.matchMedia('(hover: hover)').matches) setActiveReactionPicker(m.id); }}
+                        onMouseLeave={() => { if (window.matchMedia('(hover: hover)').matches) setActiveReactionPicker((cur) => (cur === m.id ? null : cur)); }}
+                      >
+                        <button
+                          type="button"
                           onClick={() => toggleLike(m)}
-                          onContextMenu={(e) => {
-                            e.preventDefault();
-                            setActiveReactionPicker(m.id);
-                          }}
-                          onMouseDown={(e) => {
-                            // For mobile long press simulation
-                            const timer = setTimeout(() => setActiveReactionPicker(m.id), 500);
-                            const cancel = () => { clearTimeout(timer); document.removeEventListener('mouseup', cancel); };
-                            document.addEventListener('mouseup', cancel);
+                          onContextMenu={(e) => { e.preventDefault(); setActiveReactionPicker(m.id); }}
+                          onTouchStart={() => {
+                            const timer = window.setTimeout(() => setActiveReactionPicker(m.id), 400);
+                            const cancel = () => { window.clearTimeout(timer); document.removeEventListener('touchend', cancel); document.removeEventListener('touchmove', cancel); };
+                            document.addEventListener('touchend', cancel);
+                            document.addEventListener('touchmove', cancel);
                           }}
                           className={`inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] transition-colors ${
-                            myReaction ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'
+                            myReaction ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                           }`}>
                           {getReactionIcon(myReaction)}
                           {m.likes_count > 0 && m.likes_count}
                         </button>
-                        
-                        <ReactionPicker 
+
+                        <ReactionPicker
                           isOpen={activeReactionPicker === m.id}
+                          active={myReaction}
+                          align={mine ? 'end' : 'start'}
                           onClose={() => setActiveReactionPicker(null)}
                           onSelect={(type) => handleReaction(m, type)}
                         />
@@ -572,11 +635,13 @@ export default function StudyGroupChat({ role }: Props) {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); }
                 }}
                 placeholder={tx('g.placeholder')}
                 rows={1}
-                className="max-h-32 min-h-10 flex-1 resize-none rounded-xl py-2.5"
+                style={{ height: 'auto' }}
+                onInput={(e) => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 192)}px`; }}
+                className="max-h-48 min-h-10 flex-1 resize-none rounded-xl py-2.5 leading-relaxed"
               />
               {text.trim() ? (
                 <Button size="icon" className="h-10 w-10 shrink-0 rounded-xl" disabled={sending} onClick={() => send()}>
@@ -592,6 +657,10 @@ export default function StudyGroupChat({ role }: Props) {
           )}
         </Card>
       </div>
+
+      <AnimatePresence>
+        {lightbox && <ImageLightbox src={lightbox.url} name={lightbox.name} onClose={() => setLightbox(null)} />}
+      </AnimatePresence>
 
       {/* Members sheet */}
       <Sheet open={membersOpen} onOpenChange={setMembersOpen}>
