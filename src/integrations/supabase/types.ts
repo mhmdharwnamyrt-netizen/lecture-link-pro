@@ -1445,6 +1445,7 @@ export type Database = {
           followers_count: number
           following_count: number
           full_name: string
+          gender: string | null
           hobbies: string[]
           id: string
           interests: string[]
@@ -1472,6 +1473,7 @@ export type Database = {
           followers_count?: number
           following_count?: number
           full_name: string
+          gender?: string | null
           hobbies?: string[]
           id?: string
           interests?: string[]
@@ -1499,6 +1501,7 @@ export type Database = {
           followers_count?: number
           following_count?: number
           full_name?: string
+          gender?: string | null
           hobbies?: string[]
           id?: string
           interests?: string[]
@@ -2425,6 +2428,10 @@ export type Database = {
       }
       db_health_snapshot: { Args: never; Returns: Json }
       db_integrity_check: { Args: never; Returns: Json }
+      get_default_avatar_url: {
+        Args: { p_gender: string; p_is_ta?: boolean; p_role: string }
+        Returns: string
+      }
       is_group_member: {
         Args: { _group: string; _uid: string }
         Returns: boolean

@@ -29,7 +29,16 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
   useEffect(() => {
     let mounted = true;
     setLoadError(false);
-    if (!avatarPath) { setDisplaySrc(null); setResolving(false); return; }
+    if (!avatarPath) { 
+      const spriteSet = role === 'doctor' 
+        ? (profile?.is_ta ? 'initials' : 'avataaars-neutral') 
+        : 'adventurer-neutral';
+      const gender = (profile as any)?.gender;
+      const seed = gender === 'female' ? `girl${Math.floor(Math.random() * 100)}` : `boy${Math.floor(Math.random() * 100)}`;
+      setDisplaySrc(`https://api.dicebear.com/7.x/${spriteSet}/svg?seed=${seed}`);
+      setResolving(false); 
+      return; 
+    }
     setResolving(true);
     createSignedUrl('face-photos', avatarPath, 60 * 60 * 24)
       .then((url) => {

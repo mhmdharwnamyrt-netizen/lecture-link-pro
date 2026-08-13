@@ -13,14 +13,39 @@ interface Props {
  * Returns null while loading or on error so the parent <Avatar>'s
  * <AvatarFallback> is shown (skeleton/initials).
  */
-export default function SmartAvatarImage({ src, alt, className }: Props) {
+interface Props {
+  src?: string | null;
+  gender?: 'male' | 'female' | string | null;
+  role?: string | null;
+  isTa?: boolean;
+  alt?: string;
+  className?: string;
+}
+
+/**
+ * AvatarImage that transparently resolves storage paths → signed URLs.
+ * Returns null while loading or on error so the parent <Avatar>'s
+ * <AvatarFallback> is shown (skeleton/initials).
+ */
+export default function SmartAvatarImage({ src, gender, role, isTa, alt, className }: Props) {
   const [resolved, setResolved] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     setFailed(false);
-    if (!src) { setResolved(null); setFailed(false); return; }
+    
+    // If no path is provided, use the DiceBear logic based on gender/role
+    if (!src) {
+      const spriteSet = role === 'doctor' 
+        ? (isTa ? 'initials' : 'avataaars-neutral') 
+        : 'adventurer-neutral';
+      
+      const seed = gender === 'female' ? `girl${Math.floor(Math.random() * 100)}` : `boy${Math.floor(Math.random() * 100)}`;
+      setResolved(`https://api.dicebear.com/7.x/${spriteSet}/svg?seed=${seed}`);
+      return;
+    }
+    
     resolveAvatarUrl(src)
       .then((u) => { if (mounted) setResolved(u); })
       .catch(() => { if (mounted) setFailed(true); });

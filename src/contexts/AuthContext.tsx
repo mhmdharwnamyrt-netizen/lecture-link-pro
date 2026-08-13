@@ -17,7 +17,9 @@ interface Profile {
   disabled_at?: string | null;
   disabled_reason?: string | null;
   avatar_url?: string | null;
+  gender?: 'male' | 'female' | null;
   is_ta?: boolean;
+  cover_url?: string | null;
 }
 
 interface AuthContextType {
