@@ -51,7 +51,7 @@ export default function PublicProfilePage() {
         .from('profiles_public' as any)
         .select('id,user_id,full_name,avatar_url,cover_url,role,academic_title,student_id,department_id,level,points,bio,skills,interests,hobbies,favorites,followers_count,following_count')
         .eq('user_id', userId)
-        .maybeSingle();
+        .maybeSingle() as any;
       setProfile(prof as any);
       const cover = parseCoverValue(prof?.cover_url);
       if (cover?.kind === 'path') {

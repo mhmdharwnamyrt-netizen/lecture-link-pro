@@ -399,7 +399,7 @@ export default function Community({ role }: { role: Role }) {
     const found: string[] = [];
     for (const name of uniqueNames.slice(0, 10)) {
       const { data } = await supabase.from('profiles_public' as any)
-        .select('user_id').ilike('full_name', `%${name}%`).limit(1);
+        .select('user_id').ilike('full_name', `%${name}%`).limit(1) as any;
       if (data?.[0]?.user_id && !found.includes(data[0].user_id)) found.push(data[0].user_id);
     }
     return found;
