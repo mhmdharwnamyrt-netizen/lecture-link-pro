@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { COVER_PRESETS, parseCoverValue } from '@/lib/coverPresets';
-import { createSignedUrl } from '@/lib/storage';
+import { createSignedUrl, extractStoragePath } from '@/lib/storage';
 import { Camera, Image as ImageIcon, Loader2, Check, Trash2, Upload } from 'lucide-react';
 
 interface Props {
@@ -42,7 +42,10 @@ export default function CoverUploader({ className = '' }: Props) {
   useEffect(() => {
     let alive = true;
     setLoadError(false);
-    if (parsed?.kind === 'path') {
+    if (parsed?.kind === 'path' && /^(https?:|data:|blob:)/i.test(parsed.path) && !extractStoragePath('face-photos', parsed.path)) {
+      setSigned(parsed.path);
+      setResolving(false);
+    } else if (parsed?.kind === 'path') {
       setResolving(true);
       createSignedUrl('face-photos', parsed.path, 3600)
         .then(u => {
