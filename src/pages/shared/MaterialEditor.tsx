@@ -164,7 +164,7 @@ export default function MaterialEditor({ role }: Props) {
     <MobileLayout role={role}>
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)} className={isRTL ? 'rotate-180' : ''}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold">{editing ? tx('m.ed.edit') : tx('m.ed.new')}</h1>
@@ -185,7 +185,7 @@ export default function MaterialEditor({ role }: Props) {
 
             {uniqueDeptIds.length > 0 && (
               <div>
-                <Label>القسم</Label>
+                <Label>{tx('m.ed.dept')}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {uniqueDeptIds.map((dId) => {
                     const d = depts.find((x: any) => x.department_id === dId);
@@ -195,7 +195,7 @@ export default function MaterialEditor({ role }: Props) {
                         className={`rounded-xl px-3 py-2 text-sm transition-colors ${
                           departmentId === dId ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                         }`}>
-                        {d?.departments?.name_ar || d?.departments?.name}
+                        {pickName(d?.departments)}
                       </button>
                     );
                   })}
@@ -205,14 +205,14 @@ export default function MaterialEditor({ role }: Props) {
 
             {levels.length > 0 && (
               <div>
-                <Label>الفرقة</Label>
+                <Label>{tx('m.ed.level')}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {levels.map((l) => (
                     <button key={l} type="button" onClick={() => setLevel(l)}
                       className={`rounded-xl px-4 py-2 text-sm transition-colors ${
                         level === l ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                       }`}>
-                      الفرقة {l}
+                      {tx('m.year', { n: l })}
                     </button>
                   ))}
                 </div>
@@ -221,7 +221,7 @@ export default function MaterialEditor({ role }: Props) {
 
             {subjects.length > 0 && (
               <div>
-                <Label>المادة</Label>
+                <Label>{tx('m.ed.subject')}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {subjects.map((s: any) => (
                     <button key={s.subject_id} type="button"

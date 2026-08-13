@@ -63,7 +63,7 @@ export default function MaterialStats({ role }: Props) {
 
       setViewers((vs || []).map((v: any) => ({
         user_id: v.user_id,
-        name: profMap[v.user_id]?.full_name || 'مستخدم',
+        name: profMap[v.user_id]?.full_name || tx('m.s.user'),
         student_id: profMap[v.user_id]?.student_id ?? null,
         level: profMap[v.user_id]?.level ?? null,
         at: v.last_viewed_at,
@@ -71,7 +71,7 @@ export default function MaterialStats({ role }: Props) {
       })));
       setDownloaders((ds || []).map((d: any) => ({
         user_id: d.user_id,
-        name: profMap[d.user_id]?.full_name || 'مستخدم',
+        name: profMap[d.user_id]?.full_name || tx('m.s.user'),
         student_id: profMap[d.user_id]?.student_id ?? null,
         level: profMap[d.user_id]?.level ?? null,
         at: d.downloaded_at,
@@ -100,8 +100,8 @@ export default function MaterialStats({ role }: Props) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{r.name}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {r.student_id ? `${r.student_id} • ` : ''}{r.level != null ? `الفرقة ${r.level} • ` : ''}
-                {new Date(r.at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+                {r.student_id ? `${r.student_id} • ` : ''}{r.level != null ? `${tx('m.year', { n: r.level })} • ` : ''}
+                {new Date(r.at).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}
               </p>
               {r.file_name && <p className="truncate text-[11px] text-muted-foreground">{r.file_name}</p>}
             </div>
@@ -116,7 +116,7 @@ export default function MaterialStats({ role }: Props) {
     <MobileLayout role={role}>
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials/${id}`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials/${id}`)} className={isRTL ? 'rotate-180' : ''}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <h1 className="truncate text-xl font-bold">{tx('m.s.title')}</h1>
@@ -132,9 +132,9 @@ export default function MaterialStats({ role }: Props) {
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
                 {[
-                  { label: 'مشاهدة', value: material?.views_count ?? 0, icon: Eye },
-                  { label: 'شاهدوها', value: viewers.length, icon: Users },
-                  { label: 'حمّلوها', value: uniqueDownloaders, icon: Download },
+                  { label: tx('m.stat.views'), value: material?.views_count ?? 0, icon: Eye },
+                  { label: tx('m.s.viewers'), value: viewers.length, icon: Users },
+                  { label: tx('m.s.downloaders'), value: uniqueDownloaders, icon: Download },
                 ].map((s) => (
                   <div key={s.label} className="rounded-2xl border border-border/40 bg-card/70 p-3 text-center">
                     <s.icon className="mx-auto mb-1 h-4 w-4 text-primary" />
@@ -148,19 +148,19 @@ export default function MaterialStats({ role }: Props) {
             <div className="relative">
               <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث باسم الطالب أو الرقم الجامعي..." className="h-12 rounded-2xl ps-10" />
+                placeholder={tx('m.s.search')} className="h-12 rounded-2xl ps-10 text-start" />
             </div>
 
             <Tabs defaultValue="views">
               <TabsList className="grid w-full grid-cols-2 rounded-2xl">
-                <TabsTrigger value="views" className="rounded-xl">من شاهدها ({viewers.length})</TabsTrigger>
-                <TabsTrigger value="downloads" className="rounded-xl">من حمّلها ({downloaders.length})</TabsTrigger>
+                <TabsTrigger value="views" className="rounded-xl">{tx('m.s.tabViews', { n: viewers.length })}</TabsTrigger>
+                <TabsTrigger value="downloads" className="rounded-xl">{tx('m.s.tabDownloads', { n: downloaders.length })}</TabsTrigger>
               </TabsList>
               <TabsContent value="views" className="mt-3">
-                <List rows={viewers} empty="لم يشاهدها أحد بعد." />
+                <List rows={viewers} empty={tx('m.s.noViews')} />
               </TabsContent>
               <TabsContent value="downloads" className="mt-3">
-                <List rows={downloaders} empty="لم يحمّلها أحد بعد." />
+                <List rows={downloaders} empty={tx('m.s.noDownloads')} />
               </TabsContent>
             </Tabs>
           </>

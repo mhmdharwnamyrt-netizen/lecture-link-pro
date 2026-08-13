@@ -81,15 +81,15 @@ export default function MaterialDetail({ role }: Props) {
       await downloadMaterialFile(f, user.id);
       setMaterial((m) => (m ? { ...m, downloads_count: m.downloads_count + 1 } : m));
     } catch (e: any) {
-      toast({ title: 'تعذّر التحميل', description: e.message, variant: 'destructive' });
+      toast({ title: tx('m.d.dlFailed'), description: e.message, variant: 'destructive' });
     } finally { setBusy(null); }
   };
 
   const handleDelete = async () => {
-    if (!material || !confirm('حذف هذه المحاضرة وكل ملفاتها؟')) return;
+    if (!material || !confirm(tx('m.d.confirmDelete'))) return;
     await supabase.storage.from('course-materials').remove(files.map((f) => f.storage_path));
     await supabase.from('course_materials' as any).delete().eq('id', material.id);
-    toast({ title: 'تم حذف المحاضرة' });
+    toast({ title: tx('m.d.deleted') });
     navigate(`${base}/materials`);
   };
 
@@ -115,7 +115,7 @@ export default function MaterialDetail({ role }: Props) {
     return (
       <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-2xl bg-muted/40 text-center">
         <FileIcon className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">لا يمكن معاينة هذا النوع داخل المتصفح — حمّل الملف لفتحه.</p>
+        <p className="text-sm text-muted-foreground">{tx('m.d.noPreview')}</p>
       </div>
     );
   };
@@ -145,7 +145,7 @@ export default function MaterialDetail({ role }: Props) {
     <MobileLayout role={role}>
       <div className="mx-auto max-w-4xl space-y-5 px-4 py-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/materials`)} className={isRTL ? 'rotate-180' : ''}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <h1 className="truncate text-xl font-bold">{material.title}</h1>
@@ -155,26 +155,26 @@ export default function MaterialDetail({ role }: Props) {
           <Card className="rounded-3xl border-border/50 p-5">
             <div className="flex flex-wrap items-center gap-1.5">
               {material.subjects?.name && <Badge variant="secondary" className="rounded-lg">{material.subjects.name}</Badge>}
-              {material.level != null && <Badge variant="outline" className="rounded-lg">الفرقة {material.level}</Badge>}
+              {material.level != null && <Badge variant="outline" className="rounded-lg">{tx('m.year', { n: material.level })}</Badge>}
               {(material.tags || []).map((tg) => <Badge key={tg} variant="outline" className="rounded-lg">#{tg}</Badge>)}
             </div>
             {material.description && <p className="mt-3 text-sm text-muted-foreground">{material.description}</p>}
             <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {material.views_count} مشاهدة</span>
-              <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {material.downloads_count} تحميل</span>
-              <span>{new Date(material.created_at).toLocaleDateString('ar-EG', { dateStyle: 'medium' })}</span>
+              <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {tx('m.d.viewsN', { n: material.views_count })}</span>
+              <span className="inline-flex items-center gap-1"><Download className="h-3.5 w-3.5" /> {tx('m.d.downloadsN', { n: material.downloads_count })}</span>
+              <span>{new Date(material.created_at).toLocaleDateString(locale, { dateStyle: 'medium' })}</span>
             </div>
 
             {isOwner && (
               <div className="mt-4 flex flex-wrap gap-2 border-t border-border/50 pt-4">
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate(`${base}/materials/${material.id}/stats`)}>
-                  <BarChart3 className="h-3.5 w-3.5" /> الإحصائيات
+                  <BarChart3 className="h-3.5 w-3.5" /> {tx('m.stats')}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate(`${base}/materials/${material.id}/edit`)}>
-                  <Pencil className="h-3.5 w-3.5" /> تعديل
+                  <Pencil className="h-3.5 w-3.5" /> {tx('m.edit')}
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1 text-destructive" onClick={handleDelete}>
-                  <Trash2 className="h-3.5 w-3.5" /> حذف
+                  <Trash2 className="h-3.5 w-3.5" /> {tx('m.delete')}
                 </Button>
               </div>
             )}
