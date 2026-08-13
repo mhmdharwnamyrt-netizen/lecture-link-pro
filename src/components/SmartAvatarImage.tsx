@@ -27,7 +27,20 @@ export default function SmartAvatarImage({ src, alt, className }: Props) {
     return () => { mounted = false; };
   }, [src]);
 
-  if (!resolved || failed) return null;
+  if (failed) return null;
+  if (!resolved && src && (src.startsWith('http') || src.includes('dicebear.com'))) {
+    return (
+      <AvatarImage
+        src={src}
+        alt={alt}
+        className={className}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  if (!resolved) return null;
   return (
     <AvatarImage
       src={resolved}
