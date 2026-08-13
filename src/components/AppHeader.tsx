@@ -56,7 +56,7 @@ export default function AppHeader({ role }: AppHeaderProps) {
             className="group flex items-center gap-2 rounded-xl p-1 transition hover:bg-muted"
           >
             <Avatar className="h-8 w-8 ring-2 ring-background transition group-hover:ring-primary/20">
-              <SmartAvatarImage src={profile?.avatar_url} />
+              <SmartAvatarImage src={profile?.avatar_url} gender={profile?.gender} role={profile?.role} isTa={profile?.is_ta} />
               <AvatarFallback className="bg-primary/10 text-primary">
                 <UserIcon className="h-4 w-4" />
               </AvatarFallback>
