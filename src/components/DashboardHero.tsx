@@ -4,6 +4,7 @@ import { Clock, Calendar as CalendarIcon, User as UserIcon } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import StorageImage from '@/components/StorageImage';
+import { avatarForProfile } from '@/lib/defaultAvatar';
 
 interface DashboardHeroProps {
   name: string;
@@ -52,17 +53,14 @@ export default function DashboardHero({ name, subtitle, nextLecture }: Dashboard
       <div className="relative z-10">
         <div className="flex items-center gap-3">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/40 bg-white/15 backdrop-blur-md">
-            {avatarUrl ? (
-              <StorageImage path={avatarUrl} alt="" className="h-full w-full object-cover" fallback={
-                <div className="flex h-full w-full items-center justify-center">
-                  <UserIcon className="h-7 w-7 text-white" />
-                </div>
-              } />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <UserIcon className="h-7 w-7 text-white" />
-              </div>
-            )}
+            <StorageImage
+              path={avatarUrl || avatarForProfile(profile as any)}
+              alt=""
+              className="h-full w-full object-cover"
+              fallback={
+                <img src={avatarForProfile(profile as any)} alt="" className="h-full w-full object-cover" />
+              }
+            />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium uppercase tracking-wider text-white/80">{t('auth.welcomeBack')}</p>

@@ -42,13 +42,44 @@ export interface GroupMember {
   is_ta: boolean;
 }
 
+/**
+ * Groups relevant to the signed-in user only:
+ *  - students: their own department + level
+ *  - doctors / TAs: every (department, level) pair they teach (doctor_departments)
+ */
 export async function fetchMyGroups(): Promise<StudyGroup[]> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth?.user?.id;
+  if (!uid) return [];
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, department_id, level, is_ta')
+    .eq('user_id', uid)
+    .maybeSingle();
+  if (!profile) return [];
+
   const { data } = await supabase
     .from('study_groups' as any)
     .select('*, departments(name, name_ar)')
     .eq('is_active', true)
     .order('level');
-  return (data || []) as unknown as StudyGroup[];
+  const all = (data || []) as unknown as StudyGroup[];
+
+  const isStaff = (profile as any).role === 'doctor' || (profile as any).is_ta;
+  if (isStaff) {
+    const { data: assign } = await supabase
+      .from('doctor_departments')
+      .select('department_id, level')
+      .eq('doctor_id', (profile as any).id);
+    const keys = new Set((assign || []).map((a: any) => `${a.department_id}:${a.level}`));
+    if (keys.size === 0) return [];
+    return all.filter((g) => keys.has(`${g.department_id}:${g.level}`));
+  }
+
+  return all.filter(
+    (g) => g.department_id === (profile as any).department_id && g.level === (profile as any).level,
+  );
 }
 
 export async function fetchGroup(id: string): Promise<StudyGroup | null> {

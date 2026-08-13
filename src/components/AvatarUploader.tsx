@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { createSignedUrl } from '@/lib/storage';
+import { createSignedUrl, extractStoragePath } from '@/lib/storage';
+import { defaultAvatarUrl } from '@/lib/defaultAvatar';
 
 interface AvatarUploaderProps {
   size?: number; // px
@@ -25,31 +26,33 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
 
   const avatarPath = (profile as any)?.avatar_url as string | undefined;
 
-  // Resolve signed URL for private-bucket avatar
+  const fallbackAvatar = defaultAvatarUrl({
+    id: (profile as any)?.user_id || profile?.id,
+    role: (profile as any)?.role || role,
+    isTa: profile?.is_ta,
+    gender: (profile as any)?.gender,
+  });
+
+  // Resolve signed URL for private-bucket avatar (or use an external default)
   useEffect(() => {
     let mounted = true;
     setLoadError(false);
-    if (!avatarPath) { 
-      const spriteSet = role === 'doctor' 
-        ? (profile?.is_ta ? 'initials' : 'avataaars-neutral') 
-        : 'adventurer-neutral';
-      const gender = (profile as any)?.gender;
-      const seed = gender === 'female' ? `girl${Math.floor(Math.random() * 100)}` : `boy${Math.floor(Math.random() * 100)}`;
-      setDisplaySrc(`https://api.dicebear.com/7.x/${spriteSet}/svg?seed=${seed}`);
-      setResolving(false); 
-      return; 
+    const isExternal = !!avatarPath && /^(https?:|data:|blob:)/i.test(avatarPath) && !extractStoragePath('face-photos', avatarPath);
+    if (!avatarPath || isExternal) {
+      setDisplaySrc(avatarPath && isExternal ? avatarPath : fallbackAvatar);
+      setResolving(false);
+      return;
     }
     setResolving(true);
     createSignedUrl('face-photos', avatarPath, 60 * 60 * 24)
       .then((url) => {
         if (!mounted) return;
-        if (!url) { setDisplaySrc(null); setLoadError(true); }
-        else setDisplaySrc(url);
+        setDisplaySrc(url || fallbackAvatar);
       })
-      .catch(() => { if (mounted) setLoadError(true); })
+      .catch(() => { if (mounted) setDisplaySrc(fallbackAvatar); })
       .finally(() => { if (mounted) setResolving(false); });
     return () => { mounted = false; };
-  }, [avatarPath]);
+  }, [avatarPath, fallbackAvatar]);
 
   // Cleanup preview blob URL
   useEffect(() => () => { if (previewSrc) URL.revokeObjectURL(previewSrc); }, [previewSrc]);
@@ -111,13 +114,7 @@ export default function AvatarUploader({ size = 112, role, showButton = true }: 
             src={previewSrc || displaySrc!}
             alt=""
             className="h-full w-full object-cover"
-            onError={() => { 
-              if (!previewSrc) { 
-                setDisplaySrc(null); 
-                // Only set load error if we actually have a path that failed
-                if (avatarPath) setLoadError(true); 
-              } 
-            }}
+            onError={() => { if (!previewSrc) setDisplaySrc(fallbackAvatar); }}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
