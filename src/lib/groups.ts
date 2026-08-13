@@ -28,6 +28,8 @@ export interface GroupMessage {
   reply_to_id: string | null;
   is_deleted: boolean;
   likes_count: number;
+  reactions?: Record<string, number>;
+  my_reaction?: string | null;
   edited_at: string | null;
   created_at: string;
 }
