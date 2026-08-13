@@ -237,6 +237,9 @@ export default function StudyGroupChat({ role }: Props) {
 
     try {
       if (editing) {
+        // Clear temp optimistic message since we are editing an existing one
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        
         const { error } = await supabase.from('study_group_messages' as any)
           .update({ content: body, edited_at: new Date().toISOString() }).eq('id', editing.id);
         if (error) throw error;
