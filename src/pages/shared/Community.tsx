@@ -204,7 +204,7 @@ export default function Community({ role }: { role: Role }) {
     const postIds = (rows || []).map((r: any) => r.id);
     const [{ data: authors }, { data: myLikes }, { data: mySaves }, { data: mediaRows }, { data: mentionRows }] = await Promise.all([
       authorIds.length
-        ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
+        ? supabase.from('profiles_public' as any).select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('post_id').eq('user_id', user.id).not('post_id', 'is', null)
@@ -232,7 +232,7 @@ export default function Community({ role }: { role: Role }) {
     let mentionProfiles: Record<string, string> = {};
     if (mentionedIds.length) {
       const { data: mp } = await supabase
-        .from('profiles').select('user_id,full_name').in('user_id', mentionedIds);
+        .from('profiles_public' as any).select('user_id,full_name').in('user_id', mentionedIds);
       mentionProfiles = ((mp as any[]) || []).reduce((acc, r) => { acc[r.user_id] = r.full_name; return acc; }, {} as Record<string, string>);
     }
     const mentionsByPost: Record<string, { name: string; user_id: string }[]> = {};
@@ -398,7 +398,7 @@ export default function Community({ role }: { role: Role }) {
     const uniqueNames = [...new Set(raw)];
     const found: string[] = [];
     for (const name of uniqueNames.slice(0, 10)) {
-      const { data } = await supabase.from('profiles')
+      const { data } = await supabase.from('profiles_public' as any)
         .select('user_id').ilike('full_name', `%${name}%`).limit(1);
       if (data?.[0]?.user_id && !found.includes(data[0].user_id)) found.push(data[0].user_id);
     }
@@ -510,7 +510,7 @@ export default function Community({ role }: { role: Role }) {
     const authorIds = [...new Set((data || []).map((c: any) => c.author_id))];
     const [{ data: authors }, { data: myLikes }] = await Promise.all([
       authorIds.length
-        ? supabase.from('profiles').select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
+        ? supabase.from('profiles_public' as any).select('id,user_id,full_name,avatar_url,role,academic_title').in('user_id', authorIds)
         : Promise.resolve({ data: [] as any[] }),
       user
         ? supabase.from('community_reactions').select('comment_id').eq('user_id', user.id).not('comment_id', 'is', null)

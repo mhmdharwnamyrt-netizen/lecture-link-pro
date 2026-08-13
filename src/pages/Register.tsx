@@ -200,8 +200,8 @@ function DoctorRegistration({ onBack, isTA = false }: { onBack: () => void; isTA
 
       // Wait for session to be established
       if (!authData.session) {
-        toast({ title: 'Please check your email to verify your account', description: 'Then sign in.' });
-        navigate('/login');
+        const { error: siErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (siErr) throw siErr;
         return;
       }
 
@@ -491,8 +491,8 @@ function StudentRegistration({ onBack }: { onBack: () => void }) {
       if (!authData.user) throw new Error('Registration failed');
 
       if (!authData.session) {
-        toast({ title: 'Please check your email to verify your account', description: 'Then sign in.' });
-        navigate('/login');
+        const { error: siErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (siErr) throw siErr;
         return;
       }
 
