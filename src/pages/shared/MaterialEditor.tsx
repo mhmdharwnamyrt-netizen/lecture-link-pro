@@ -237,15 +237,15 @@ export default function MaterialEditor({ role }: Props) {
             )}
 
             <div>
-              <Label>وسوم (اختياري)</Label>
-              <Input value={tags} onChange={(e) => setTags(e.target.value)} className="mt-1 h-12 rounded-xl"
-                placeholder="شبكات، الفصل الأول" />
+              <Label>{tx('m.ed.tags')}</Label>
+              <Input value={tags} onChange={(e) => setTags(e.target.value)} className="mt-1 h-12 rounded-xl text-start"
+                placeholder={tx('m.ed.tagsPh')} />
             </div>
 
             <div className="flex items-center justify-between rounded-2xl bg-muted/50 p-3">
               <div>
-                <p className="text-sm font-medium">نشر للطلاب</p>
-                <p className="text-xs text-muted-foreground">عند الإيقاف تبقى المحاضرة مسودة لديك فقط.</p>
+                <p className="text-sm font-medium">{tx('m.ed.publish')}</p>
+                <p className="text-xs text-muted-foreground">{tx('m.ed.publishHint')}</p>
               </div>
               <Switch checked={published} onCheckedChange={setPublished} />
             </div>
@@ -254,7 +254,7 @@ export default function MaterialEditor({ role }: Props) {
 
         {/* Files */}
         <Card className="space-y-3 rounded-3xl p-5">
-          <Label>ملفات المحاضرة</Label>
+          <Label>{tx('m.ed.files')}</Label>
 
           {existing.map((f) => (
             <div key={f.id} className="flex items-center gap-2 rounded-2xl border border-border/50 p-3">
@@ -280,16 +280,16 @@ export default function MaterialEditor({ role }: Props) {
 
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/70 p-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
             <Upload className="h-6 w-6 text-primary" />
-            <span className="text-sm font-medium">اضغط لاختيار الملفات</span>
-            <span className="text-xs text-muted-foreground">PDF, Word, Excel, PowerPoint, صور — حتى {MAX_FILE_MB}MB للملف</span>
+            <span className="text-sm font-medium">{tx('m.ed.pick')}</span>
+            <span className="text-xs text-muted-foreground">{tx('m.ed.pickHint', { n: MAX_FILE_MB })}</span>
             <input type="file" multiple accept={ACCEPTED_TYPES} className="hidden"
               onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ''; }} />
           </label>
         </Card>
 
         <Button onClick={save} disabled={saving} className="h-14 w-full rounded-2xl text-base">
-          {saving ? (<><Loader2 className="me-2 h-4 w-4 animate-spin" /> {progress || 'جارٍ الحفظ...'}</>)
-            : (<><Save className="me-2 h-4 w-4" /> {editing ? 'حفظ التعديلات' : 'رفع ونشر'}</>)}
+          {saving ? (<><Loader2 className="me-2 h-4 w-4 animate-spin" /> {progress || tx('m.ed.saving')}</>)
+            : (<><Save className="me-2 h-4 w-4" /> {editing ? tx('m.ed.save') : tx('m.ed.create')}</>)}
         </Button>
       </div>
     </MobileLayout>
