@@ -263,7 +263,11 @@ export default function StudyGroupChat({ role }: Props) {
       if (error) throw error;
       
       // Replace optimistic message with real one
-      setMessages(prev => prev.map(m => m.id === tempId ? data : m));
+      if (data) {
+        setMessages(prev => prev.map(m => m.id === tempId ? (data as unknown as GroupMessage) : m));
+      } else {
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+      }
       setText(''); setReplyTo(null);
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== tempId));
