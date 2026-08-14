@@ -160,6 +160,8 @@ const dict = {
   'g.delivered': ['Delivered', 'تم التسليم'],
   'g.seenByAll': ['Seen by everyone', 'شاهدها الجميع'],
   'g.notSeenYet': ['Not seen yet', 'لم تتم المشاهدة بعد'],
+  'g.cancel': ['Cancel', 'إلغاء'],
+  'g.sendReport': ['Send report', 'إرسال البلاغ'],
   'g.blockUser': ['Block user', 'حظر المستخدم'],
 
   /* --- moderation --- */
