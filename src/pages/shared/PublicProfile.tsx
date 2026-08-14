@@ -322,6 +322,22 @@ export default function PublicProfilePage() {
                     {p.content && (
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{p.content}</p>
                     )}
+                    {p.media?.length ? (
+                      <div className="mt-3 grid gap-2">
+                        {p.media.map((m: any) => {
+                          const src = m.display_url || m.storage_path;
+                          if (m.media_type === 'video') {
+                            return <video key={m.id} src={src} controls preload="metadata" className="max-h-96 w-full rounded-xl bg-muted object-contain" />;
+                          }
+                          if (m.media_type === 'audio') {
+                            return <audio key={m.id} src={src} controls preload="metadata" className="w-full" />;
+                          }
+                          return <img key={m.id} src={src} alt={m.file_name || t('صورة منشور', 'Post image')} className="max-h-96 w-full rounded-xl object-cover" loading="lazy" />;
+                        })}
+                      </div>
+                    ) : (p.image_url?.startsWith('http') && (
+                      <img src={p.image_url} alt="" className="mt-3 max-h-96 w-full rounded-xl object-cover" loading="lazy" />
+                    ))}
                     <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {p.likes_count || 0}</span>
                       <span className="inline-flex items-center gap-1"><MessageCircle className="h-3 w-3" /> {p.comments_count || 0}</span>
