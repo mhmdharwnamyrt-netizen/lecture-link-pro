@@ -32,7 +32,7 @@ export default function QuizResult({ role }: Props) {
         const { data: qs } = await supabase.from('quiz_questions' as any).select('*').eq('quiz_id', id).order('order_index');
         const qq = ((qs || []) as any) as QuizQuestion[];
         setQuestions(qq);
-        const { data: opts } = await supabase.from('quiz_options' as any).select('*').in('question_id', qq.map((x) => x.id));
+        const { data: opts } = await supabase.rpc('quiz_options_with_answers' as any, { _quiz: id });
         const map: Record<string, QuizOption[]> = {};
         (opts || []).forEach((o: any) => { (map[o.question_id] ||= []).push(o as any); });
         Object.keys(map).forEach((k) => map[k].sort((a, b) => a.order_index - b.order_index));
