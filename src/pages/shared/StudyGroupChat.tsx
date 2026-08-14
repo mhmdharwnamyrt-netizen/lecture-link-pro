@@ -205,9 +205,11 @@ export default function StudyGroupChat({ role }: Props) {
     const ids = msgs.filter((m) => m.sender_id === user?.id).map((m) => m.id);
     if (!ids.length) return;
     const { data } = await supabase
-      .from('study_group_reads' as any).select('message_id, user_id').in('message_id', ids);
-    const map: Record<string, string[]> = {};
-    (data || []).forEach((r: any) => { (map[r.message_id] ||= []).push(r.user_id); });
+      .from('study_group_reads' as any).select('message_id, user_id, read_at').in('message_id', ids);
+    const map: Record<string, { user_id: string; read_at: string }[]> = {};
+    (data || []).forEach((r: any) => {
+      (map[r.message_id] ||= []).push({ user_id: r.user_id, read_at: r.read_at });
+    });
     setReads(map);
   }, [user?.id]);
 
