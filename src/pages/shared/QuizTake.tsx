@@ -44,7 +44,7 @@ export default function QuizTake({ role }: Props) {
         if (!q) throw new Error('Quiz not found');
         const { data: qs } = await supabase.from('quiz_questions' as any).select('*').eq('quiz_id', id).order('order_index');
         const qq = ((qs || []) as any) as QuizQuestion[];
-        const { data: opts } = await supabase.from('quiz_options' as any).select('*').in('question_id', qq.map((x) => x.id));
+        const { data: opts } = await supabase.from('quiz_options' as any).select('id,question_id,order_index,option_text').in('question_id', qq.map((x) => x.id));
         const map: Record<string, QuizOption[]> = {};
         (opts || []).forEach((o: any) => { (map[o.question_id] ||= []).push(o); });
         Object.keys(map).forEach((k) => map[k].sort((a, b) => a.order_index - b.order_index));
@@ -123,10 +123,7 @@ export default function QuizTake({ role }: Props) {
     submittedRef.current = true;
     setSubmitting(true);
     try {
-      // For auto-submit, mark status differently
-      if (auto) {
-        await supabase.from('quiz_attempts' as any).update({ status: 'auto_submitted' }).eq('id', attemptId);
-      }
+      // Grading and status are handled server-side by the submit RPC
       await submitQuizAttempt(attemptId);
       toast.success(auto ? 'انتهى الوقت — تم التسليم' : 'تم التسليم');
       navigate(`/${role}/quizzes/${id}/result/${attemptId}`);

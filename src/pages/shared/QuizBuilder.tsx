@@ -77,7 +77,7 @@ export default function QuizBuilder({ role }: Props) {
         setPassing(qq.passing_percentage); setReward(qq.reward_points);
       }
       const { data: qs } = await supabase.from('quiz_questions' as any).select('*').eq('quiz_id', id).order('order_index');
-      const { data: opts } = await supabase.from('quiz_options' as any).select('*').in('question_id', (qs || []).map((x: any) => x.id));
+      const { data: opts } = await supabase.rpc('quiz_options_with_answers' as any, { _quiz: id });
       setQuestions((qs || []).map((qq: any) => ({
         id: qq.id, question_type: qq.question_type, question_text: qq.question_text,
         points: qq.points, explanation: qq.explanation || '',
