@@ -66,7 +66,25 @@ export default function PublicProfilePage() {
         .eq('is_hidden', false)
         .order('created_at', { ascending: false })
         .limit(30);
-      setPosts(pRows || []);
+      const list = pRows || [];
+      // Attach uploaded media (images / video / voice) to each post
+      const ids = list.map((p: any) => p.id);
+      if (ids.length) {
+        const { data: mediaRows } = await (supabase as any)
+          .from('community_post_media')
+          .select('*')
+          .in('post_id', ids)
+          .order('created_at', { ascending: true });
+        const withUrls = await Promise.all(((mediaRows as any[]) || []).map(async (m) => {
+          const { data } = await supabase.storage.from('community-media').createSignedUrl(m.storage_path, 60 * 60);
+          return { ...m, display_url: data?.signedUrl || '' };
+        }));
+        const byPost: Record<string, any[]> = {};
+        withUrls.forEach((m) => { (byPost[m.post_id] ||= []).push(m); });
+        setPosts(list.map((p: any) => ({ ...p, media: byPost[p.id] || [] })));
+      } else {
+        setPosts(list);
+      }
       // Am I following this user?
       if (me?.user_id && me.user_id !== userId) {
         const { data: f } = await supabase
