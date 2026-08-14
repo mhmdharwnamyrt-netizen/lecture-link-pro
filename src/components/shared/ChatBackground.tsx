@@ -282,9 +282,12 @@ const ChatBackground: React.FC<ChatBackgroundProps> = ({ departmentName, departm
   const patternId = `chat-doodles-${theme.key}-${uid}`;
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
+    // `-z-10` is essential: the wallpaper must paint BELOW the message list.
+    // Without it, this absolutely-positioned layer paints on top of the
+    // non-positioned chat content and washes the text out.
+    <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl">
       {/* soft gradient wash */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${theme.wash}`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${theme.wash} opacity-70`} />
 
       {/* doodle pattern */}
       <svg className={`absolute inset-0 h-full w-full ${theme.ink} ${theme.opacity}`} xmlns="http://www.w3.org/2000/svg">
@@ -304,10 +307,8 @@ const ChatBackground: React.FC<ChatBackgroundProps> = ({ departmentName, departm
         <rect width="100%" height="100%" fill={`url(#${patternId})`} />
       </svg>
 
-      {/* readability veil — keeps bubbles crisp over the pattern */}
-      <div className="absolute inset-0 bg-background/45 dark:bg-background/55" />
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/70 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/70 to-transparent" />
+      {/* light readability veil (content sits above this layer) */}
+      <div className="absolute inset-0 bg-background/25 dark:bg-background/40" />
     </div>
   );
 };

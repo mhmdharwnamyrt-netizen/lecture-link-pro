@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, Users, Send, Paperclip, Image as ImageIcon, Mic, Square,
   Heart, CornerUpLeft, Pencil, Trash2, X, Loader2, FileText, Eye, Download,
-  ThumbsUp, Smile, ThumbsDown, Frown, Angry, Maximize2, ZoomIn, ZoomOut
+  ThumbsUp, Smile, ThumbsDown, Frown, Angry, Maximize2, ZoomIn, ZoomOut,
+  Search, Flag, Ban, MoreVertical, Bell, BellOff, Check, CheckCheck, ShieldOff
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,9 +14,18 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  REPORT_REASONS, submitChatReport, fetchBlockedIds, blockUser, unblockUser,
+} from '@/lib/chatModeration';
+import { requestNotificationPermission, getNotificationPermission, showLocalNotification } from '@/lib/pushNotifications';
 import { useTx } from '@/lib/i18nModules';
 import { ReactionPicker, type ReactionType } from '@/components/shared/ReactionPicker';
 import ChatBackground from '@/components/shared/ChatBackground';
@@ -153,8 +163,20 @@ export default function StudyGroupChat({ role }: Props) {
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [myLikes, setMyLikes] = useState<Record<string, string>>(new Set() as any); // Modified to store reaction type
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
-  const [reads, setReads] = useState<Record<string, string[]>>({});
+  const [reads, setReads] = useState<Record<string, { user_id: string; read_at: string }[]>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  /* moderation + search + push */
+  const [blocked, setBlocked] = useState<string[]>([]);
+  const [blockedOpen, setBlockedOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ msg?: GroupMessage; userId: string } | null>(null);
+  const [reportReason, setReportReason] = useState<string>(REPORT_REASONS[0].key);
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportBusy, setReportBusy] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [senderFilter, setSenderFilter] = useState<string>('all');
+  const [pushPerm, setPushPerm] = useState<string>(typeof window !== 'undefined' ? getNotificationPermission() : 'default');
 
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<GroupMessage | null>(null);
@@ -177,15 +199,25 @@ export default function StudyGroupChat({ role }: Props) {
     return m;
   }, [members]);
 
+  // Live mirrors so the realtime subscription never reads stale state
+  const messagesRef = useRef<GroupMessage[]>([]);
+  const memberMapRef = useRef<Record<string, GroupMember>>({});
+  const blockedRef = useRef<string[]>([]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { memberMapRef.current = memberMap; }, [memberMap]);
+  useEffect(() => { blockedRef.current = blocked; }, [blocked]);
+
   const Back = isRTL ? ArrowRight : ArrowLeft;
 
   const loadReads = useCallback(async (msgs: GroupMessage[]) => {
     const ids = msgs.filter((m) => m.sender_id === user?.id).map((m) => m.id);
     if (!ids.length) return;
     const { data } = await supabase
-      .from('study_group_reads' as any).select('message_id, user_id').in('message_id', ids);
-    const map: Record<string, string[]> = {};
-    (data || []).forEach((r: any) => { (map[r.message_id] ||= []).push(r.user_id); });
+      .from('study_group_reads' as any).select('message_id, user_id, read_at').in('message_id', ids);
+    const map: Record<string, { user_id: string; read_at: string }[]> = {};
+    (data || []).forEach((r: any) => {
+      (map[r.message_id] ||= []).push({ user_id: r.user_id, read_at: r.read_at });
+    });
     setReads(map);
   }, [user?.id]);
 
@@ -207,14 +239,16 @@ export default function StudyGroupChat({ role }: Props) {
       if (!alive) return;
       setGroup(g);
       if (!g) { setLoading(false); return; }
-      const [ms, msgs, likes] = await Promise.all([
+      const [ms, msgs, likes, blk] = await Promise.all([
         fetchGroupMembers(id).catch(() => []),
         fetchMessages(id),
         supabase.from('study_group_reactions' as any).select('message_id, reaction_type').eq('user_id', user.id),
+        fetchBlockedIds(user.id).catch(() => [] as string[]),
       ]);
       if (!alive) return;
       setMembers(ms);
       setMessages(msgs);
+      setBlocked(blk);
       const reactionsMap: Record<string, string> = {};
       (likes.data || []).forEach((r: any) => { reactionsMap[r.message_id] = r.reaction_type || 'like'; });
       setMyLikes(reactionsMap as any);
@@ -225,7 +259,7 @@ export default function StudyGroupChat({ role }: Props) {
     return () => { alive = false; };
   }, [id, user, loadReads, markRead]);
 
-  // Realtime
+  // Realtime + push notifications for replies / reactions on my messages
   useEffect(() => {
     if (!id || !user) return;
     const channel = supabase
@@ -235,8 +269,22 @@ export default function StudyGroupChat({ role }: Props) {
         (payload) => {
           const row = (payload.new || payload.old) as GroupMessage;
           if (payload.eventType === 'INSERT') {
+            if (blockedRef.current.includes(row.sender_id)) return;
             setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
-            if (row.sender_id !== user.id) markRead([row]);
+            if (row.sender_id !== user.id) {
+              markRead([row]);
+              const parent = row.reply_to_id
+                ? messagesRef.current.find((m) => m.id === row.reply_to_id)
+                : null;
+              if (parent && parent.sender_id === user.id) {
+                const name = memberMapRef.current[row.sender_id]?.full_name || tx('m.s.user');
+                showLocalNotification(
+                  tx('g.newReply', { name }),
+                  row.content || row.media_name || tx('g.voice'),
+                  `sg-reply-${row.id}`,
+                );
+              }
+            }
           } else if (payload.eventType === 'UPDATE') {
             setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, ...row } : m)));
           } else {
@@ -244,10 +292,26 @@ export default function StudyGroupChat({ role }: Props) {
           }
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_group_reads' }, () => {
-        setMessages((prev) => { loadReads(prev); return prev; });
+        loadReads(messagesRef.current);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_reactions' }, (payload) => {
+        const r: any = payload.new;
+        if (!r || r.user_id === user.id) return;
+        const target = messagesRef.current.find((m) => m.id === r.message_id);
+        if (!target) return;
+        setMessages((prev) => prev.map((m) => (m.id === r.message_id ? { ...m, likes_count: (m.likes_count || 0) + 1 } : m)));
+        if (target.sender_id === user.id) {
+          const name = memberMapRef.current[r.user_id]?.full_name || tx('m.s.user');
+          showLocalNotification(
+            tx('g.newReaction', { name }),
+            target.content || target.media_name || tx('g.voice'),
+            `sg-reaction-${r.id}`,
+          );
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, markRead, loadReads]);
 
   useEffect(() => {
@@ -403,6 +467,76 @@ export default function StudyGroupChat({ role }: Props) {
     setRecording(false);
   };
 
+  /* ---------- moderation ---------- */
+  const openReport = (userId: string, msg?: GroupMessage) => {
+    setReportReason(REPORT_REASONS[0].key);
+    setReportDetails('');
+    setReportTarget({ userId, msg });
+  };
+
+  const sendReport = async () => {
+    if (!user || !id || !reportTarget) return;
+    setReportBusy(true);
+    try {
+      await submitChatReport({
+        reporterId: user.id,
+        reportedUserId: reportTarget.userId,
+        groupId: id,
+        messageId: reportTarget.msg?.id ?? null,
+        contentSnapshot: reportTarget.msg?.content || reportTarget.msg?.media_name || null,
+        reason: reportReason,
+        details: reportDetails.trim() || null,
+      });
+      toast({ title: tx('g.reportDone') });
+      setReportTarget(null);
+    } catch (e: any) {
+      toast({ title: e.message, variant: 'destructive' });
+    } finally { setReportBusy(false); }
+  };
+
+  const doBlock = async (userId: string) => {
+    if (!user) return;
+    if (!confirm(tx('g.confirmBlock'))) return;
+    try {
+      await blockUser(user.id, userId);
+      setBlocked((p) => (p.includes(userId) ? p : [...p, userId]));
+      toast({ title: tx('g.blocked') });
+    } catch (e: any) { toast({ title: e.message, variant: 'destructive' }); }
+  };
+
+  const doUnblock = async (userId: string) => {
+    if (!user) return;
+    try {
+      await unblockUser(user.id, userId);
+      setBlocked((p) => p.filter((x) => x !== userId));
+      toast({ title: tx('g.unblocked') });
+    } catch (e: any) { toast({ title: e.message, variant: 'destructive' }); }
+  };
+
+  const enablePush = async () => {
+    const ok = await requestNotificationPermission();
+    setPushPerm(getNotificationPermission());
+    toast({ title: ok ? tx('g.pushOn') : tx('g.pushOff'), variant: ok ? undefined : 'destructive' });
+  };
+
+  /* ---------- visible messages (blocked filter + search) ---------- */
+  const visibleMessages = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return messages.filter((m) => {
+      if (blocked.includes(m.sender_id)) return false;
+      if (senderFilter !== 'all' && m.sender_id !== senderFilter) return false;
+      if (!q) return true;
+      const author = memberMap[m.sender_id]?.full_name?.toLowerCase() || '';
+      return (
+        m.content?.toLowerCase().includes(q) ||
+        (m.media_name || '').toLowerCase().includes(q) ||
+        author.includes(q)
+      );
+    });
+  }, [messages, blocked, query, senderFilter, memberMap]);
+
+  const searching = !!query.trim() || senderFilter !== 'all';
+
   /* ---------- render ---------- */
   if (loading) {
     return (
@@ -432,34 +566,110 @@ export default function StudyGroupChat({ role }: Props) {
         <ChatBackground departmentName={group.departments?.name} departmentNameAr={group.departments?.name_ar} />
 
         {/* Header */}
-        <Card className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border-border/50 bg-card/80 p-3 backdrop-blur-md shadow-sm">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/${role}/groups`)}>
-            <Back className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold leading-tight">{pickName(group) || group.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {pickName(group.departments)} • {tx('g.yearLabel', { n: group.level })}
-            </p>
+        <Card className="relative z-10 mb-2 shrink-0 rounded-2xl border-border/60 bg-card/95 p-3 shadow-sm backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/${role}/groups`)}>
+              <Back className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold leading-tight">{pickName(group) || group.name}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {pickName(group.departments)} • {tx('g.yearLabel', { n: group.level })}
+              </p>
+            </div>
+            <button
+              onClick={() => setSearchOpen((s) => !s)}
+              title={tx('g.searchOpen')}
+              className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors ${searchOpen || searching ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/70'}`}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+            <button onClick={() => setMembersOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-muted px-2.5 py-2 text-xs font-medium transition-colors hover:bg-muted/70">
+              <Users className="h-3.5 w-3.5" /> {members.length}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button title={tx('g.more')} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted transition-colors hover:bg-muted/70">
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
+                <DropdownMenuItem onClick={enablePush}>
+                  {pushPerm === 'granted' ? <Bell className="me-2 h-4 w-4 text-success" /> : <BellOff className="me-2 h-4 w-4" />}
+                  {pushPerm === 'granted' ? tx('g.pushOn') : tx('g.enablePush')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setBlockedOpen(true)}>
+                  <ShieldOff className="me-2 h-4 w-4" />
+                  {tx('g.blockedList')} ({blocked.length})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <button onClick={() => setMembersOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium transition-colors hover:bg-muted/70">
-            <Users className="h-3.5 w-3.5" /> {members.length}
-          </button>
+
+          <AnimatePresence>
+            {searchOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  <div className="relative min-w-[180px] flex-1">
+                    <Search className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground start-3" />
+                    <Input
+                      autoFocus
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={tx('g.search')}
+                      className="h-10 rounded-xl ps-9"
+                    />
+                  </div>
+                  <select
+                    value={senderFilter}
+                    onChange={(e) => setSenderFilter(e.target.value)}
+                    className="h-10 rounded-xl border border-input bg-background px-2 text-xs"
+                  >
+                    <option value="all">{tx('g.searchAll')}</option>
+                    {members.map((mem) => (
+                      <option key={mem.user_id} value={mem.user_id}>{mem.full_name}</option>
+                    ))}
+                  </select>
+                  {searching && (
+                    <Button variant="ghost" size="sm" className="h-10 rounded-xl"
+                      onClick={() => { setQuery(''); setSenderFilter('all'); }}>
+                      <X className="me-1 h-3.5 w-3.5" /> {tx('g.clear')}
+                    </Button>
+                  )}
+                </div>
+                {searching && (
+                  <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+                    {tx('g.searchResults', { n: visibleMessages.length })}
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
 
         {/* Messages */}
-        <div className="no-scrollbar flex-1 space-y-3 overflow-y-auto rounded-2xl px-1 pb-2">
-          {messages.length === 0 && (
-            <div className="grid h-full place-items-center text-sm text-muted-foreground">{tx('g.noMessages')}</div>
+        <div className="no-scrollbar relative z-10 flex-1 space-y-3 overflow-y-auto rounded-2xl px-1 pb-2">
+          {visibleMessages.length === 0 && (
+            <div className="grid h-full place-items-center text-sm text-muted-foreground">
+              {searching ? tx('g.searchNone') : tx('g.noMessages')}
+            </div>
           )}
-          {messages.map((m) => {
+          {visibleMessages.map((m) => {
             const mine = m.sender_id === user?.id;
             const author = memberMap[m.sender_id];
             const parent = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
             const long = m.content.length > LONG_TEXT;
             const open = expanded.has(m.id);
-            const seenCount = (reads[m.id] || []).length;
+            const readRows = reads[m.id] || [];
+            const seenCount = readRows.length;
+            const lastSeenAt = readRows.length
+              ? readRows.map((r) => r.read_at).sort().slice(-1)[0]
+              : null;
             const myReaction = (myLikes as any)[m.id];
             
             const getReactionIcon = (type?: string) => {
@@ -485,10 +695,10 @@ export default function StudyGroupChat({ role }: Props) {
                     {m.edited_at && !m.is_deleted && <span>· {tx('g.edited')}</span>}
                   </div>
 
-                  <div className={`rounded-2xl border px-3 py-2 text-sm shadow-sm ${
-                    mine 
-                      ? 'border-primary/20 bg-primary/90 text-primary-foreground shadow-md dark:bg-primary/80' 
-                      : 'border-border/50 bg-card/90 backdrop-blur-sm shadow-sm dark:bg-card/80'
+                  <div className={`rounded-2xl border px-3 py-2 text-sm shadow-md ${
+                    mine
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-card text-card-foreground'
                   }`}>
                     {m.is_deleted ? (
                       <p className="italic text-muted-foreground">{tx('g.deletedMsg')}</p>
@@ -522,7 +732,7 @@ export default function StudyGroupChat({ role }: Props) {
                   </div>
 
                   {!m.is_deleted && (
-                    <div className={`flex items-center gap-1 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-0.5 rounded-xl border border-border/60 bg-card px-1 py-0.5 shadow-sm ${mine ? 'flex-row-reverse' : ''}`}>
                       <div
                         className="relative"
                         onMouseEnter={() => { if (window.matchMedia('(hover: hover)').matches) setActiveReactionPicker(m.id); }}
@@ -570,10 +780,33 @@ export default function StudyGroupChat({ role }: Props) {
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                           <button onClick={() => setSeenFor(m)}
-                            className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground">
-                            <Eye className="h-3.5 w-3.5" /> {seenCount}
+                            title={lastSeenAt ? tx('g.seenAt', { time: new Date(lastSeenAt).toLocaleString(locale) }) : tx('g.notSeenYet')}
+                            className={`inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] ${seenCount ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground`}>
+                            {seenCount ? <CheckCheck className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+                            {seenCount || ''}
                           </button>
                         </>
+                      )}
+                      {!mine && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded-lg px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-52">
+                            <DropdownMenuItem onClick={() => openReport(m.sender_id, m)}>
+                              <Flag className="me-2 h-4 w-4" /> {tx('g.reportMsg')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openReport(m.sender_id)}>
+                              <Flag className="me-2 h-4 w-4" /> {tx('g.reportUser')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => doBlock(m.sender_id)}>
+                              <ShieldOff className="me-2 h-4 w-4" /> {tx('g.blockUser')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   )}
@@ -584,8 +817,8 @@ export default function StudyGroupChat({ role }: Props) {
           <div ref={bottomRef} />
         </div>
 
-        {/* Composer */}
-        <Card className="mt-2 shrink-0 space-y-2 rounded-2xl border-border/50 bg-card/80 p-2.5 backdrop-blur-md shadow-lg">
+        {/* Composer — pinned to the bottom of the chat area */}
+        <Card className="relative z-20 mt-auto shrink-0 space-y-2 rounded-2xl border-border bg-card p-2.5 shadow-lg">
           <AnimatePresence>
             {(replyTo || editing) && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -699,15 +932,88 @@ export default function StudyGroupChat({ role }: Props) {
           <div className="mt-4 space-y-2">
             {(reads[seenFor?.id || ''] || []).length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">{tx('g.noSeen')}</p>
-            ) : (reads[seenFor!.id] || []).map((uid) => (
-              <div key={uid} className="flex items-center gap-2.5 rounded-xl border border-border/40 p-2">
-                <MemberAvatar member={memberMap[uid]} id={uid} size={32} />
-                <span className="min-w-0 flex-1 truncate text-sm">{memberMap[uid]?.full_name || tx('m.s.user')}</span>
+            ) : (reads[seenFor!.id] || []).map((r) => (
+              <div key={r.user_id} className="flex items-center gap-2.5 rounded-xl border border-border/40 p-2">
+                <MemberAvatar member={memberMap[r.user_id]} id={r.user_id} size={32} />
+                <span className="min-w-0 flex-1 truncate text-sm">{memberMap[r.user_id]?.full_name || tx('m.s.user')}</span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  {r.read_at ? new Date(r.read_at).toLocaleString(locale, { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : ''}
+                </span>
               </div>
             ))}
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Blocked users sheet */}
+      <Sheet open={blockedOpen} onOpenChange={setBlockedOpen}>
+        <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto rounded-t-3xl">
+          <SheetHeader className="text-start">
+            <SheetTitle>{tx('g.blockedList')}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {blocked.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">{tx('g.blockedCount', { n: 0 })}</p>
+            ) : blocked.map((uid) => (
+              <div key={uid} className="flex items-center gap-2.5 rounded-xl border border-border/40 p-2">
+                <MemberAvatar member={memberMap[uid]} id={uid} size={32} />
+                <span className="min-w-0 flex-1 truncate text-sm">{memberMap[uid]?.full_name || tx('m.s.user')}</span>
+                <Button size="sm" variant="secondary" className="rounded-xl" onClick={() => doUnblock(uid)}>
+                  {tx('g.unblock')}
+                </Button>
+              </div>
+            ))}
+            {blocked.length > 0 && (
+              <p className="pt-1 text-center text-[11px] text-muted-foreground">{tx('g.blockedHidden')}</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Report dialog */}
+      <Dialog open={!!reportTarget} onOpenChange={(o) => !o && setReportTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-start">
+              {reportTarget?.msg ? tx('g.reportMsg') : tx('g.reportUser')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {reportTarget?.msg && (
+              <p className="line-clamp-3 rounded-xl border border-border/50 bg-muted/50 p-2 text-xs text-muted-foreground">
+                {reportTarget.msg.content || reportTarget.msg.media_name || tx('g.voice')}
+              </p>
+            )}
+            <div className="space-y-1.5">
+              {REPORT_REASONS.map((r) => (
+                <button
+                  key={r.key}
+                  onClick={() => setReportReason(r.key)}
+                  className={`w-full rounded-xl border px-3 py-2 text-start text-sm transition-colors ${
+                    reportReason === r.key ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  {isRTL ? r.ar : r.en}
+                </button>
+              ))}
+            </div>
+            <Textarea
+              value={reportDetails}
+              onChange={(e) => setReportDetails(e.target.value)}
+              placeholder={tx('g.reportDetails')}
+              rows={3}
+              className="resize-none rounded-xl"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" className="rounded-xl" onClick={() => setReportTarget(null)}>{tx('g.cancel')}</Button>
+            <Button className="gap-2 rounded-xl" disabled={reportBusy} onClick={sendReport}>
+              {reportBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flag className="h-4 w-4" />}
+              {tx('g.sendReport')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileLayout>
   );
 }

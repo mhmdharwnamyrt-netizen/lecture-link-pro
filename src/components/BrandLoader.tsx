@@ -75,7 +75,7 @@ export default function BrandLoader({ fullscreen = true, message, inline = false
           transition={{ delay: 0.4, duration: 0.8 }}
           className="mt-6 text-[12px] font-medium tracking-[0.18em] text-white/55"
         >
-          {message || 'جامعة بني سويف التكنولوجية'}
+          {message || 'BENI-SUEF TECHNOLOGICAL UNIVERSITY'}
         </motion.p>
       </motion.div>
     </div>

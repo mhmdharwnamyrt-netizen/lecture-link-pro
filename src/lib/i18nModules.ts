@@ -145,6 +145,49 @@ const dict = {
   'g.online': ['Group chat', 'محادثة جماعية'],
   'g.viewMembers': ['View members', 'عرض الأعضاء'],
   'g.you': ['You', 'أنت'],
+
+  /* --- search --- */
+  'g.search': ['Search messages…', 'ابحث في الرسائل...'],
+  'g.searchOpen': ['Search', 'بحث'],
+  'g.searchBySender': ['Sender', 'المرسل'],
+  'g.searchAll': ['Everyone', 'الجميع'],
+  'g.searchResults': ['{n} results', '{n} نتيجة'],
+  'g.searchNone': ['No matching messages', 'لا توجد رسائل مطابقة'],
+  'g.clear': ['Clear', 'مسح'],
+
+  /* --- read receipts --- */
+  'g.seenAt': ['Seen {time}', 'شوهدت {time}'],
+  'g.delivered': ['Delivered', 'تم التسليم'],
+  'g.seenByAll': ['Seen by everyone', 'شاهدها الجميع'],
+  'g.notSeenYet': ['Not seen yet', 'لم تتم المشاهدة بعد'],
+  'g.cancel': ['Cancel', 'إلغاء'],
+  'g.sendReport': ['Send report', 'إرسال البلاغ'],
+  'g.blockUser': ['Block user', 'حظر المستخدم'],
+
+  /* --- moderation --- */
+  'g.report': ['Report', 'إبلاغ'],
+  'g.reportMsg': ['Report message', 'الإبلاغ عن الرسالة'],
+  'g.reportUser': ['Report user', 'الإبلاغ عن المستخدم'],
+  'g.reportReason': ['Reason', 'سبب البلاغ'],
+  'g.reportDetails': ['More details (optional)', 'تفاصيل إضافية (اختياري)'],
+  'g.reportSend': ['Send report', 'إرسال البلاغ'],
+  'g.reportDone': ['Report sent to moderators', 'تم إرسال البلاغ إلى الإشراف'],
+  'g.block': ['Block user', 'حظر المستخدم'],
+  'g.unblock': ['Unblock', 'إلغاء الحظر'],
+  'g.blocked': ['User blocked — messages hidden', 'تم حظر المستخدم — رسائله مخفية'],
+  'g.unblocked': ['User unblocked', 'تم إلغاء الحظر'],
+  'g.blockedCount': ['{n} blocked', '{n} محظور'],
+  'g.blockedList': ['Blocked users', 'المستخدمون المحظورون'],
+  'g.blockedHidden': ['Message from a blocked user', 'رسالة من مستخدم محظور'],
+  'g.confirmBlock': ['Block this user? Their messages will be hidden from you.', 'حظر هذا المستخدم؟ لن تظهر لك رسائله.'],
+  'g.more': ['More', 'المزيد'],
+
+  /* --- push --- */
+  'g.pushOn': ['Notifications enabled', 'تم تفعيل الإشعارات'],
+  'g.pushOff': ['Notifications blocked by the browser', 'المتصفح يمنع الإشعارات'],
+  'g.enablePush': ['Enable notifications', 'تفعيل الإشعارات'],
+  'g.newReply': ['New reply from {name}', 'رد جديد من {name}'],
+  'g.newReaction': ['{name} reacted to your message', '{name} تفاعل مع رسالتك'],
 } as const;
 
 export type TxKey = keyof typeof dict;
