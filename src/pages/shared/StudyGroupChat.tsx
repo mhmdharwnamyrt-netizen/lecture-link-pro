@@ -163,8 +163,20 @@ export default function StudyGroupChat({ role }: Props) {
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [myLikes, setMyLikes] = useState<Record<string, string>>(new Set() as any); // Modified to store reaction type
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
-  const [reads, setReads] = useState<Record<string, string[]>>({});
+  const [reads, setReads] = useState<Record<string, { user_id: string; read_at: string }[]>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  /* moderation + search + push */
+  const [blocked, setBlocked] = useState<string[]>([]);
+  const [blockedOpen, setBlockedOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ msg?: GroupMessage; userId: string } | null>(null);
+  const [reportReason, setReportReason] = useState<string>(REPORT_REASONS[0].key);
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportBusy, setReportBusy] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [senderFilter, setSenderFilter] = useState<string>('all');
+  const [pushPerm, setPushPerm] = useState<string>(typeof window !== 'undefined' ? getNotificationPermission() : 'default');
 
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<GroupMessage | null>(null);
