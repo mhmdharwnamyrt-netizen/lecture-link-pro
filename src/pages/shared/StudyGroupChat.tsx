@@ -199,6 +199,14 @@ export default function StudyGroupChat({ role }: Props) {
     return m;
   }, [members]);
 
+  // Live mirrors so the realtime subscription never reads stale state
+  const messagesRef = useRef<GroupMessage[]>([]);
+  const memberMapRef = useRef<Record<string, GroupMember>>({});
+  const blockedRef = useRef<string[]>([]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { memberMapRef.current = memberMap; }, [memberMap]);
+  useEffect(() => { blockedRef.current = blocked; }, [blocked]);
+
   const Back = isRTL ? ArrowRight : ArrowLeft;
 
   const loadReads = useCallback(async (msgs: GroupMessage[]) => {
