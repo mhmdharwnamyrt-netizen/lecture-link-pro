@@ -76,7 +76,7 @@ export default function PublicProfilePage() {
           .in('post_id', ids)
           .order('created_at', { ascending: true });
         const withUrls = await Promise.all(((mediaRows as any[]) || []).map(async (m) => {
-          const { data } = await supabase.storage.from('community-media').createSignedUrl(m.storage_path, 60 * 60);
+          const { data } = await supabase.storage.from('message-attachments').createSignedUrl(m.storage_path, 60 * 60);
           return { ...m, display_url: data?.signedUrl || '' };
         }));
         const byPost: Record<string, any[]> = {};
