@@ -251,7 +251,7 @@ export default function StudyGroupChat({ role }: Props) {
     return () => { alive = false; };
   }, [id, user, loadReads, markRead]);
 
-  // Realtime
+  // Realtime + push notifications for replies / reactions on my messages
   useEffect(() => {
     if (!id || !user) return;
     const channel = supabase
@@ -261,8 +261,22 @@ export default function StudyGroupChat({ role }: Props) {
         (payload) => {
           const row = (payload.new || payload.old) as GroupMessage;
           if (payload.eventType === 'INSERT') {
+            if (blockedRef.current.includes(row.sender_id)) return;
             setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev, row]));
-            if (row.sender_id !== user.id) markRead([row]);
+            if (row.sender_id !== user.id) {
+              markRead([row]);
+              const parent = row.reply_to_id
+                ? messagesRef.current.find((m) => m.id === row.reply_to_id)
+                : null;
+              if (parent && parent.sender_id === user.id) {
+                const name = memberMapRef.current[row.sender_id]?.full_name || tx('m.s.user');
+                showLocalNotification(
+                  tx('g.newReply', { name }),
+                  row.content || row.media_name || tx('g.voice'),
+                  `sg-reply-${row.id}`,
+                );
+              }
+            }
           } else if (payload.eventType === 'UPDATE') {
             setMessages((prev) => prev.map((m) => (m.id === row.id ? { ...m, ...row } : m)));
           } else {
@@ -270,10 +284,26 @@ export default function StudyGroupChat({ role }: Props) {
           }
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_group_reads' }, () => {
-        setMessages((prev) => { loadReads(prev); return prev; });
+        loadReads(messagesRef.current);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_group_reactions' }, (payload) => {
+        const r: any = payload.new;
+        if (!r || r.user_id === user.id) return;
+        const target = messagesRef.current.find((m) => m.id === r.message_id);
+        if (!target) return;
+        setMessages((prev) => prev.map((m) => (m.id === r.message_id ? { ...m, likes_count: (m.likes_count || 0) + 1 } : m)));
+        if (target.sender_id === user.id) {
+          const name = memberMapRef.current[r.user_id]?.full_name || tx('m.s.user');
+          showLocalNotification(
+            tx('g.newReaction', { name }),
+            target.content || target.media_name || tx('g.voice'),
+            `sg-reaction-${r.id}`,
+          );
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user, markRead, loadReads]);
 
   useEffect(() => {
