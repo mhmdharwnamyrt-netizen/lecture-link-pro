@@ -817,8 +817,8 @@ export default function StudyGroupChat({ role }: Props) {
           <div ref={bottomRef} />
         </div>
 
-        {/* Composer */}
-        <Card className="mt-2 shrink-0 space-y-2 rounded-2xl border-border/50 bg-card/80 p-2.5 backdrop-blur-md shadow-lg">
+        {/* Composer — pinned to the bottom of the chat area */}
+        <Card className="relative z-20 mt-auto shrink-0 space-y-2 rounded-2xl border-border bg-card p-2.5 shadow-lg">
           <AnimatePresence>
             {(replyTo || editing) && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
