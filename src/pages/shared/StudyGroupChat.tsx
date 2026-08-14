@@ -723,10 +723,13 @@ export default function StudyGroupChat({ role }: Props) {
           <div className="mt-4 space-y-2">
             {(reads[seenFor?.id || ''] || []).length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">{tx('g.noSeen')}</p>
-            ) : (reads[seenFor!.id] || []).map((uid) => (
-              <div key={uid} className="flex items-center gap-2.5 rounded-xl border border-border/40 p-2">
-                <MemberAvatar member={memberMap[uid]} id={uid} size={32} />
-                <span className="min-w-0 flex-1 truncate text-sm">{memberMap[uid]?.full_name || tx('m.s.user')}</span>
+            ) : (reads[seenFor!.id] || []).map((r) => (
+              <div key={r.user_id} className="flex items-center gap-2.5 rounded-xl border border-border/40 p-2">
+                <MemberAvatar member={memberMap[r.user_id]} id={r.user_id} size={32} />
+                <span className="min-w-0 flex-1 truncate text-sm">{memberMap[r.user_id]?.full_name || tx('m.s.user')}</span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  {r.read_at ? new Date(r.read_at).toLocaleString(locale, { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : ''}
+                </span>
               </div>
             ))}
           </div>
