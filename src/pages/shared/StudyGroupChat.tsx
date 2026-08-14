@@ -566,34 +566,110 @@ export default function StudyGroupChat({ role }: Props) {
         <ChatBackground departmentName={group.departments?.name} departmentNameAr={group.departments?.name_ar} />
 
         {/* Header */}
-        <Card className="mb-3 flex shrink-0 items-center gap-3 rounded-2xl border-border/50 bg-card/80 p-3 backdrop-blur-md shadow-sm">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/${role}/groups`)}>
-            <Back className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold leading-tight">{pickName(group) || group.name}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {pickName(group.departments)} • {tx('g.yearLabel', { n: group.level })}
-            </p>
+        <Card className="relative z-10 mb-2 shrink-0 rounded-2xl border-border/60 bg-card/95 p-3 shadow-sm backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/${role}/groups`)}>
+              <Back className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold leading-tight">{pickName(group) || group.name}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {pickName(group.departments)} • {tx('g.yearLabel', { n: group.level })}
+              </p>
+            </div>
+            <button
+              onClick={() => setSearchOpen((s) => !s)}
+              title={tx('g.searchOpen')}
+              className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors ${searchOpen || searching ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/70'}`}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+            <button onClick={() => setMembersOpen(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-muted px-2.5 py-2 text-xs font-medium transition-colors hover:bg-muted/70">
+              <Users className="h-3.5 w-3.5" /> {members.length}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button title={tx('g.more')} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted transition-colors hover:bg-muted/70">
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-56">
+                <DropdownMenuItem onClick={enablePush}>
+                  {pushPerm === 'granted' ? <Bell className="me-2 h-4 w-4 text-success" /> : <BellOff className="me-2 h-4 w-4" />}
+                  {pushPerm === 'granted' ? tx('g.pushOn') : tx('g.enablePush')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setBlockedOpen(true)}>
+                  <ShieldOff className="me-2 h-4 w-4" />
+                  {tx('g.blockedList')} ({blocked.length})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <button onClick={() => setMembersOpen(true)}
-            className="flex shrink-0 items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs font-medium transition-colors hover:bg-muted/70">
-            <Users className="h-3.5 w-3.5" /> {members.length}
-          </button>
+
+          <AnimatePresence>
+            {searchOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  <div className="relative min-w-[180px] flex-1">
+                    <Search className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground start-3" />
+                    <Input
+                      autoFocus
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={tx('g.search')}
+                      className="h-10 rounded-xl ps-9"
+                    />
+                  </div>
+                  <select
+                    value={senderFilter}
+                    onChange={(e) => setSenderFilter(e.target.value)}
+                    className="h-10 rounded-xl border border-input bg-background px-2 text-xs"
+                  >
+                    <option value="all">{tx('g.searchAll')}</option>
+                    {members.map((mem) => (
+                      <option key={mem.user_id} value={mem.user_id}>{mem.full_name}</option>
+                    ))}
+                  </select>
+                  {searching && (
+                    <Button variant="ghost" size="sm" className="h-10 rounded-xl"
+                      onClick={() => { setQuery(''); setSenderFilter('all'); }}>
+                      <X className="me-1 h-3.5 w-3.5" /> {tx('g.clear')}
+                    </Button>
+                  )}
+                </div>
+                {searching && (
+                  <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+                    {tx('g.searchResults', { n: visibleMessages.length })}
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
 
         {/* Messages */}
-        <div className="no-scrollbar flex-1 space-y-3 overflow-y-auto rounded-2xl px-1 pb-2">
-          {messages.length === 0 && (
-            <div className="grid h-full place-items-center text-sm text-muted-foreground">{tx('g.noMessages')}</div>
+        <div className="no-scrollbar relative z-10 flex-1 space-y-3 overflow-y-auto rounded-2xl px-1 pb-2">
+          {visibleMessages.length === 0 && (
+            <div className="grid h-full place-items-center text-sm text-muted-foreground">
+              {searching ? tx('g.searchNone') : tx('g.noMessages')}
+            </div>
           )}
-          {messages.map((m) => {
+          {visibleMessages.map((m) => {
             const mine = m.sender_id === user?.id;
             const author = memberMap[m.sender_id];
             const parent = m.reply_to_id ? messages.find((x) => x.id === m.reply_to_id) : null;
             const long = m.content.length > LONG_TEXT;
             const open = expanded.has(m.id);
-            const seenCount = (reads[m.id] || []).length;
+            const readRows = reads[m.id] || [];
+            const seenCount = readRows.length;
+            const lastSeenAt = readRows.length
+              ? readRows.map((r) => r.read_at).sort().slice(-1)[0]
+              : null;
             const myReaction = (myLikes as any)[m.id];
             
             const getReactionIcon = (type?: string) => {
