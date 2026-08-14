@@ -200,6 +200,69 @@ export type Database = {
           },
         ]
       }
+      chat_reports: {
+        Row: {
+          content_snapshot: string | null
+          created_at: string
+          details: string | null
+          group_id: string | null
+          id: string
+          message_id: string | null
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          content_snapshot?: string | null
+          created_at?: string
+          details?: string | null
+          group_id?: string | null
+          id?: string
+          message_id?: string | null
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          content_snapshot?: string | null
+          created_at?: string
+          details?: string | null
+          group_id?: string | null
+          id?: string
+          message_id?: string | null
+          reason?: string
+          reported_user_id?: string
+          reporter_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_reports_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "study_group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_comments: {
         Row: {
           author_id: string
@@ -2267,6 +2330,27 @@ export type Database = {
           peer_id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
         }
         Relationships: []
       }
