@@ -732,7 +732,7 @@ export default function StudyGroupChat({ role }: Props) {
                   </div>
 
                   {!m.is_deleted && (
-                    <div className={`flex items-center gap-1 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-0.5 rounded-xl border border-border/60 bg-card px-1 py-0.5 shadow-sm ${mine ? 'flex-row-reverse' : ''}`}>
                       <div
                         className="relative"
                         onMouseEnter={() => { if (window.matchMedia('(hover: hover)').matches) setActiveReactionPicker(m.id); }}
