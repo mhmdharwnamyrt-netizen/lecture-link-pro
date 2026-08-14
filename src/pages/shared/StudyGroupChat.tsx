@@ -944,6 +944,76 @@ export default function StudyGroupChat({ role }: Props) {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Blocked users sheet */}
+      <Sheet open={blockedOpen} onOpenChange={setBlockedOpen}>
+        <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto rounded-t-3xl">
+          <SheetHeader className="text-start">
+            <SheetTitle>{tx('g.blockedList')}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {blocked.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">{tx('g.blockedCount', { n: 0 })}</p>
+            ) : blocked.map((uid) => (
+              <div key={uid} className="flex items-center gap-2.5 rounded-xl border border-border/40 p-2">
+                <MemberAvatar member={memberMap[uid]} id={uid} size={32} />
+                <span className="min-w-0 flex-1 truncate text-sm">{memberMap[uid]?.full_name || tx('m.s.user')}</span>
+                <Button size="sm" variant="secondary" className="rounded-xl" onClick={() => doUnblock(uid)}>
+                  {tx('g.unblock')}
+                </Button>
+              </div>
+            ))}
+            {blocked.length > 0 && (
+              <p className="pt-1 text-center text-[11px] text-muted-foreground">{tx('g.blockedHidden')}</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Report dialog */}
+      <Dialog open={!!reportTarget} onOpenChange={(o) => !o && setReportTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-start">
+              {reportTarget?.msg ? tx('g.reportMsg') : tx('g.reportUser')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {reportTarget?.msg && (
+              <p className="line-clamp-3 rounded-xl border border-border/50 bg-muted/50 p-2 text-xs text-muted-foreground">
+                {reportTarget.msg.content || reportTarget.msg.media_name || tx('g.voice')}
+              </p>
+            )}
+            <div className="space-y-1.5">
+              {REPORT_REASONS.map((r) => (
+                <button
+                  key={r.key}
+                  onClick={() => setReportReason(r.key)}
+                  className={`w-full rounded-xl border px-3 py-2 text-start text-sm transition-colors ${
+                    reportReason === r.key ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  {isRTL ? r.ar : r.en}
+                </button>
+              ))}
+            </div>
+            <Textarea
+              value={reportDetails}
+              onChange={(e) => setReportDetails(e.target.value)}
+              placeholder={tx('g.reportDetails')}
+              rows={3}
+              className="resize-none rounded-xl"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" className="rounded-xl" onClick={() => setReportTarget(null)}>{tx('g.cancel')}</Button>
+            <Button className="gap-2 rounded-xl" disabled={reportBusy} onClick={sendReport}>
+              {reportBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Flag className="h-4 w-4" />}
+              {tx('g.sendReport')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MobileLayout>
   );
 }
