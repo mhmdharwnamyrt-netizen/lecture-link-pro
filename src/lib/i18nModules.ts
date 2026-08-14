@@ -159,6 +159,8 @@ const dict = {
   'g.seenAt': ['Seen {time}', 'شوهدت {time}'],
   'g.delivered': ['Delivered', 'تم التسليم'],
   'g.seenByAll': ['Seen by everyone', 'شاهدها الجميع'],
+  'g.notSeenYet': ['Not seen yet', 'لم تتم المشاهدة بعد'],
+  'g.blockUser': ['Block user', 'حظر المستخدم'],
 
   /* --- moderation --- */
   'g.report': ['Report', 'إبلاغ'],
