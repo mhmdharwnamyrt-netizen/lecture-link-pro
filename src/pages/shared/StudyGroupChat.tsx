@@ -695,10 +695,10 @@ export default function StudyGroupChat({ role }: Props) {
                     {m.edited_at && !m.is_deleted && <span>· {tx('g.edited')}</span>}
                   </div>
 
-                  <div className={`rounded-2xl border px-3 py-2 text-sm shadow-sm ${
-                    mine 
-                      ? 'border-primary/20 bg-primary/90 text-primary-foreground shadow-md dark:bg-primary/80' 
-                      : 'border-border/50 bg-card/90 backdrop-blur-sm shadow-sm dark:bg-card/80'
+                  <div className={`rounded-2xl border px-3 py-2 text-sm shadow-md ${
+                    mine
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-card text-card-foreground'
                   }`}>
                     {m.is_deleted ? (
                       <p className="italic text-muted-foreground">{tx('g.deletedMsg')}</p>
