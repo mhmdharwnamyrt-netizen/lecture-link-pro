@@ -467,6 +467,76 @@ export default function StudyGroupChat({ role }: Props) {
     setRecording(false);
   };
 
+  /* ---------- moderation ---------- */
+  const openReport = (userId: string, msg?: GroupMessage) => {
+    setReportReason(REPORT_REASONS[0].key);
+    setReportDetails('');
+    setReportTarget({ userId, msg });
+  };
+
+  const sendReport = async () => {
+    if (!user || !id || !reportTarget) return;
+    setReportBusy(true);
+    try {
+      await submitChatReport({
+        reporterId: user.id,
+        reportedUserId: reportTarget.userId,
+        groupId: id,
+        messageId: reportTarget.msg?.id ?? null,
+        contentSnapshot: reportTarget.msg?.content || reportTarget.msg?.media_name || null,
+        reason: reportReason,
+        details: reportDetails.trim() || null,
+      });
+      toast({ title: tx('g.reportDone') });
+      setReportTarget(null);
+    } catch (e: any) {
+      toast({ title: e.message, variant: 'destructive' });
+    } finally { setReportBusy(false); }
+  };
+
+  const doBlock = async (userId: string) => {
+    if (!user) return;
+    if (!confirm(tx('g.confirmBlock'))) return;
+    try {
+      await blockUser(user.id, userId);
+      setBlocked((p) => (p.includes(userId) ? p : [...p, userId]));
+      toast({ title: tx('g.blocked') });
+    } catch (e: any) { toast({ title: e.message, variant: 'destructive' }); }
+  };
+
+  const doUnblock = async (userId: string) => {
+    if (!user) return;
+    try {
+      await unblockUser(user.id, userId);
+      setBlocked((p) => p.filter((x) => x !== userId));
+      toast({ title: tx('g.unblocked') });
+    } catch (e: any) { toast({ title: e.message, variant: 'destructive' }); }
+  };
+
+  const enablePush = async () => {
+    const ok = await requestNotificationPermission();
+    setPushPerm(getNotificationPermission());
+    toast({ title: ok ? tx('g.pushOn') : tx('g.pushOff'), variant: ok ? undefined : 'destructive' });
+  };
+
+  /* ---------- visible messages (blocked filter + search) ---------- */
+  const visibleMessages = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return messages.filter((m) => {
+      if (blocked.includes(m.sender_id)) return false;
+      if (senderFilter !== 'all' && m.sender_id !== senderFilter) return false;
+      if (!q) return true;
+      const author = memberMap[m.sender_id]?.full_name?.toLowerCase() || '';
+      return (
+        m.content?.toLowerCase().includes(q) ||
+        (m.media_name || '').toLowerCase().includes(q) ||
+        author.includes(q)
+      );
+    });
+  }, [messages, blocked, query, senderFilter, memberMap]);
+
+  const searching = !!query.trim() || senderFilter !== 'all';
+
   /* ---------- render ---------- */
   if (loading) {
     return (
