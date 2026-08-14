@@ -231,14 +231,16 @@ export default function StudyGroupChat({ role }: Props) {
       if (!alive) return;
       setGroup(g);
       if (!g) { setLoading(false); return; }
-      const [ms, msgs, likes] = await Promise.all([
+      const [ms, msgs, likes, blk] = await Promise.all([
         fetchGroupMembers(id).catch(() => []),
         fetchMessages(id),
         supabase.from('study_group_reactions' as any).select('message_id, reaction_type').eq('user_id', user.id),
+        fetchBlockedIds(user.id).catch(() => [] as string[]),
       ]);
       if (!alive) return;
       setMembers(ms);
       setMessages(msgs);
+      setBlocked(blk);
       const reactionsMap: Record<string, string> = {};
       (likes.data || []).forEach((r: any) => { reactionsMap[r.message_id] = r.reaction_type || 'like'; });
       setMyLikes(reactionsMap as any);
