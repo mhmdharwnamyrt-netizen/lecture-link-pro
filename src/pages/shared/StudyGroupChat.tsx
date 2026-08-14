@@ -780,10 +780,33 @@ export default function StudyGroupChat({ role }: Props) {
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                           <button onClick={() => setSeenFor(m)}
-                            className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground">
-                            <Eye className="h-3.5 w-3.5" /> {seenCount}
+                            title={lastSeenAt ? tx('g.seenAt', { time: new Date(lastSeenAt).toLocaleString(locale) }) : tx('g.notSeenYet')}
+                            className={`inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] ${seenCount ? 'text-primary' : 'text-muted-foreground'} hover:text-foreground`}>
+                            {seenCount ? <CheckCheck className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+                            {seenCount || ''}
                           </button>
                         </>
+                      )}
+                      {!mine && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="rounded-lg px-1.5 py-0.5 text-muted-foreground transition-colors hover:text-foreground">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isRTL ? 'start' : 'end'} className="w-52">
+                            <DropdownMenuItem onClick={() => openReport(m.sender_id, m)}>
+                              <Flag className="me-2 h-4 w-4" /> {tx('g.reportMsg')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openReport(m.sender_id)}>
+                              <Flag className="me-2 h-4 w-4" /> {tx('g.reportUser')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => doBlock(m.sender_id)}>
+                              <ShieldOff className="me-2 h-4 w-4" /> {tx('g.blockUser')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   )}
