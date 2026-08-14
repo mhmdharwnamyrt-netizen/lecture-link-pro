@@ -14,9 +14,18 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  REPORT_REASONS, submitChatReport, fetchBlockedIds, blockUser, unblockUser,
+} from '@/lib/chatModeration';
+import { requestNotificationPermission, getNotificationPermission, showLocalNotification } from '@/lib/pushNotifications';
 import { useTx } from '@/lib/i18nModules';
 import { ReactionPicker, type ReactionType } from '@/components/shared/ReactionPicker';
 import ChatBackground from '@/components/shared/ChatBackground';
